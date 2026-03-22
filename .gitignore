@@ -1,0 +1,21 @@
+# Environment variables — API key, never commit
+.env
+
+# Database lives in OneDrive, not in code
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node modules — reinstalled with npm install
+frontend/node_modules/
+frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+ClaudeAPIKey.txt
