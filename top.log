@@ -1,0 +1,12 @@
+2026-03-22 15:49:36,400 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-22 15:49:36,401 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-22 15:50:04,162 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-22 15:50:04,163 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
