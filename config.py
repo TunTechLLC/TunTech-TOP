@@ -1,21 +1,22 @@
 # TOP Configuration
-# TunTech Operations Platform - Phase 1
+# TunTech Operations Platform - Phase 2
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-# Base directory
-BASE_DIR = Path(r"C:\Users\varic\OneDrive\100_TunTech\TOP")
+# Load environment variables from .env file
+load_dotenv()
 
-# Database — string for sqlite3 compatibility
-DB_PATH = r"C:\Users\varic\OneDrive\100_TunTech\TOP\TOP.db"
+# Database — loaded from .env
+DB_PATH = os.getenv('TOP_DB_PATH', r'C:\Users\varic\OneDrive\100_TunTech\TOP\TOP.db')
 
-# Reports output folder — Path object so mkdir works
-REPORTS_DIR = Path(r"C:\Users\varic\OneDrive\100_TunTech\TOP\reports")
+# Reports output folder — loaded from .env
+REPORTS_DIR = Path(os.getenv('REPORTS_DIR', r'C:\Users\varic\OneDrive\100_TunTech\TOP\reports'))
 
 # Ensure reports directory exists
 REPORTS_DIR.mkdir(exist_ok=True)
 
-# Agent names - valid values for log-agent-run command
+# Agent names
 VALID_AGENTS = [
     "Diagnostician",
     "Delivery",
@@ -24,7 +25,7 @@ VALID_AGENTS = [
     "Synthesizer"
 ]
 
-# Domain list - used in populate-findings command
+# Domain list
 DOMAINS = [
     "Sales & Pipeline",
     "Sales-to-Delivery Transition",
