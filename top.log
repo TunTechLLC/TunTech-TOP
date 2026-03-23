@@ -163,3 +163,27 @@ Traceback (most recent call last):
   File "C:\Dev\TunTech\TOP\api\routers\agents.py", line 19, in get_agent_registry
     from api.services.claude import AGENT_REGISTRY
 ModuleNotFoundError: No module named 'api.services.claude'
+2026-03-23 14:42:41,279 INFO api.db.repositories.finding: Fetching findings for engagement: ep001
+2026-03-23 14:42:41,280 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-03-23 14:42:54,905 INFO api.db.repositories.finding: Fetching findings for engagement: ep001
+2026-03-23 14:42:54,906 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-03-23 14:43:34,708 INFO api.db.repositories.finding: Fetching findings for engagement: ep001
+2026-03-23 14:43:34,708 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-03-23 14:48:18,566 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-03-23 14:48:18,566 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 

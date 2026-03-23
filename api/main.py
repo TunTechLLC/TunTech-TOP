@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from api.routers import engagements, signals, patterns, agents
+from api.routers import engagements, signals, patterns, agents, findings
 
 # ── Logging ──────────────────────────────────────────────────────────────
 LOG_PATH = Path(r"C:\dev\tuntech\top\top.log")
@@ -50,6 +50,11 @@ app.include_router(
     agents.router,
     prefix="/api/engagements",
     tags=["agents"]
+)
+app.include_router(
+    findings.router,
+    prefix="/api/engagements",
+    tags=["findings"]
 )
 
 # ── Global error handler ──────────────────────────────────────────────────
