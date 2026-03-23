@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.pattern import PatternRepository
 from api.db.repositories.signal import SignalRepository
 from api.models.pattern import (PatternDetectionResult, PatternUpdate,
-                                 EngagementPatternResponse, PatternLibraryResponse)
+                                EngagementPatternResponse)
 
 logger = logging.getLogger(__name__)
 
@@ -108,9 +108,3 @@ def update_pattern(
     if data.economic_impact_est is not None:
         repo.update_economic_estimate(ep_id, data.economic_impact_est)
     return {"updated": ep_id}
-
-
-@router.get("/library", response_model=list[PatternLibraryResponse])
-def get_pattern_library(repo: PatternRepository = Depends(get_pattern_repo)):
-    """Return the full pattern library P01-P47."""
-    return repo.get_library()
