@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from api.routers import engagements, signals, patterns, agents, findings, roadmap
+from api.routers import engagements, signals, patterns, agents, findings, roadmap, knowledge, reporting
 
 # ── Logging ──────────────────────────────────────────────────────────────
 LOG_PATH = Path(r"C:\dev\tuntech\top\top.log")
@@ -61,6 +61,16 @@ app.include_router(
     prefix="/api/engagements",
     tags=["roadmap"]
 )
+app.include_router(
+    knowledge.router,
+    prefix="/api/engagements",
+    tags=["knowledge"]
+)
+app.include_router(
+    reporting.router,
+    prefix="/api",
+    tags=["reporting"]
+)
 
 # ── Global error handler ──────────────────────────────────────────────────
 @app.exception_handler(Exception)
@@ -70,8 +80,3 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"error": str(exc), "path": str(request.url)}
     )
-
-# ── Health check ──────────────────────────────────────────────────────────
-@app.get("/api/health")
-def health_check():
-    return {"status": "ok"}

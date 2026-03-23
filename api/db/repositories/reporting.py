@@ -31,7 +31,7 @@ GET_ECONOMIC_IMPACT = """
 GET_AGENT_RUN_LOG = """
     SELECT *
     FROM   vw_AgentRunLog
-    ORDER  BY engagement_id, created_date
+    ORDER  BY firm_name, run_date
 """
 
 GET_ENGAGEMENT_SUMMARY = """
