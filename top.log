@@ -187,3 +187,33 @@ ModuleNotFoundError: No module named 'api.services.claude'
            f.engagement_id,
            f.pattern_id,
  
+2026-03-23 14:55:24,343 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: ep001
+2026-03-23 14:55:24,344 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-03-23 14:55:56,044 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: ep001
+2026-03-23 14:55:56,045 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-03-23 14:55:57,842 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: ep001
+2026-03-23 14:55:57,842 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-03-23 14:57:09,179 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: e001
+2026-03-23 14:57:09,179 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-03-23 14:57:53,702 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E001
+2026-03-23 14:57:53,703 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
