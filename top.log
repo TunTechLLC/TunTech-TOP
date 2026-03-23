@@ -10,3 +10,20 @@
            e.engagement_name,
            e.status,
 
+2026-03-23 13:38:17,649 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-23 13:38:17,651 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-23 13:39:51,446 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-23 13:39:51,447 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-23 13:40:47,759 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-23 13:40:47,760 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
