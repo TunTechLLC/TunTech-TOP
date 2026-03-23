@@ -316,3 +316,145 @@ sqlite3.OperationalError: no such column: engagement_id
            pattern_name,
            domain,
            t
+2026-03-23 15:14:06,259 INFO api.db.repositories.reporting: Fetching pattern frequency
+2026-03-23 15:14:06,260 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_PatternFrequency
+    ORDER  BY times_detected DESC
+
+2026-03-23 15:14:06,263 INFO api.db.repositories.reporting: Fetching pattern frequency by domain
+2026-03-23 15:14:06,264 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_PatternFrequencyByDomain
+    ORDER  BY domain, times
+2026-03-23 15:14:06,267 INFO api.db.repositories.reporting: Fetching accepted patterns
+2026-03-23 15:14:06,267 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_AcceptedPatterns
+    ORDER  BY engagement_id, patter
+2026-03-23 15:14:06,270 INFO api.db.repositories.reporting: Fetching economic impact
+2026-03-23 15:14:06,270 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EconomicImpactByEngagement
+    ORDER  BY engagement_
+2026-03-23 15:14:06,273 INFO api.db.repositories.reporting: Fetching agent run log
+2026-03-23 15:14:06,273 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_AgentRunLog
+    ORDER  BY firm_name, run_date
+
+2026-03-23 15:14:06,276 INFO api.db.repositories.reporting: Fetching OPD summary
+2026-03-23 15:14:06,276 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_OPDSummary
+    ORDER  BY firm_name, finding_id
+
+2026-03-23 15:14:06,279 INFO api.db.repositories.reporting: Fetching engagement overview
+2026-03-23 15:14:06,280 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-23 15:21:03,494 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-23 15:21:03,495 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-23 15:22:22,297 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-23 15:22:22,298 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-23 15:22:25,746 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-23 15:22:25,746 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-23 15:22:54,683 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-23 15:22:54,684 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-23 15:23:22,354 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-23 15:23:22,355 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-23 15:23:51,796 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-23 15:23:51,797 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-23 15:24:43,001 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-03-23 15:24:43,002 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-03-23 15:25:25,684 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E001
+2026-03-23 15:25:25,685 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-03-23 15:26:04,865 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E001
+2026-03-23 15:26:04,866 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-03-23 15:27:40,496 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-03-23 15:27:40,507 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-23 15:28:41,872 INFO api.db.repositories.reporting: Fetching pattern frequency
+2026-03-23 15:28:41,872 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_PatternFrequency
+    ORDER  BY times_detected DESC
+
+2026-03-23 15:28:41,877 INFO api.db.repositories.reporting: Fetching pattern frequency by domain
+2026-03-23 15:28:41,877 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_PatternFrequencyByDomain
+    ORDER  BY domain, times
+2026-03-23 15:28:41,881 INFO api.db.repositories.reporting: Fetching accepted patterns
+2026-03-23 15:28:41,881 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_AcceptedPatterns
+    ORDER  BY engagement_id, patter
+2026-03-23 15:28:41,888 INFO api.db.repositories.reporting: Fetching economic impact
+2026-03-23 15:28:41,889 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EconomicImpactByEngagement
+    ORDER  BY engagement_
+2026-03-23 15:28:41,892 INFO api.db.repositories.reporting: Fetching agent run log
+2026-03-23 15:28:41,893 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_AgentRunLog
+    ORDER  BY firm_name, run_date
+
+2026-03-23 15:28:41,895 INFO api.db.repositories.reporting: Fetching OPD summary
+2026-03-23 15:28:41,896 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_OPDSummary
+    ORDER  BY firm_name, finding_id
+
+2026-03-23 15:28:41,899 INFO api.db.repositories.reporting: Fetching engagement overview
+2026-03-23 15:28:41,899 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-23 15:29:26,933 INFO api.db.repositories.pattern: Fetching full pattern library
+2026-03-23 15:29:26,934 INFO api.db.repositories.base: Query: 
+    SELECT pattern_id,
+           pattern_name,
+           domain,
+           t
