@@ -1,0 +1,115 @@
+import logging
+from fastapi import APIRouter, HTTPException, Depends
+from api.db.repositories.agent_run import AgentRunRepository
+from api.models.agent import AgentRunResponse, AgentRegistryEntry
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+def get_repo() -> AgentRunRepository:
+    return AgentRunRepository()
+
+
+@router.get("/agents/registry", response_model=list[AgentRegistryEntry])
+def get_agent_registry():
+    """Return the full agent registry.
+    Frontend uses this to build agent cards dynamically."""
+    from api.services.claude import AGENT_REGISTRY
+    return [
+        {
+            'name':                  key,
+            'sequence':              entry['sequence'],
+            'domain':                entry['domain'],
+            'required_prior_agents': entry['required_prior_agents'],
+        }
+        for key, entry in sorted(
+            AGENT_REGISTRY.items(),
+            key=lambda x: x[1]['sequence']
+        )
+    ]
+
+
+@router.get("/{engagement_id}/agents",
+            response_model=list[AgentRunResponse])
+def list_agent_runs(
+    engagement_id: str,
+    repo: AgentRunRepository = Depends(get_repo)
+):
+    """Return all agent runs for an engagement in chronological order."""
+    return repo.get_for_engagement(engagement_id)
+
+
+@router.post("/{engagement_id}/agents/{agent_name}/run")
+async def run_agent(
+    engagement_id: str,
+    agent_name:    str,
+    repo:          AgentRunRepository = Depends(get_repo)
+):
+    """Execute an agent via Claude API.
+    Validates prerequisites, assembles context, calls Claude, stores output."""
+    from api.services.claude import AGENT_REGISTRY, call_claude
+    from api.services.case_packet import CasePacketService
+
+    if agent_name not in AGENT_REGISTRY:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown agent: {agent_name}. Valid agents: {list(AGENT_REGISTRY.keys())}"
+        )
+
+    agent = AGENT_REGISTRY[agent_name]
+
+    missing = repo.validate_prerequisites(
+        engagement_id,
+        agent['required_prior_agents']
+    )
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Prerequisites not met. Accept these agents first: {missing}"
+        )
+
+    case_packet   = CasePacketService(engagement_id).assemble()
+    prior_outputs = [
+        repo.get_accepted_output(engagement_id, required)
+        for required in agent['required_prior_agents']
+    ]
+
+    logger.info(f"Running agent {agent_name} for engagement {engagement_id}")
+    output = await call_claude(case_packet, prior_outputs, agent['prompt'])
+
+    run_id = repo.create({
+        'engagement_id':  engagement_id,
+        'agent_name':     agent_name,
+        'output':         output,
+        'model_used':     'claude-sonnet-4-6',
+        'prompt_version': '2.0',
+    })
+
+    logger.info(f"Agent {agent_name} run complete. run_id: {run_id}")
+    return {'run_id': run_id, 'agent_name': agent_name, 'output': output}
+
+
+@router.patch("/{engagement_id}/agents/{run_id}/accept")
+def accept_agent_run(
+    engagement_id: str,
+    run_id:        str,
+    repo:          AgentRunRepository = Depends(get_repo)
+):
+    """Accept an agent run. Sets accepted=1 and unlocks the next agent."""
+    repo.accept(run_id)
+    logger.info(f"Agent run accepted: {run_id}")
+    return {'accepted': run_id}
+
+
+@router.patch("/{engagement_id}/agents/{run_id}/reject")
+def reject_agent_run(
+    engagement_id: str,
+    run_id:        str,
+    repo:          AgentRunRepository = Depends(get_repo)
+):
+    """Reject an agent run. Allows the agent to be re-run."""
+    repo.reject(run_id)
+    logger.info(f"Agent run rejected: {run_id}")
+    return {'rejected': run_id}

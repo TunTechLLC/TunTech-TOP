@@ -39,3 +39,127 @@
            c.firm_name,
            c.firm_size,
            c.se
+2026-03-23 14:33:49,878 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/agents/registry: No module named 'api.services.claude'
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\agents.py", line 19, in get_agent_registry
+    from api.services.claude import AGENT_REGISTRY
+ModuleNotFoundError: No module named 'api.services.claude'
+2026-03-23 14:34:11,953 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: ep001
+2026-03-23 14:34:11,955 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-23 14:36:33,190 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-03-23 14:36:33,191 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-23 14:38:02,169 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/agents/registry: No module named 'api.services.claude'
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\agents.py", line 19, in get_agent_registry
+    from api.services.claude import AGENT_REGISTRY
+ModuleNotFoundError: No module named 'api.services.claude'
