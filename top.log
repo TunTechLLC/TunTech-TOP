@@ -27,3 +27,15 @@
     SELECT domain,
            signal_confidence,
            COUNT(*) AS signal_
+2026-03-23 13:52:42,103 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-23 13:52:42,104 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-23 13:53:07,334 INFO api.db.repositories.engagement: Fetching engagement: library
+2026-03-23 13:53:07,335 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se

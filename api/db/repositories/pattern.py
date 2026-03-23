@@ -59,6 +59,11 @@ UPDATE_ECONOMIC_ESTIMATE = """
     WHERE  ep_id = ?
 """
 
+GET_NEXT_EP_NUM = """
+    SELECT COUNT(*) AS total
+    FROM   EngagementPatterns
+"""
+
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -71,6 +76,12 @@ class PatternRepository(BaseRepository):
         logger.info(f"Fetching patterns for engagement: {engagement_id}")
         rows = self._query(GET_FOR_ENGAGEMENT, (engagement_id,))
         return [dict(row) for row in rows]
+
+    def get_next_ep_id(self, engagement_id: str) -> str:
+        """Return the next available EP ID string (e.g. EP054).
+        Used to tell Claude which ID to start from in pattern detection prompt."""
+        from api.utils.ids import next_ep_id
+        return next_ep_id()
 
     def get_library(self) -> list:
         """Return the full pattern library P01-P47.
