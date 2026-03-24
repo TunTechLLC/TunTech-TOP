@@ -32,11 +32,21 @@ GET_BY_ID = """
     SELECT e.*,
            c.firm_name,
            c.firm_size,
-           c.service_model
+           c.service_model,
+           COUNT(DISTINCT s.signal_id)   AS signal_count,
+           COUNT(DISTINCT ep.ep_id)      AS pattern_count,
+           COUNT(DISTINCT f.finding_id)  AS finding_count
     FROM   Engagements e
     JOIN   Clients c
            ON e.client_id = c.client_id
+    LEFT JOIN Signals s
+           ON s.engagement_id = e.engagement_id
+    LEFT JOIN EngagementPatterns ep
+           ON ep.engagement_id = e.engagement_id
+    LEFT JOIN OPDFindings f
+           ON f.engagement_id = e.engagement_id
     WHERE  e.engagement_id = ?
+    GROUP  BY e.engagement_id
 """
 
 INSERT_CLIENT = """
