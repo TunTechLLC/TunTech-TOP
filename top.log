@@ -686,3 +686,325 @@ sqlite3.OperationalError: no such column: engagement_id
     SELECT domain,
            signal_confidence,
            COUNT(*) AS signal_
+2026-03-24 12:53:50,831 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:53:50,832 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:53:50,846 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:53:50,847 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:54:16,447 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:54:16,447 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:54:16,456 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:54:16,457 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:54:17,167 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 12:54:17,167 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:54:17,175 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 12:54:17,176 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:54:17,182 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 12:54:17,182 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:54:17,190 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 12:54:17,190 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:55:10,890 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:55:10,891 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:55:10,900 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 12:55:10,901 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:55:13,911 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 12:55:13,911 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 12:55:13,912 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:55:13,912 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:55:13,921 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 12:55:13,922 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 12:55:13,922 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:55:13,923 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:42,889 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 12:56:42,889 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 12:56:42,908 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 12:56:42,909 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 12:56:44,571 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-03-24 12:56:44,572 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 12:56:44,582 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-03-24 12:56:44,582 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 12:56:44,592 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:44,592 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:44,593 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:44,593 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:44,601 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:44,602 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:44,602 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:44,602 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:49,559 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:49,560 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:56:49,568 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:49,568 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:56:52,193 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:52,193 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:52,201 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:52,201 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:52,208 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:52,209 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:52,216 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:52,216 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:53,407 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:53,408 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:56:53,417 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:53,418 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:56:54,563 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:54,563 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:54,563 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:54,564 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:54,575 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 12:56:54,575 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 12:56:54,576 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 12:56:54,576 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 12:56:54,976 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:54,977 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:56:54,984 INFO api.db.repositories.pattern: Fetching patterns for engagement: E002
+2026-03-24 12:56:54,984 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 12:58:25,537 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 12:58:25,537 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 12:58:25,559 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 12:58:25,560 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:06:55,214 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:06:55,214 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:06:55,232 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:06:55,232 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:06:59,195 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-24 13:06:59,195 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 13:06:59,206 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-24 13:06:59,206 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 13:06:59,213 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 13:06:59,214 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 13:06:59,220 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 13:06:59,221 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 13:06:59,223 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 13:06:59,223 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 13:06:59,230 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-24 13:06:59,231 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 13:07:02,882 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:07:02,882 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:07:02,896 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:07:02,897 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:07:04,028 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-03-24 13:07:04,029 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 13:07:04,040 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-03-24 13:07:04,040 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 13:07:04,045 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 13:07:04,045 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 13:07:04,046 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 13:07:04,046 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 13:07:04,057 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-03-24 13:07:04,057 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-24 13:07:04,057 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-03-24 13:07:04,058 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 13:07:05,579 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:07:05,580 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-24 13:07:05,595 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-24 13:07:05,596 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+

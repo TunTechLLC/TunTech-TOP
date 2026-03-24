@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import SignalPanel from './SignalPanel'
-import PatternPanel from './PatternPanel'
+import SignalPanel   from './SignalPanel'
+import PatternPanel  from './PatternPanel'
+import AgentPanel    from './AgentPanel'
+import FindingsPanel from './FindingsPanel'
+import RoadmapPanel  from './RoadmapPanel'
+import KnowledgePanel from './KnowledgePanel'
+import ReportPanel   from './ReportPanel'
 
 const TABS = [
   { id: 'signals',  label: 'Signals' },
@@ -41,18 +46,18 @@ export default function EngagementDetail() {
   if (error)   return <div className="p-8 text-red-600">Error: {error}</div>
   if (!engagement) return <div className="p-8 text-gray-500">Engagement not found.</div>
 
-  const renderPanel = () => {
-    switch (activeTab) {
-      case 'signals':  return <SignalPanel  engagementId={id} />
-      case 'patterns': return <PatternPanel engagementId={id} />
-      case 'agents':   return <Placeholder title="Agents" />
-      case 'findings': return <Placeholder title="Findings" />
-      case 'roadmap':  return <Placeholder title="Roadmap" />
-      case 'knowledge':return <Placeholder title="Knowledge" />
-      case 'report':   return <Placeholder title="Report" />
-      default:         return null
-    }
+ const renderPanel = () => {
+  switch (activeTab) {
+    case 'signals':   return <SignalPanel    engagementId={id} />
+    case 'patterns':  return <PatternPanel   engagementId={id} />
+    case 'agents':    return <AgentPanel     engagementId={id} />
+    case 'findings':  return <FindingsPanel  engagementId={id} />
+    case 'roadmap':   return <RoadmapPanel   engagementId={id} />
+    case 'knowledge': return <KnowledgePanel engagementId={id} />
+    case 'report':    return <ReportPanel    engagementId={id} />
+    default:          return null
   }
+}
 
   return (
     <div className="max-w-5xl mx-auto p-8">
