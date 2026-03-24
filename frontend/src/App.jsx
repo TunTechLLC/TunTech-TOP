@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Dashboard from './components/Dashboard'
+import NewEngagement from './components/NewEngagement'
 
 function Placeholder({ title }) {
   return (
@@ -15,10 +16,10 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          <Route path="/"                    element={<Dashboard />} />
-          <Route path="/engagements/new"     element={<Placeholder title="New Engagement" />} />
-          <Route path="/engagements/:id"     element={<Placeholder title="Engagement Detail" />} />
-          <Route path="/cross-engagement"    element={<Placeholder title="Cross-Engagement Report" />} />
+          <Route path="/"                 element={<Dashboard />} />
+          <Route path="/engagements/new"  element={<NewEngagement />} />
+          <Route path="/engagements/:id"  element={<Placeholder title="Engagement Detail" />} />
+          <Route path="/cross-engagement" element={<Placeholder title="Cross-Engagement Report" />} />
         </Routes>
       </div>
     </BrowserRouter>
