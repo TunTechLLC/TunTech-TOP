@@ -1874,3 +1874,31 @@ Traceback (most recent call last):
   File "C:\Dev\TunTech\TOP\api\routers\agents.py", line 19, in get_agent_registry
     from api.services.claude import AGENT_REGISTRY
 ImportError: cannot import name 'AGENT_REGISTRY' from 'api.services.claude' (C:\Dev\TunTech\TOP\api\services\claude.py)
+2026-03-24 16:20:54,931 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-24 16:20:54,934 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-24 16:20:54,945 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-24 16:20:54,945 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-24 16:20:54,948 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-24 16:20:54,949 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-24 16:20:54,954 INFO api.routers.agents: Running agent Diagnostician for engagement E001
+2026-03-24 16:20:54,954 INFO api.services.claude: Calling Claude API - context length: 15210 chars
+2026-03-24 16:22:36,829 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-03-24 16:22:36,939 INFO api.services.claude: Claude API response received - 18387 chars
+2026-03-24 16:22:36,943 INFO api.db.repositories.agent_run: Creating agent run: AR011 — Diagnostician for engagement: E001
+2026-03-24 16:22:36,944 INFO api.db.repositories.base: Write: 
+    INSERT INTO AgentRuns (
+        run_id, engagement_id, agent_name,
+        
+2026-03-24 16:22:37,080 INFO api.routers.agents: Agent Diagnostician run complete. run_id: AR011
