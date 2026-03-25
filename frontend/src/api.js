@@ -23,9 +23,9 @@ export const api = {
                             { method: 'PATCH', ...json(data) }).then(handle),
   },
   signals: {
-    list:    (id) => fetch(`${BASE}/engagements/${id}/signals`).then(handle),
-    summary: (id) => fetch(`${BASE}/engagements/${id}/signals/summary`).then(handle),
-    create:  (id, data) => fetch(`${BASE}/engagements/${id}/signals`, json(data)).then(handle),
+    list:     (id)       => fetch(`${BASE}/engagements/${id}/signals`).then(handle),
+    summary:  (id)       => fetch(`${BASE}/engagements/${id}/signals/summary`).then(handle),
+    create:   (id, data) => fetch(`${BASE}/engagements/${id}/signals`, json(data)).then(handle),
   },
   patterns: {
     list:    (id) => fetch(`${BASE}/engagements/${id}/patterns`).then(handle),

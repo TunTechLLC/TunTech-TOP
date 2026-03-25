@@ -10,13 +10,13 @@ import KnowledgePanel from './KnowledgePanel'
 import ReportPanel   from './ReportPanel'
 
 const TABS = [
-  { id: 'signals',  label: 'Signals' },
-  { id: 'patterns', label: 'Patterns' },
-  { id: 'agents',   label: 'Agents' },
-  { id: 'findings', label: 'Findings' },
-  { id: 'roadmap',  label: 'Roadmap' },
-  { id: 'knowledge',label: 'Knowledge' },
-  { id: 'report',   label: 'Report' },
+  { id: 'signals',    label: 'Signals' },
+  { id: 'patterns',   label: 'Patterns' },
+  { id: 'agents',     label: 'Agents' },
+  { id: 'findings',   label: 'Findings' },
+  { id: 'roadmap',    label: 'Roadmap' },
+  { id: 'knowledge',  label: 'Knowledge' },
+  { id: 'report',     label: 'Report' },
 ]
 
 function Placeholder({ title }) {
