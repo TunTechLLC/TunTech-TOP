@@ -2006,3 +2006,739 @@ ImportError: cannot import name 'AGENT_REGISTRY' from 'api.services.claude' (C:\
            e.engagement_name,
            e.status,
 
+2026-03-25 10:58:13,673 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 10:58:13,673 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 10:58:13,689 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 10:58:13,689 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 10:58:13,701 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 10:58:13,701 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 10:58:13,708 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 10:58:13,708 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 10:58:13,716 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 10:58:13,717 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 10:58:13,724 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 10:58:13,724 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 10:58:15,117 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-03-25 10:58:15,117 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 10:58:15,124 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-03-25 10:58:15,124 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 11:09:17,838 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:09:17,840 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:09:17,873 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:09:17,873 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:09:24,659 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:09:24,660 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:09:24,681 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:09:24,681 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:10:09,953 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:10:09,953 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:10:09,981 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:10:09,982 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:11:20,075 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:11:20,076 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:11:20,077 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:11:20,078 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:12:56,372 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:12:56,373 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:12:56,391 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:12:56,392 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:13:08,965 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:13:08,965 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:21:58,725 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:21:58,725 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:21:58,746 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:21:58,746 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:22:00,898 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 11:22:00,899 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 11:22:00,907 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 11:22:00,907 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 11:22:00,916 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 11:22:00,917 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:22:00,918 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 11:22:00,918 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 11:22:00,930 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 11:22:00,931 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 11:22:00,932 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:22:00,932 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 11:22:03,976 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-03-25 11:22:03,976 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 11:22:03,984 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-03-25 11:22:03,984 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 11:23:03,215 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 11:23:03,215 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 11:23:03,219 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 11:23:03,220 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:23:03,222 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 11:23:03,222 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 11:23:03,223 INFO api.routers.agents: Running agent Diagnostician for engagement E003
+2026-03-25 11:23:03,224 INFO api.services.claude: Calling Claude API - context length: 1207 chars
+2026-03-25 11:23:49,007 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-03-25 11:23:49,057 INFO api.services.claude: Claude API response received - 7533 chars
+2026-03-25 11:23:49,060 INFO api.db.repositories.agent_run: Creating agent run: AR011 — Diagnostician for engagement: E003
+2026-03-25 11:23:49,060 INFO api.db.repositories.base: Write: 
+    INSERT INTO AgentRuns (
+        run_id, engagement_id, agent_name,
+        
+2026-03-25 11:23:49,084 INFO api.routers.agents: Agent Diagnostician run complete. run_id: AR011
+2026-03-25 11:23:49,090 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-03-25 11:23:49,091 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 11:25:39,002 INFO api.db.repositories.agent_run: Accepting agent run: AR011
+2026-03-25 11:25:39,002 INFO api.db.repositories.base: Write: 
+    UPDATE AgentRuns
+    SET    accepted = 1
+    WHERE  run_id = ?
+
+2026-03-25 11:25:39,023 INFO api.routers.agents: Agent run accepted: AR011
+2026-03-25 11:25:39,032 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-03-25 11:25:39,033 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-03-25 11:27:36,160 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:27:36,160 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:27:36,182 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 11:27:36,182 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 11:35:33,207 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 11:35:33,208 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 11:35:33,221 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 11:35:33,222 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 11:35:33,232 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 11:35:33,233 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 11:35:33,241 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 11:35:33,242 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:35:33,249 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 11:35:33,249 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 11:35:33,256 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 11:35:33,256 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:46:41,723 INFO api.db.repositories.signal: Creating signal: S067 for engagement: E001
+2026-03-25 11:46:41,724 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-03-25 11:46:41,729 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/E001/signals: FOREIGN KEY constraint failed
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\signals.py", line 42, in create_signal
+    signal_id = repo.create(payload)
+  File "C:\Dev\TunTech\TOP\api\db\repositories\signal.py", line 80, in create
+    self._write(INSERT_SIGNAL, (
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+        signal_id,
+        ^^^^^^^^^^
+    ...<10 lines>...
+        today
+        ^^^^^
+    ))
+    ^^
+  File "C:\Dev\TunTech\TOP\api\db\repositories\base.py", line 29, in _write
+    cursor = conn.execute(sql, params)
+sqlite3.IntegrityError: FOREIGN KEY constraint failed
+2026-03-25 11:47:52,318 INFO api.db.repositories.signal: Creating signal: S067 for engagement: E001
+2026-03-25 11:47:52,319 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-03-25 11:47:52,322 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/E001/signals: FOREIGN KEY constraint failed
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\signals.py", line 42, in create_signal
+    signal_id = repo.create(payload)
+  File "C:\Dev\TunTech\TOP\api\db\repositories\signal.py", line 80, in create
+    self._write(INSERT_SIGNAL, (
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+        signal_id,
+        ^^^^^^^^^^
+    ...<10 lines>...
+        today
+        ^^^^^
+    ))
+    ^^
+  File "C:\Dev\TunTech\TOP\api\db\repositories\base.py", line 29, in _write
+    cursor = conn.execute(sql, params)
+sqlite3.IntegrityError: FOREIGN KEY constraint failed
+2026-03-25 11:55:37,097 INFO api.db.repositories.signal: Creating signal: S067 for engagement: E001
+2026-03-25 11:55:37,098 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-03-25 11:55:37,112 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 11:55:37,112 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:55:37,122 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 11:55:37,123 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 11:55:37,129 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 11:55:37,130 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:00:12,739 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 12:00:12,740 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:00:12,752 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-03-25 12:00:12,753 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:00:12,763 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 12:00:12,764 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:00:12,772 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 12:00:12,773 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:00:12,781 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-03-25 12:00:12,782 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:00:12,791 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-03-25 12:00:12,792 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:02:18,351 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-25 12:02:18,352 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:02:18,361 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-03-25 12:02:18,361 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:05:48,557 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 12:05:48,557 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 12:05:48,575 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 12:05:48,575 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 12:05:50,288 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 12:05:50,289 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:05:50,295 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 12:05:50,296 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:05:50,302 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:05:50,302 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:05:50,303 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:05:50,303 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:05:50,312 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:05:50,312 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:05:50,312 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:05:50,313 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:05:57,808 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:05:57,809 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:05:57,820 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:05:57,820 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:05:59,016 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:05:59,016 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:05:59,016 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:05:59,017 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:05:59,025 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:05:59,026 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:05:59,026 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:05:59,026 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:06:30,041 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:06:30,041 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:06:30,047 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:06:30,048 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:06:41,104 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:06:41,104 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:06:41,108 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 12:06:41,109 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:06:41,113 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:06:41,114 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:06:41,119 INFO api.services.claude: Calling Claude API - context length: 3570 chars
+2026-03-25 12:06:49,782 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-03-25 12:06:49,827 INFO api.services.claude: Claude API response received - 1713 chars
+2026-03-25 12:06:49,828 INFO api.db.repositories.pattern: Fetching full pattern library
+2026-03-25 12:06:49,828 INFO api.db.repositories.base: Query: 
+    SELECT pattern_id,
+           pattern_name,
+           domain,
+           t
+2026-03-25 12:07:30,774 INFO api.db.repositories.pattern: Bulk creating 6 engagement patterns
+2026-03-25 12:07:30,774 INFO api.db.repositories.base: Write many: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+ — 6 rows
+2026-03-25 12:07:30,787 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/E003/patterns/load: UNIQUE constraint failed: EngagementPatterns.ep_id
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\patterns.py", line 96, in load_patterns
+    count = repo.bulk_create(rows)
+  File "C:\Dev\TunTech\TOP\api\db\repositories\pattern.py", line 112, in bulk_create
+    return self._write_many(INSERT_PATTERN, params)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Dev\TunTech\TOP\api\db\repositories\base.py", line 37, in _write_many
+    cursor = conn.executemany(sql, param_list)
+sqlite3.IntegrityError: UNIQUE constraint failed: EngagementPatterns.ep_id
+2026-03-25 12:08:25,444 INFO api.db.repositories.pattern: Bulk creating 6 engagement patterns
+2026-03-25 12:08:25,445 INFO api.db.repositories.base: Write many: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+ — 6 rows
+2026-03-25 12:08:25,450 ERROR api.main: Unhandled error on http://localhost:8000/api/engagements/E003/patterns/load: UNIQUE constraint failed: EngagementPatterns.ep_id
+Traceback (most recent call last):
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 96, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\cors.py", line 154, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\varic\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\anyio\_backends\_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "C:\Dev\TunTech\TOP\api\routers\patterns.py", line 96, in load_patterns
+    count = repo.bulk_create(rows)
+  File "C:\Dev\TunTech\TOP\api\db\repositories\pattern.py", line 112, in bulk_create
+    return self._write_many(INSERT_PATTERN, params)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Dev\TunTech\TOP\api\db\repositories\base.py", line 37, in _write_many
+    cursor = conn.executemany(sql, param_list)
+sqlite3.IntegrityError: UNIQUE constraint failed: EngagementPatterns.ep_id

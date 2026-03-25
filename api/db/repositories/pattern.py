@@ -91,25 +91,22 @@ class PatternRepository(BaseRepository):
         return [dict(row) for row in rows]
 
     def bulk_create(self, rows: list) -> int:
-        """Insert multiple EngagementPatterns in a single batch.
-        Returns the number of rows inserted.
-
-        Each item in rows must contain:
-            engagement_id, pattern_id, confidence, notes
-        """
+        """Insert multiple EngagementPatterns one at a time to ensure unique sequential EP IDs. Returns the number of rows inserted."""
         today = date.today().isoformat()
-
-        params = [(
-            next_ep_id(),
-            row['engagement_id'],
-            row['pattern_id'],
-            row['confidence'],
-            row.get('notes', ''),
-            today
-        ) for row in rows]
-
-        logger.info(f"Bulk creating {len(params)} engagement patterns")
-        return self._write_many(INSERT_PATTERN, params)
+        count = 0
+        for row in rows:
+            ep_id = next_ep_id()
+            self._write(INSERT_PATTERN, (
+                ep_id,
+                row['engagement_id'],
+                row['pattern_id'],
+                row['confidence'],
+                row.get('notes', ''),
+                today
+            ))
+            count += 1
+        logger.info(f"Bulk created {count} engagement patterns")
+        return count
 
     def accept_contributing(self, ep_ids: list) -> int:
         """Set accepted=1 on a list of EngagementPatterns.

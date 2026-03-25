@@ -39,6 +39,8 @@ def create_signal(
     """Add a single signal to an engagement."""
     payload = data.model_dump()
     payload['engagement_id'] = engagement_id
+    if not payload.get('interview_id'):
+        payload['interview_id'] = None
     signal_id = repo.create(payload)
     signals = repo.get_for_engagement(engagement_id)
     signal = next((s for s in signals if s['signal_id'] == signal_id), None)
