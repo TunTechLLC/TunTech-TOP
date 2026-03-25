@@ -2742,3 +2742,92 @@ Traceback (most recent call last):
   File "C:\Dev\TunTech\TOP\api\db\repositories\base.py", line 37, in _write_many
     cursor = conn.executemany(sql, param_list)
 sqlite3.IntegrityError: UNIQUE constraint failed: EngagementPatterns.ep_id
+2026-03-25 12:16:16,709 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,726 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,739 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,753 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,766 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,777 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-03-25 12:16:16,788 INFO api.db.repositories.pattern: Bulk created 6 engagement patterns
+2026-03-25 12:16:16,794 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:16:16,795 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:21:29,236 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 12:21:29,236 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:21:29,245 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-03-25 12:21:29,245 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-03-25 12:21:29,253 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:21:29,253 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:21:29,261 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:21:29,261 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:21:29,269 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-03-25 12:21:29,269 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-03-25 12:21:29,276 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-03-25 12:21:29,277 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-03-25 12:21:32,681 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:21:32,681 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:21:32,690 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-03-25 12:21:32,690 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-03-25 12:23:09,408 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 12:23:09,409 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-03-25 12:23:09,435 INFO api.db.repositories.engagement: Fetching all engagements
+2026-03-25 12:23:09,435 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
