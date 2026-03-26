@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.engagement import EngagementRepository
-from api.models.engagement import EngagementCreate, EngagementResponse
+from api.models.engagement import EngagementCreate, EngagementResponse, EngagementSettingsUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +42,16 @@ def create_engagement(
     if not engagement:
         raise HTTPException(status_code=500, detail="Engagement created but could not be retrieved")
     return engagement
+
+@router.patch("/{engagement_id}/settings")
+def update_settings(
+    engagement_id: str,
+    data: EngagementSettingsUpdate,
+    repo: EngagementRepository = Depends(get_repo)
+):
+    """Update folder settings for an engagement."""
+    fields = data.model_dump(exclude_none=True)
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields provided")
+    repo.update_settings(engagement_id, fields)
+    return repo.get_by_id(engagement_id)

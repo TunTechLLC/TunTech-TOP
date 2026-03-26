@@ -46,3 +46,6 @@ def next_roadmap_id():
 
 def next_knowledge_id():
     return next_id("KnowledgePromotions", "promotion_id", "KP", 3)
+
+def next_processed_file_id():
+    return next_id("ProcessedFiles", "file_id", "PF", 3)

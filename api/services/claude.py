@@ -5,6 +5,7 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
 MODEL          = "claude-sonnet-4-6"
 MAX_TOKENS     = 8000
@@ -135,8 +136,7 @@ async def call_claude(
     return response
 
 async def extract_signals_from_transcript(transcript: str) -> str:
-    """Extract signal candidates from an interview transcript.
-    Returns raw JSON string for validation by the router."""
+    """Extract signal candidates from an interview transcript."""
     logger.info(f"Extracting signals from transcript — {len(transcript)} chars")
     async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     message = await async_client.messages.create(
@@ -145,6 +145,10 @@ async def extract_signals_from_transcript(transcript: str) -> str:
         system=SIGNAL_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": f"INTERVIEW TRANSCRIPT:\n\n{transcript}"}],
     )
-    response = message.content[0].text
-    logger.info(f"Signal extraction complete — {len(response)} chars")
-    return response
+    raw = message.content[0].text
+    clean = raw.strip()
+    if clean.startswith('```'):
+        clean = clean.split('\n', 1)[1] if '\n' in clean else clean
+        clean = clean.rsplit('```', 1)[0].strip()
+    logger.info(f"Signal extraction complete — {len(clean)} chars")
+    return clean

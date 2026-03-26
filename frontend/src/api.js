@@ -14,27 +14,37 @@ const json = (data) => ({
   body: JSON.stringify(data),
 });
 
+const patch = (data) => ({
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+});
+
 export const api = {
   engagements: {
-    list:   ()     => fetch(`${BASE}/engagements`).then(handle),
-    get:    (id)   => fetch(`${BASE}/engagements/${id}`).then(handle),
-    create: (data) => fetch(`${BASE}/engagements`, json(data)).then(handle),
-    update: (id, data) => fetch(`${BASE}/engagements/${id}`,
-                            { method: 'PATCH', ...json(data) }).then(handle),
+    list:           ()         => fetch(`${BASE}/engagements`).then(handle),
+    get:            (id)       => fetch(`${BASE}/engagements/${id}`).then(handle),
+    create:         (data)     => fetch(`${BASE}/engagements`, json(data)).then(handle),
+    update:         (id, data) => fetch(`${BASE}/engagements/${id}`, patch(data)).then(handle),
+    updateSettings: (id, data) => fetch(`${BASE}/engagements/${id}/settings`, patch(data)).then(handle),
   },
   signals: {
-    list:     (id)       => fetch(`${BASE}/engagements/${id}/signals`).then(handle),
-    summary:  (id)       => fetch(`${BASE}/engagements/${id}/signals/summary`).then(handle),
-    create:   (id, data) => fetch(`${BASE}/engagements/${id}/signals`, json(data)).then(handle),
+    list:           (id)       => fetch(`${BASE}/engagements/${id}/signals`).then(handle),
+    summary:        (id)       => fetch(`${BASE}/engagements/${id}/signals/summary`).then(handle),
+    create:         (id, data) => fetch(`${BASE}/engagements/${id}/signals`, json(data)).then(handle),
+    processFiles:   (id)       => fetch(`${BASE}/engagements/${id}/signals/process-files`,
+                                    { method: 'POST' }).then(handle),
+    loadCandidates: (id, data) => fetch(`${BASE}/engagements/${id}/signals/load-candidates`,
+                                    json(data)).then(handle),
   },
   patterns: {
-    list:    (id) => fetch(`${BASE}/engagements/${id}/patterns`).then(handle),
-    detect:  (id) => fetch(`${BASE}/engagements/${id}/patterns/detect`,
-                      { method: 'POST' }).then(handle),
-    load:    (id, data) => fetch(`${BASE}/engagements/${id}/patterns/load`, json(data)).then(handle),
+    list:    (id)          => fetch(`${BASE}/engagements/${id}/patterns`).then(handle),
+    detect:  (id)          => fetch(`${BASE}/engagements/${id}/patterns/detect`,
+                               { method: 'POST' }).then(handle),
+    load:    (id, data)    => fetch(`${BASE}/engagements/${id}/patterns/load`, json(data)).then(handle),
     update:  (id, epId, data) => fetch(`${BASE}/engagements/${id}/patterns/${epId}`,
-                                   { method: 'PATCH', ...json(data) }).then(handle),
-    library: () => fetch(`${BASE}/patterns/library`).then(handle),
+                                   patch(data)).then(handle),
+    library: ()            => fetch(`${BASE}/patterns/library`).then(handle),
   },
   agents: {
     registry: ()           => fetch(`${BASE}/engagements/agents/registry`).then(handle),
@@ -50,7 +60,7 @@ export const api = {
     list:   (id)            => fetch(`${BASE}/engagements/${id}/findings`).then(handle),
     create: (id, data)      => fetch(`${BASE}/engagements/${id}/findings`, json(data)).then(handle),
     update: (id, fid, data) => fetch(`${BASE}/engagements/${id}/findings/${fid}`,
-                                 { method: 'PATCH', ...json(data) }).then(handle),
+                                 patch(data)).then(handle),
   },
   roadmap: {
     list:   (id)       => fetch(`${BASE}/engagements/${id}/roadmap`).then(handle),

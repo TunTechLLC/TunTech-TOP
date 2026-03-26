@@ -5,7 +5,6 @@ from api.utils.ids import next_client_id, next_engagement_id
 
 logger = logging.getLogger(__name__)
 
-# SQL constants — keeps method bodies readable
 GET_ALL = """
     SELECT e.engagement_id,
            e.engagement_name,
@@ -72,29 +71,20 @@ class EngagementRepository(BaseRepository):
     """Handles all database operations for Clients and Engagements."""
 
     def get_all(self) -> list:
-        """Return summary list of all engagements for the dashboard.
-        Includes signal, pattern, and finding counts per engagement."""
+        """Return summary list of all engagements for the dashboard."""
         logger.info("Fetching all engagements")
         rows = self._query(GET_ALL)
         return [dict(row) for row in rows]
 
     def get_by_id(self, engagement_id: str) -> dict | None:
-        """Return full detail for a single engagement including client info.
-        Returns None if the engagement_id does not exist."""
+        """Return full detail for a single engagement including client info."""
         logger.info(f"Fetching engagement: {engagement_id}")
         rows = self._query(GET_BY_ID, (engagement_id,))
         return dict(rows[0]) if rows else None
 
     def create(self, data: dict) -> str:
         """Create a new client and engagement together in a single transaction.
-        Returns the new engagement_id.
-
-        Expected keys in data:
-            firm_name, firm_size, service_model,
-            stated_problem, client_hypothesis,
-            previously_tried, client_notes (optional),
-            consultant_notes (optional)
-        """
+        Returns the new engagement_id."""
         client_id     = next_client_id()
         engagement_id = next_engagement_id()
         today         = date.today().isoformat()
@@ -127,3 +117,13 @@ class EngagementRepository(BaseRepository):
         ])
 
         return engagement_id
+
+    def update_settings(self, engagement_id: str, fields: dict) -> None:
+        """Update folder settings fields on an engagement."""
+        set_clause = ', '.join([f"{k} = ?" for k in fields.keys()])
+        values = list(fields.values()) + [engagement_id]
+        self._write(
+            f"UPDATE Engagements SET {set_clause} WHERE engagement_id = ?",
+            tuple(values)
+        )
+        logger.info(f"Updated settings for {engagement_id}: {list(fields.keys())}")

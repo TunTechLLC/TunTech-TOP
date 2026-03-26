@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import SignalPanel   from './SignalPanel'
@@ -34,17 +34,46 @@ export default function EngagementDetail() {
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
   const [activeTab, setActiveTab]   = useState('signals')
+  const [showSettings, setShowSettings]   = useState(false)
+  const [settingsForm, setSettingsForm]   = useState({
+    interviews_folder: '',
+    documents_folder:  '',
+    candidates_folder: '',
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsError, setSettingsError]   = useState(null)
 
   useEffect(() => {
-    api.engagements.get(id)
-      .then(setEngagement)
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [id])
+  api.engagements.get(id)
+    .then(eng => {
+      setEngagement(eng)
+      setSettingsForm({
+        interviews_folder: eng.interviews_folder || '',
+        documents_folder:  eng.documents_folder  || '',
+        candidates_folder: eng.candidates_folder || '',
+      })
+    })
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false))
+}, [id])
 
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>
   if (error)   return <div className="p-8 text-red-600">Error: {error}</div>
   if (!engagement) return <div className="p-8 text-gray-500">Engagement not found.</div>
+
+const handleSettingsSave = async () => {
+  setSettingsSaving(true)
+  setSettingsError(null)
+  try {
+    await api.engagements.updateSettings(id, settingsForm)
+    setEngagement(prev => ({ ...prev, ...settingsForm }))
+    setShowSettings(false)
+  } catch (err) {
+    setSettingsError(err.message)
+  } finally {
+    setSettingsSaving(false)
+  }
+}
 
  const renderPanel = () => {
   switch (activeTab) {
@@ -96,7 +125,63 @@ export default function EngagementDetail() {
             </div>
           ))}
         </div>
+
+      {/* Edit Settings button */}
+      <div className="mt-4 pt-3 border-t border-gray-100">
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {showSettings ? 'Hide settings ↑' : 'Edit settings ↓'}
+        </button>
+
+        {showSettings && (
+          <div className="mt-3 space-y-3">
+            {settingsError && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                {settingsError}
+              </div>
+            )}
+            {[
+              { key: 'interviews_folder', label: 'Interviews folder' },
+              { key: 'documents_folder',  label: 'Client documents folder' },
+              { key: 'candidates_folder', label: 'Candidates folder' },
+            ].map(field => (
+              <div key={field.key}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {field.label}
+                </label>
+                <input
+                  value={settingsForm[field.key]}
+                  onChange={e => setSettingsForm(prev => ({
+                    ...prev, [field.key]: e.target.value
+                  }))}
+                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-500"
+                  placeholder={`C:\\Users\\varic\\OneDrive\\...\\${field.label}`}
+                />
+              </div>
+            ))}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded text-xs hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSettingsSave}
+                disabled={settingsSaving}
+                className="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
+                {settingsSaving ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+
+    {/* Tabs */}
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
