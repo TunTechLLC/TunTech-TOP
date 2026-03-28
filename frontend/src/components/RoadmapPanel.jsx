@@ -1,20 +1,8 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { DOMAINS, PHASES, PRIORITIES, EFFORTS } from '../constants'
 
-const PHASES    = ['Stabilize', 'Optimize', 'Scale']
-const PRIORITIES = ['High', 'Medium', 'Low']
-const EFFORTS   = ['High', 'Medium', 'Low']
-const STATUSES  = ['Proposed', 'In Progress', 'Complete', 'On Hold']
-
-const DOMAINS = [
-  'Sales & Pipeline',
-  'Sales-to-Delivery Transition',
-  'Delivery Operations',
-  'Resource Management',
-  'Project Governance / PMO',
-  'Consulting Economics',
-  'Customer Experience',
-]
+const STATUSES = ['Proposed', 'In Progress', 'Complete', 'On Hold']
 
 const phaseColors = {
   Stabilize: 'bg-red-50 border-red-200 text-red-800',
@@ -30,7 +18,7 @@ const priorityColors = {
 
 const EMPTY_FORM = {
   initiative_name:  '',
-  domain:           DOMAINS[0],
+  domain:           'Delivery Operations',
   phase:            'Stabilize',
   priority:         'High',
   effort:           'Medium',
@@ -124,8 +112,13 @@ export default function RoadmapPanel({ engagementId }) {
 
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Initiative name *</label>
-              <input name="initiative_name" value={form.initiative_name} onChange={handleChange}
-                className={inp} placeholder="e.g. Implement Formal Sales-to-Delivery Handoff Process" />
+              <input
+                name="initiative_name"
+                value={form.initiative_name}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Implement Formal Sales-to-Delivery Handoff Process"
+              />
             </div>
 
             <div>
@@ -165,14 +158,24 @@ export default function RoadmapPanel({ engagementId }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Target date</label>
-              <input name="target_date" value={form.target_date} onChange={handleChange}
-                className={inp} placeholder="e.g. 2026-06-30" />
+              <input
+                name="target_date"
+                value={form.target_date}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. 2026-06-30"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Owner</label>
-              <input name="owner" value={form.owner} onChange={handleChange}
-                className={inp} placeholder="e.g. Director of Delivery" />
+              <input
+                name="owner"
+                value={form.owner}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Director of Delivery"
+              />
             </div>
 
             <div className="col-span-2">
@@ -189,8 +192,13 @@ export default function RoadmapPanel({ engagementId }) {
 
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Estimated impact</label>
-              <input name="estimated_impact" value={form.estimated_impact} onChange={handleChange}
-                className={inp} placeholder="e.g. Reduces project overrun frequency by establishing estimation baseline" />
+              <input
+                name="estimated_impact"
+                value={form.estimated_impact}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Reduces project overrun frequency by establishing estimation baseline"
+              />
             </div>
 
           </div>
@@ -225,8 +233,10 @@ export default function RoadmapPanel({ engagementId }) {
               </div>
               <div className="space-y-3">
                 {phaseItems.map(item => (
-                  <div key={item.item_id}
-                    className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors">
+                  <div
+                    key={item.item_id}
+                    className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors"
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">

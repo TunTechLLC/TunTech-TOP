@@ -1,18 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { api } from '../api'
-
-const DOMAINS = [
-  'Sales & Pipeline',
-  'Sales-to-Delivery Transition',
-  'Delivery Operations',
-  'Resource Management',
-  'Project Governance / PMO',
-  'Consulting Economics',
-  'Customer Experience',
-]
-
-const CONFIDENCE_LEVELS = ['High', 'Medium', 'Hypothesis']
-const SOURCES = ['Interview', 'Document', 'Observation']
+import { DOMAINS, CONFIDENCE_LEVELS, SOURCES } from '../constants'
 
 const confidenceColors = {
   High:       'bg-red-100 text-red-800',
@@ -102,11 +90,18 @@ export default function SignalPanel({ engagementId }) {
     try {
       const result = await api.signals.processFiles(engagementId)
       setProcessResult(result)
+
+      // TODO Step 8 Ext 1 Cleanup — multi-file review
+      // Currently only loads candidates from the first processed file.
+      // Fix: fetch all candidate file paths from result.files array,
+      // merge into one review list with source_file label on each candidate card.
+      // Backend already returns all candidate_file paths in result.files.
       if (result.files && result.files.length > 0) {
         const firstFile = result.files.find(f => f.candidate_file && !f.error)
         if (firstFile) {
           const response = await fetch(
-            'http://localhost:8000/api/engagements/' + engagementId + '/signals/read-candidates?file=' + encodeURIComponent(firstFile.candidate_file)
+            'http://localhost:8000/api/engagements/' + engagementId +
+            '/signals/read-candidates?file=' + encodeURIComponent(firstFile.candidate_file)
           )
           const data = await response.json()
           const cands = data.candidates || []
@@ -196,7 +191,9 @@ export default function SignalPanel({ engagementId }) {
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
           {processResult.files_processed === 0
             ? 'No new files found to process.'
-            : processResult.files_processed + ' file(s) processed — ' + processResult.total_candidates + ' signal candidates extracted.' + (candidates.length > 0 ? ' Review below.' : '')}
+            : processResult.files_processed + ' file(s) processed — ' +
+              processResult.total_candidates + ' signal candidates extracted.' +
+              (candidates.length > 0 ? ' Review below.' : '')}
         </div>
       )}
 
@@ -241,7 +238,10 @@ export default function SignalPanel({ engagementId }) {
 
           <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
             {candidates.map((c, idx) => (
-              <div key={idx} className={'p-3 transition-colors ' + (approved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}>
+              <div
+                key={idx}
+                className={'p-3 transition-colors ' + (approved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}
+              >
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -320,48 +320,101 @@ export default function SignalPanel({ engagementId }) {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Signal name *</label>
-              <input name="signal_name" value={form.signal_name} onChange={handleChange} className={inp} placeholder="e.g. Projects on schedule" />
+              <input
+                name="signal_name"
+                value={form.signal_name}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Projects on schedule"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Domain *</label>
-              <select name="domain" value={form.domain} onChange={handleChange} className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+              <select
+                name="domain"
+                value={form.domain}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              >
                 {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Confidence *</label>
-              <select name="signal_confidence" value={form.signal_confidence} onChange={handleChange} className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+              <select
+                name="signal_confidence"
+                value={form.signal_confidence}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              >
                 {CONFIDENCE_LEVELS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Observed value *</label>
-              <input name="observed_value" value={form.observed_value} onChange={handleChange} className={inp} placeholder="e.g. 57%" />
+              <input
+                name="observed_value"
+                value={form.observed_value}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. 57%"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Normalized band *</label>
-              <input name="normalized_band" value={form.normalized_band} onChange={handleChange} className={inp} placeholder="e.g. Below 80% target" />
+              <input
+                name="normalized_band"
+                value={form.normalized_band}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Below 80% target"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Source *</label>
-              <select name="source" value={form.source} onChange={handleChange} className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+              <select
+                name="source"
+                value={form.source}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              >
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Economic relevance</label>
-              <input name="economic_relevance" value={form.economic_relevance} onChange={handleChange} className={inp} placeholder="e.g. Delivery margin" />
+              <input
+                name="economic_relevance"
+                value={form.economic_relevance}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Delivery margin"
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
-              <textarea name="notes" value={form.notes} onChange={handleChange} className={inp} rows={2} placeholder="Supporting detail, context, source quote" />
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                className={inp}
+                rows={2}
+                placeholder="Supporting detail, context, source quote"
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setSaveError(null) }} className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded text-xs hover:bg-gray-50">
+            <button
+              onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setSaveError(null) }}
+              className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded text-xs hover:bg-gray-50"
+            >
               Cancel
             </button>
-            <button onClick={handleSubmit} disabled={saving} className="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50">
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
               {saving ? 'Saving...' : 'Save Signal'}
             </button>
           </div>
@@ -371,7 +424,10 @@ export default function SignalPanel({ engagementId }) {
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setFilter('All')}
-          className={'px-3 py-1 rounded-full text-xs font-medium border transition-colors ' + (filter === 'All' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-400')}
+          className={'px-3 py-1 rounded-full text-xs font-medium border transition-colors ' +
+            (filter === 'All'
+              ? 'border-blue-500 bg-blue-50 text-blue-700'
+              : 'border-gray-200 text-gray-600 hover:border-gray-400')}
         >
           All - {signals.length}
         </button>
@@ -379,13 +435,19 @@ export default function SignalPanel({ engagementId }) {
           <button
             key={s.domain + '-' + s.signal_confidence}
             onClick={() => setFilter(s.domain)}
-            className={'px-3 py-1 rounded-full text-xs font-medium border transition-colors ' + (filter === s.domain ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-400')}
+            className={'px-3 py-1 rounded-full text-xs font-medium border transition-colors ' +
+              (filter === s.domain
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 text-gray-600 hover:border-gray-400')}
           >
             {s.domain} - {s.signal_confidence} - {s.signal_count}
           </button>
         ))}
         {filter !== 'All' && (
-          <button onClick={() => setFilter('All')} className="px-3 py-1 rounded-full text-xs text-gray-400 hover:text-gray-600">
+          <button
+            onClick={() => setFilter('All')}
+            className="px-3 py-1 rounded-full text-xs text-gray-400 hover:text-gray-600"
+          >
             Clear x
           </button>
         )}
@@ -397,15 +459,20 @@ export default function SignalPanel({ engagementId }) {
 
       <div className="space-y-3">
         {filtered.map(signal => (
-          <div key={signal.signal_id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-300 transition-colors">
+          <div
+            key={signal.signal_id}
+            className="border border-gray-100 rounded-lg p-4 hover:border-gray-300 transition-colors"
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-gray-900 text-sm">{signal.signal_name}</span>
-                  <span className={'px-2 py-0.5 rounded text-xs font-medium ' + (confidenceColors[signal.signal_confidence] || 'bg-gray-100 text-gray-600')}>
+                  <span className={'px-2 py-0.5 rounded text-xs font-medium ' +
+                    (confidenceColors[signal.signal_confidence] || 'bg-gray-100 text-gray-600')}>
                     {signal.signal_confidence}
                   </span>
-                  <span className={'px-2 py-0.5 rounded text-xs font-medium ' + (sourceColors[signal.source] || 'bg-gray-100 text-gray-600')}>
+                  <span className={'px-2 py-0.5 rounded text-xs font-medium ' +
+                    (sourceColors[signal.source] || 'bg-gray-100 text-gray-600')}>
                     {signal.source}
                   </span>
                 </div>

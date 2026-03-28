@@ -1,19 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-
-const DOMAINS = [
-  'Sales & Pipeline',
-  'Sales-to-Delivery Transition',
-  'Delivery Operations',
-  'Resource Management',
-  'Project Governance / PMO',
-  'Consulting Economics',
-  'Customer Experience',
-]
-
-const CONFIDENCE_LEVELS = ['High', 'Medium', 'Low']
-const PRIORITIES        = ['High', 'Medium', 'Low']
-const EFFORTS           = ['High', 'Medium', 'Low']
+import { DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS } from '../constants'
 
 const confidenceColors = {
   High:   'bg-red-100 text-red-800',
@@ -28,29 +15,29 @@ const priorityColors = {
 }
 
 const EMPTY_FORM = {
-  finding_title:      '',
-  domain:             DOMAINS[0],
-  confidence:         'High',
-  priority:           'High',
-  effort:             'Medium',
-  opd_section:        '',
-  operational_impact: '',
-  economic_impact:    '',
-  root_cause:         '',
-  recommendation:     '',
+  finding_title:       '',
+  domain:              'Delivery Operations',
+  confidence:          'High',
+  priority:            'High',
+  effort:              'Medium',
+  opd_section:         '',
+  operational_impact:  '',
+  economic_impact:     '',
+  root_cause:          '',
+  recommendation:      '',
   contributing_ep_ids: [],
 }
 
 export default function FindingsPanel({ engagementId }) {
-  const [findings, setFindings]     = useState([])
-  const [patterns, setPatterns]     = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
-  const [expanded, setExpanded]     = useState({})
-  const [showForm, setShowForm]     = useState(false)
-  const [form, setForm]             = useState(EMPTY_FORM)
-  const [saving, setSaving]         = useState(false)
-  const [saveError, setSaveError]   = useState(null)
+  const [findings, setFindings]   = useState([])
+  const [patterns, setPatterns]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(null)
+  const [expanded, setExpanded]   = useState({})
+  const [showForm, setShowForm]   = useState(false)
+  const [form, setForm]           = useState(EMPTY_FORM)
+  const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
   const fetchData = () => {
     Promise.all([
@@ -125,6 +112,11 @@ export default function FindingsPanel({ engagementId }) {
         </button>
       </div>
 
+      {/* Parse Findings button — Step 8 Extension 2 (not yet built)
+          Appears here when Synthesizer is accepted and finding count is zero.
+          Calls api.findings.parseSynthesizer() which does not exist yet.
+          Build in Step 8 Extension 2. */}
+
       {/* Finding form */}
       {showForm && (
         <div className="border border-blue-200 rounded-lg p-4 mb-6 bg-blue-50">
@@ -141,8 +133,13 @@ export default function FindingsPanel({ engagementId }) {
             {/* Finding title */}
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Finding title *</label>
-              <input name="finding_title" value={form.finding_title} onChange={handleChange}
-                className={inp} placeholder="e.g. Chronic Project Overruns" />
+              <input
+                name="finding_title"
+                value={form.finding_title}
+                onChange={handleChange}
+                className={inp}
+                placeholder="e.g. Chronic Project Overruns"
+              />
             </div>
 
             {/* Domain and confidence */}
@@ -155,7 +152,7 @@ export default function FindingsPanel({ engagementId }) {
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Confidence *</label>
               <select name="confidence" value={form.confidence} onChange={handleChange} className={sel}>
-                {CONFIDENCE_LEVELS.map(c => <option key={c} value={c}>{c}</option>)}
+                {FINDING_CONFIDENCES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
@@ -174,44 +171,80 @@ export default function FindingsPanel({ engagementId }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">OPD section number</label>
-              <input name="opd_section" value={form.opd_section} onChange={handleChange}
-                className={inp} placeholder="1-8" />
+              <input
+                name="opd_section"
+                value={form.opd_section}
+                onChange={handleChange}
+                className={inp}
+                placeholder="1-8"
+              />
             </div>
 
             {/* Text areas */}
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Operational impact *</label>
-              <textarea name="operational_impact" value={form.operational_impact} onChange={handleChange}
-                className={ta} rows={2} placeholder="What is the operational consequence of this finding?" />
+              <textarea
+                name="operational_impact"
+                value={form.operational_impact}
+                onChange={handleChange}
+                className={ta}
+                rows={2}
+                placeholder="What is the operational consequence of this finding?"
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Economic impact *</label>
-              <textarea name="economic_impact" value={form.economic_impact} onChange={handleChange}
-                className={ta} rows={2} placeholder="e.g. $130K-$280K/year in direct overrun cost (INFERRED)" />
+              <textarea
+                name="economic_impact"
+                value={form.economic_impact}
+                onChange={handleChange}
+                className={ta}
+                rows={2}
+                placeholder="e.g. $130K-$280K/year in direct overrun cost (INFERRED)"
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Root cause *</label>
-              <textarea name="root_cause" value={form.root_cause} onChange={handleChange}
-                className={ta} rows={2} placeholder="One sentence root cause statement" />
+              <textarea
+                name="root_cause"
+                value={form.root_cause}
+                onChange={handleChange}
+                className={ta}
+                rows={2}
+                placeholder="One sentence root cause statement"
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-1">Recommendation *</label>
-              <textarea name="recommendation" value={form.recommendation} onChange={handleChange}
-                className={ta} rows={2} placeholder="One sentence actionable recommendation" />
+              <textarea
+                name="recommendation"
+                value={form.recommendation}
+                onChange={handleChange}
+                className={ta}
+                rows={2}
+                placeholder="One sentence actionable recommendation"
+              />
             </div>
 
             {/* Contributing patterns */}
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-700 mb-2">
                 Contributing patterns
-                <span className="text-gray-400 font-normal ml-1">— select accepted patterns that support this finding</span>
+                <span className="text-gray-400 font-normal ml-1">
+                  — select accepted patterns that support this finding
+                </span>
               </label>
               {acceptedPatterns.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No accepted patterns yet. Accept patterns in the Patterns tab first.</p>
+                <p className="text-xs text-gray-400 italic">
+                  No accepted patterns yet. Accept patterns in the Patterns tab first.
+                </p>
               ) : (
                 <div className="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
                   {acceptedPatterns.map(p => (
-                    <label key={p.ep_id} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <label
+                      key={p.ep_id}
+                      className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                    >
                       <input
                         type="checkbox"
                         checked={form.contributing_ep_ids.includes(p.ep_id)}
@@ -219,7 +252,9 @@ export default function FindingsPanel({ engagementId }) {
                         className="mt-0.5 shrink-0"
                       />
                       <div>
-                        <span className="text-xs font-medium text-gray-700">{p.pattern_id} — {p.pattern_name}</span>
+                        <span className="text-xs font-medium text-gray-700">
+                          {p.pattern_id} — {p.pattern_name}
+                        </span>
                         <span className="text-xs text-gray-400 ml-2">{p.domain}</span>
                       </div>
                     </label>
@@ -254,13 +289,17 @@ export default function FindingsPanel({ engagementId }) {
       ) : (
         <div className="space-y-4">
           {findings.map((f, idx) => (
-            <div key={f.finding_id}
-              className={`border rounded-lg overflow-hidden ${priorityColors[f.priority] || 'bg-white border-gray-200'}`}>
+            <div
+              key={f.finding_id}
+              className={`border rounded-lg overflow-hidden ${priorityColors[f.priority] || 'bg-white border-gray-200'}`}
+            >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-mono text-gray-400">F{String(idx + 1).padStart(3, '0')}</span>
+                      <span className="text-xs font-mono text-gray-400">
+                        F{String(idx + 1).padStart(3, '0')}
+                      </span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${confidenceColors[f.confidence] || 'bg-gray-100'}`}>
                         {f.confidence}
                       </span>
@@ -283,19 +322,25 @@ export default function FindingsPanel({ engagementId }) {
                 <div className="px-4 pb-4 space-y-3 border-t border-gray-200 pt-3">
                   {f.operational_impact && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Operational Impact</div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Operational Impact
+                      </div>
                       <p className="text-xs text-gray-700 leading-relaxed">{f.operational_impact}</p>
                     </div>
                   )}
                   {f.root_cause && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Root Cause</div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Root Cause
+                      </div>
                       <p className="text-xs text-gray-700 leading-relaxed">{f.root_cause}</p>
                     </div>
                   )}
                   {f.recommendation && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Recommendation</div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Recommendation
+                      </div>
                       <p className="text-xs text-gray-700 leading-relaxed">{f.recommendation}</p>
                     </div>
                   )}
