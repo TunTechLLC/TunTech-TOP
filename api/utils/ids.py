@@ -1,18 +1,36 @@
 # TOP Auto-ID Generation
 # Never manually increment IDs - always use these functions
 
-from db.connection import execute_query
+import os
+import sqlite3
+from config import DB_PATH
 
 
-def next_id(table, id_column, prefix, pad):
+def next_id(table: str, id_column: str, prefix: str, pad: int) -> str:
+    """Generic next-ID generator.
+
+    Reads the current maximum numeric suffix from the given table/column
+    and returns the next value as a zero-padded string.
+
+    Examples:
+        prefix='C',  pad=3 -> 'C001', 'C002', ...
+        prefix='EP', pad=3 -> 'EP001', 'EP002', ...
+
+    Uses TOP_DB_PATH environment variable if set (for tests),
+    otherwise falls back to DB_PATH from config.py.
     """
-    Generic next-ID generator.
-    prefix = 'C', 'E', 'EP', etc.
-    pad = total digits after prefix (3 for C001, 3 for EP001)
-    """
-    sql = f"SELECT MAX(CAST(SUBSTR({id_column}, {len(prefix) + 1}) AS INTEGER)) as max_id FROM {table}"
-    rows = execute_query(sql)
-    current_max = rows[0]['max_id'] or 0
+    db_path = os.environ.get("TOP_DB_PATH") or DB_PATH
+    sql = (
+        f"SELECT MAX(CAST(SUBSTR({id_column}, {len(prefix) + 1}) AS INTEGER)) "
+        f"AS max_id FROM {table}"
+    )
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(sql).fetchone()
+        current_max = row["max_id"] or 0
+    finally:
+        conn.close()
     next_num = current_max + 1
     return f"{prefix}{str(next_num).zfill(pad)}"
 
