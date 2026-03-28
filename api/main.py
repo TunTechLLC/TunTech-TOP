@@ -7,18 +7,27 @@ from fastapi.responses import JSONResponse
 from api.routers import engagements, signals, patterns, agents, findings, roadmap, knowledge, reporting
 
 # ── Logging ──────────────────────────────────────────────────────────────
-LOG_PATH = Path(r"C:\dev\tuntech\top\top.log")
+from config import LOG_PATH
+from pathlib import Path
+
+log_path = Path(LOG_PATH)
+log_path.parent.mkdir(parents=True, exist_ok=True)
 
 handler = RotatingFileHandler(
-    LOG_PATH, maxBytes=5_000_000, backupCount=3
+    log_path, maxBytes=5_000_000, backupCount=3
 )
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    handlers=[handler, logging.StreamHandler()]
-)
+handler.setFormatter(logging.Formatter(
+    "%(asctime)s %(levelname)s %(name)s: %(message)s"
+))
+
+# Get the root logger and attach the handler directly
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(handler)
+root_logger.addHandler(logging.StreamHandler())
 
 logger = logging.getLogger(__name__)
+logger.info("TOP backend starting up — log file initialized at %s", log_path)
 
 # ── App ───────────────────────────────────────────────────────────────────
 app = FastAPI(title="TOP — TunTech Operations Platform")

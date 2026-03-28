@@ -1,46 +1,34 @@
-# TOP Configuration
-# TunTech Operations Platform - Phase 2
 import os
-from pathlib import Path
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Database path — overridable for testing and Phase 3 migration
+DB_PATH = os.environ.get(
+    "TOP_DB_PATH",
+    r"C:\Users\varic\OneDrive\100_TunTech\TOP\TOP.db"
+)
 
-# Database — loaded from .env
-DB_PATH = os.getenv('TOP_DB_PATH', r'C:\Users\varic\OneDrive\100_TunTech\TOP\TOP.db')
+# Log file path
+LOG_PATH = os.environ.get(
+    "TOP_LOG_PATH",
+    r"C:\Dev\TunTech\TOP\top.log"
+)
 
-# Reports output folder — loaded from .env
-REPORTS_DIR = Path(os.getenv('REPORTS_DIR', r'C:\Users\varic\OneDrive\100_TunTech\TOP\reports'))
+# Claude model — change here or via environment variable
+MODEL = os.environ.get("TOP_MODEL", "claude-sonnet-4-6")
 
-# Ensure reports directory exists
-REPORTS_DIR.mkdir(exist_ok=True)
+# Max tokens per Claude call
+MAX_TOKENS = int(os.environ.get("TOP_MAX_TOKENS", "8000"))
 
-# Agent names
-VALID_AGENTS = [
-    "Diagnostician",
-    "Delivery",
-    "Economics",
-    "Skeptic",
-    "Synthesizer"
-]
-
-# Domain list
+# Valid domains — single source of truth for backend
+# Frontend uses src/constants.js (kept in sync)
 DOMAINS = [
-    "Sales & Pipeline",
-    "Sales-to-Delivery Transition",
-    "Delivery Operations",
-    "Resource Management",
-    "Project Governance / PMO",
-    "Consulting Economics",
-    "Customer Experience"
+    'Sales & Pipeline',
+    'Sales-to-Delivery Transition',
+    'Delivery Operations',
+    'Resource Management',
+    'Project Governance / PMO',
+    'Consulting Economics',
+    'Customer Experience',
+    'AI Readiness',
+    'Human Resources',
+    'Finance and Commercial',
 ]
-
-# Confidence levels
-CONFIDENCE_LEVELS = ["High", "Medium", "Hypothesis"]
-
-# Roadmap phases
-ROADMAP_PHASES = ["Stabilize", "Optimize", "Scale"]
-
-# Priority levels
-PRIORITY_LEVELS = ["High", "Medium", "Low"]

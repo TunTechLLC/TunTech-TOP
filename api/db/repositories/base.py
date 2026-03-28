@@ -10,8 +10,10 @@ class BaseRepository:
         self._db_path = DB_PATH
 
     def _get_connection(self):
-        """Create and return a database connection with standard settings."""
-        conn = sqlite3.connect(self._db_path)
+        import os
+        from config import DB_PATH
+        db_path = os.environ.get("TOP_DB_PATH") or DB_PATH
+        conn = sqlite3.connect(db_path)
         conn.execute("PRAGMA foreign_keys = ON")
         conn.row_factory = sqlite3.Row
         return conn

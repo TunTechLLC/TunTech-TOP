@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-MODEL          = "claude-sonnet-4-6"
-MAX_TOKENS     = 8000
+from config import MODEL, MAX_TOKENS
 PROMPT_VERSION = "2.0"
 
 DIAGNOSTICIAN_PROMPT = "You are the Diagnostician agent in the TOP multi-agent consulting diagnostic system. Analyze the case packet and produce a structured diagnostic assessment including: hypothesis assessment, pattern cluster analysis, primary failure sequence, confidence assessment, and open questions for specialist agents."
