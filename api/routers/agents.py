@@ -12,10 +12,15 @@ def get_repo() -> AgentRunRepository:
     return AgentRunRepository()
 
 
-@router.get("/agents/registry", response_model=list[AgentRegistryEntry])
+@router.get("/agents/registry")
 def get_agent_registry():
-    """Return the full agent registry.
-    Frontend uses this to build agent cards dynamically."""
+    """Return the full agent registry — all five agents with sequence and prerequisites.
+
+    Note: This endpoint is not engagement-specific but is registered under
+    /api/engagements for simplicity. Full URL: /api/engagements/agents/registry.
+    Moving to /api/agents/registry is a Phase 3 cosmetic fix.
+    Do not move without also updating api.js agents.registry() call.
+    """
     from api.services.claude import AGENT_REGISTRY
     return [
         {
@@ -31,8 +36,7 @@ def get_agent_registry():
     ]
 
 
-@router.get("/{engagement_id}/agents",
-            response_model=list[AgentRunResponse])
+@router.get("/{engagement_id}/agents")
 def list_agent_runs(
     engagement_id: str,
     repo: AgentRunRepository = Depends(get_repo)
@@ -48,7 +52,12 @@ async def run_agent(
     repo:          AgentRunRepository = Depends(get_repo)
 ):
     """Execute an agent via Claude API.
-    Validates prerequisites, assembles context, calls Claude, stores output."""
+    Validates prerequisites, assembles context, calls Claude, stores output.
+
+    Stores full Claude output in output_full.
+    Stores truncated summary (500 chars) in output_summary.
+    Does not populate prompt_version — git tracks prompt history.
+    """
     from api.services.claude import AGENT_REGISTRY, call_claude
     from api.services.case_packet import CasePacketService
 
@@ -79,12 +88,15 @@ async def run_agent(
     logger.info(f"Running agent {agent_name} for engagement {engagement_id}")
     output = await call_claude(case_packet, prior_outputs, agent['prompt'])
 
+    # Store full output in output_full, truncated summary in output_summary
+    summary = output[:500] + '...' if len(output) > 500 else output
+
     run_id = repo.create({
         'engagement_id':  engagement_id,
         'agent_name':     agent_name,
-        'output':         output,
+        'output_full':    output,
+        'output_summary': summary,
         'model_used':     'claude-sonnet-4-6',
-        'prompt_version': '2.0',
     })
 
     logger.info(f"Agent {agent_name} run complete. run_id: {run_id}")

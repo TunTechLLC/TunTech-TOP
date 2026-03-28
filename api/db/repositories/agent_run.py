@@ -12,8 +12,8 @@ GET_FOR_ENGAGEMENT = """
            agent_name,
            model_used,
            run_date,
-           prompt_version,
            output_summary,
+           output_full,
            output_doc_link,
            accepted,
            created_date
@@ -29,6 +29,7 @@ GET_BY_AGENT = """
            model_used,
            run_date,
            output_summary,
+           output_full,
            output_doc_link,
            accepted,
            created_date
@@ -40,7 +41,7 @@ GET_BY_AGENT = """
 """
 
 GET_ACCEPTED_OUTPUT = """
-    SELECT output_summary
+    SELECT output_full
     FROM   AgentRuns
     WHERE  engagement_id = ?
     AND    agent_name = ?
@@ -52,9 +53,9 @@ GET_ACCEPTED_OUTPUT = """
 INSERT_AGENT_RUN = """
     INSERT INTO AgentRuns (
         run_id, engagement_id, agent_name,
-        model_used, run_date, prompt_version,
-        output_summary, output_doc_link,
-        accepted, created_date
+        model_used, run_date,
+        output_summary, output_full,
+        output_doc_link, accepted, created_date
     ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, ?)
 """
 
@@ -90,11 +91,12 @@ class AgentRunRepository(BaseRepository):
         return dict(rows[0]) if rows else None
 
     def get_accepted_output(self, engagement_id: str, agent_name: str) -> str | None:
-        """Return the output text of the accepted run for a specific agent.
+        """Return the full output text of the accepted run for a specific agent.
         Returns None if no accepted run exists.
-        Used by the agent runner to assemble context for subsequent agents."""
+        Used by the agent runner to assemble context for subsequent agents.
+        Reads from output_full — the complete untruncated Claude response."""
         rows = self._query(GET_ACCEPTED_OUTPUT, (engagement_id, agent_name))
-        return rows[0]['output_summary'] if rows else None
+        return rows[0]['output_full'] if rows else None
 
     def validate_prerequisites(self, engagement_id: str,
                                 required_agents: list) -> list:
@@ -112,8 +114,11 @@ class AgentRunRepository(BaseRepository):
         """Store a new agent run output. Returns the new run_id.
 
         Expected keys in data:
-            engagement_id, agent_name, output (the full agent response text),
-            model_used (optional), prompt_version (optional)
+            engagement_id  — the engagement this run belongs to
+            agent_name     — name of the agent (e.g. 'Diagnostician')
+            output_full    — the complete Claude response text
+            output_summary — truncated summary (first 500 chars + ellipsis)
+            model_used     — Claude model used (optional)
         """
         run_id = next_agent_run_id()
         today  = date.today().isoformat()
@@ -127,9 +132,9 @@ class AgentRunRepository(BaseRepository):
             data['agent_name'],
             data.get('model_used', 'claude-sonnet-4-6'),
             today,
-            data.get('prompt_version', '1.0'),
-            data['output'],
-            today
+            data.get('output_summary', ''),
+            data.get('output_full', ''),
+            today,
         ))
 
         return run_id
