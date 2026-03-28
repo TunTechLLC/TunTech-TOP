@@ -59,11 +59,6 @@ UPDATE_ECONOMIC_ESTIMATE = """
     WHERE  ep_id = ?
 """
 
-GET_NEXT_EP_NUM = """
-    SELECT COUNT(*) AS total
-    FROM   EngagementPatterns
-"""
-
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -77,21 +72,21 @@ class PatternRepository(BaseRepository):
         rows = self._query(GET_FOR_ENGAGEMENT, (engagement_id,))
         return [dict(row) for row in rows]
 
-    def get_next_ep_id(self, engagement_id: str) -> str:
-        """Return the next available EP ID string (e.g. EP054).
-        Used to tell Claude which ID to start from in pattern detection prompt."""
-        from api.utils.ids import next_ep_id
-        return next_ep_id()
-
     def get_library(self) -> list:
-        """Return the full pattern library P01-P47.
+        """Return the full pattern library P01-P60.
         Used for pattern detection validation and frontend display."""
         logger.info("Fetching full pattern library")
         rows = self._query(GET_LIBRARY)
         return [dict(row) for row in rows]
 
     def bulk_create(self, rows: list) -> int:
-        """Insert multiple EngagementPatterns one at a time to ensure unique sequential EP IDs. Returns the number of rows inserted."""
+        """Insert multiple EngagementPatterns one at a time to ensure
+        unique sequential EP IDs. Returns the number of rows inserted.
+
+        Uses sequential loop intentionally — list comprehension caused
+        duplicate EP IDs because next_ep_id() was called before any
+        rows were written. Do not refactor to batch insert.
+        """
         today = date.today().isoformat()
         count = 0
         for row in rows:
@@ -102,7 +97,7 @@ class PatternRepository(BaseRepository):
                 row['pattern_id'],
                 row['confidence'],
                 row.get('notes', ''),
-                today
+                today,
             ))
             count += 1
         logger.info(f"Bulk created {count} engagement patterns")
