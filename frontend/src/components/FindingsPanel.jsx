@@ -583,7 +583,10 @@ export default function FindingsPanel({ engagementId }) {
                         F{String(idx + 1).padStart(3, '0')}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${confidenceColors[f.confidence] || 'bg-gray-100'}`}>
-                        {f.confidence}
+                        Confidence: {f.confidence}
+                      </span>
+                      <span className="text-xs text-gray-600 font-medium">
+                        Priority: {f.priority}
                       </span>
                       <span className="text-xs text-gray-500">{f.domain}</span>
                     </div>
