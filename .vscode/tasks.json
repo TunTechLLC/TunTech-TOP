@@ -11,8 +11,7 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "top",
-        "label": "TOP Backend"
+        "group": "top"
       },
       "problemMatcher": []
     },
@@ -26,8 +25,7 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "top",
-        "label": "TOP Frontend"
+        "group": "top"
       },
       "problemMatcher": []
     },
