@@ -6,27 +6,73 @@
 ## Deferred to After Checkpoint 3
 
 ### Enforce Pattern-to-Finding Mapping
-Every finding must map to one or more patterns, and inherit their economic model types.
-Even if invisible in the UI initially, this constraint should be enforced at the data layer.
+**Requirement:**
+- Every finding must reference 1+ patterns (Pxx)
+- Patterns must be explicitly linked, not inferred
+- Finding inherits domain (if consistent across patterns) and economic model types
+
+**Rules:**
+- No orphan findings — must map to at least one pattern
+- If multiple patterns, they must share a common root cause OR be explicitly grouped under a single control point
+
+**Output (internal, not UI yet):**
+```
+Finding F001:
+Patterns: P06, P08, P10
+Domains: Sales-to-Delivery Transition
+Economic Models: Delivery Overrun Loss, Delay / Start Lag
+```
+
 **Implementation:**
 - Require at least one `contributing_ep_id` when creating a finding (currently optional)
-- Store the economic model type(s) from contributing patterns on the finding record
-- Use pattern economic models to guide and validate the finding's economic impact field
+- Store the inherited economic model types from contributing patterns on the finding record
 
 ### Standardize Economic Output Generation
-For each economic formula type in the pattern library, define:
-- Required inputs (e.g. billable rate, headcount, utilization %)
-- Assumptions (e.g. industry benchmark targets)
-- Range logic (how to compute low/high estimates)
-This makes economic impact fields consistent and defensible across all findings rather
-than free-text estimates. Build after the pattern-to-finding mapping is enforced.
+This is the most consequential system improvement. Every number in the report becomes
+reproducible. For each economic formula type in the pattern library, define:
+
+**A. Inputs**
+- Required variables (e.g. Idle Hours, Bill Rate)
+- Source: Confirmed (from data) or Estimated (from interview / assumption)
+
+**B. Assumptions**
+- Default values if inputs are missing
+- Acceptable ranges
+- Override rules
+
+**C. Range Logic**
+- When to output a point estimate vs a range
+- How the range is calculated (Low = conservative assumption, High = aggressive assumption)
+
+**Example — Delivery Overrun Loss:**
+```
+Inputs:
+  - Overrun Hours (estimated or confirmed)
+  - Cost Rate (confirmed or estimated)
+
+Assumptions:
+  - Overrun % range: 10%–25% if not explicitly measured
+
+Range Logic:
+  - Low = 10% overrun scenario
+  - High = 25% overrun scenario
+```
+
+Build after the pattern-to-finding mapping is enforced.
 
 ### Lightweight Evidence Summary on Findings
-Once pattern-to-finding mapping is enforced, auto-generate a brief evidence summary
-on each finding showing which patterns support it and which signal domains they span.
-Example: "Supported by P06, P08, P10 across Sales-to-Delivery Transition;
-consistent signals across 3 projects."
-This becomes straightforward once the pattern linkage is reliable.
+Keep this simple. Do not over-engineer.
+
+**Requirement:** Each finding includes 1–2 lines:
+```
+Evidence Summary:
+Supported by P06, P08, P10 across sales-to-delivery transition;
+6 signals (2 confirmed, 4 inferred); observed across 3 projects
+```
+
+**Rules:**
+- Must include: pattern IDs, signal count (optional but strong), confirmation mix if available
+- This becomes straightforward once pattern-to-finding mapping is enforced
 
 ### Synthesizer-to-Roadmap Parser
 Same detect-review-load pattern as the findings parser (Step 8 Extension 2).
@@ -65,14 +111,11 @@ write operations. Requires F5 page refresh to update.
 When a panel writes data (loads signals, loads patterns, creates finding), it calls
 the refresh callback which re-fetches the engagement header data.
 
-### Multi-File Candidate Review (Merge All Files)
-Currently only the first candidate file displays after multi-file processing.
-Files 2+ are processed and written correctly but the frontend ignores them.
-**Fix:** Merge all candidate files from a processing batch into one review list
-with a `source_file` label on each candidate card so you know which interview
-each signal came from.
-**Files to change:** `document_processor.py`, `signals.py` router, `SignalPanel.jsx`
-This is actually a Step 8 Extension 1 cleanup item — prioritize before Checkpoint 3.
+### Word Report Template Cleanup
+The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
+Needs visual polish before client delivery: column widths, font sizing, header row shading,
+consistent spacing. Consider a custom document template (`.dotx`) as the base for `Document()`.
+Not blocking — the content is correct and readable.
 
 ---
 
