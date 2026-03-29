@@ -5,6 +5,29 @@
 
 ## Deferred to After Checkpoint 3
 
+### Enforce Pattern-to-Finding Mapping
+Every finding must map to one or more patterns, and inherit their economic model types.
+Even if invisible in the UI initially, this constraint should be enforced at the data layer.
+**Implementation:**
+- Require at least one `contributing_ep_id` when creating a finding (currently optional)
+- Store the economic model type(s) from contributing patterns on the finding record
+- Use pattern economic models to guide and validate the finding's economic impact field
+
+### Standardize Economic Output Generation
+For each economic formula type in the pattern library, define:
+- Required inputs (e.g. billable rate, headcount, utilization %)
+- Assumptions (e.g. industry benchmark targets)
+- Range logic (how to compute low/high estimates)
+This makes economic impact fields consistent and defensible across all findings rather
+than free-text estimates. Build after the pattern-to-finding mapping is enforced.
+
+### Lightweight Evidence Summary on Findings
+Once pattern-to-finding mapping is enforced, auto-generate a brief evidence summary
+on each finding showing which patterns support it and which signal domains they span.
+Example: "Supported by P06, P08, P10 across Sales-to-Delivery Transition;
+consistent signals across 3 projects."
+This becomes straightforward once the pattern linkage is reliable.
+
 ### Synthesizer-to-Roadmap Parser
 Same detect-review-load pattern as the findings parser (Step 8 Extension 2).
 Auto-generate roadmap items from accepted Synthesizer output.
@@ -42,11 +65,14 @@ write operations. Requires F5 page refresh to update.
 When a panel writes data (loads signals, loads patterns, creates finding), it calls
 the refresh callback which re-fetches the engagement header data.
 
-### Word Report Template Cleanup
-The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
-Needs visual polish before client delivery: column widths, font sizing, header row shading,
-consistent spacing. Consider a custom document template (`.dotx`) as the base for `Document()`.
-Not blocking — the content is correct and readable.
+### Multi-File Candidate Review (Merge All Files)
+Currently only the first candidate file displays after multi-file processing.
+Files 2+ are processed and written correctly but the frontend ignores them.
+**Fix:** Merge all candidate files from a processing batch into one review list
+with a `source_file` label on each candidate card so you know which interview
+each signal came from.
+**Files to change:** `document_processor.py`, `signals.py` router, `SignalPanel.jsx`
+This is actually a Step 8 Extension 1 cleanup item — prioritize before Checkpoint 3.
 
 ---
 
