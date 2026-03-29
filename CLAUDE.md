@@ -89,7 +89,7 @@ Empty string is not a valid foreign key value.
 ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH directly.
 
 **Dry run data:**
-- E001 — Meridian Consulting Group (33 signals, 32 patterns, 5 agent runs accepted, 7 findings, 16 roadmap items)
+- E001 — Meridian Consulting Group (33 signals, 32 patterns — modified by testing: findings and roadmap counts differ from original)
 - E002 — Apex Technology Solutions (33 signals, 21 patterns, 5 agent runs, 7 findings, 16 roadmap items)
 
 **Patterns:** P01–P60 after new domain inserts (58 total)
@@ -115,21 +115,20 @@ ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH 
 | Issue | Location | Fix Timing |
 |-------|----------|------------|
 | Engagement header counts don't refresh after write operations | EngagementDetail.jsx | After Checkpoint 3 |
-| Only first candidate file shows after multi-file processing | SignalPanel.jsx | Step 8 Ext 1 Cleanup |
 | No reprocess button — must use DB Browser to clear ProcessedFiles | SignalPanel.jsx | After Checkpoint 3 |
 | Candidate JSON files accumulate in candidates folder | document_processor.py | After Checkpoint 3 — archive to processed/ subfolder |
 | Agent registry URL is under /api/engagements but is not engagement-specific | agents.py | Phase 3 cosmetic fix — do not move without updating api.js |
 | process-files endpoint runs synchronously — long transcripts could timeout | signals.py | Phase 3 — background tasks |
+| Word report uses default python-docx styles — needs visual polish | report_generator.py | After Checkpoint 3 |
 
 ---
 
-## What Is Not Yet Built (Stubs Exist)
+## What Is Not Yet Built
 
-- **`api/services/report_generator.py`** — exists as a stub with NotImplementedError. Build in Step 10.
-- **`GET /{engagement_id}/report/download`** — exists as a 501 stub in reporting.py. Build in Step 10.
-- **Parse Findings button** — comment placeholder in FindingsPanel.jsx. Build in Step 8 Extension 2.
-- **`POST /{engagement_id}/findings/parse-synthesizer`** — not yet built. Build in Step 8 Extension 2.
-- **CrossEngagement.jsx** — placeholder route in App.jsx. Build in Step 9.
+All Phase 2 features are complete. Remaining work is post-Checkpoint 3:
+- Synthesizer-to-Roadmap parser (BACKLOG.md)
+- Word report visual polish (BACKLOG.md)
+- PDF file support (BACKLOG.md)
 
 ---
 
@@ -163,4 +162,4 @@ ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH 
 - Tailwind CSS v3.4.19 (v4 incompatible)
 - FastAPI, uvicorn, anthropic, pydantic — see requirements.txt
 - React, react-router-dom, vite — see frontend/package.json
-- python-docx — needed for Step 10 report generation
+- python-docx 1.2.0 — used by report_generator.py for Word document generation
