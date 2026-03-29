@@ -13,13 +13,13 @@ def get_repo() -> EngagementRepository:
     return EngagementRepository()
 
 
-@router.get("/", response_model=list[EngagementResponse])
+@router.get("/")
 def list_engagements(repo: EngagementRepository = Depends(get_repo)):
     """Return all engagements with summary counts for the dashboard."""
     return repo.get_all()
 
 
-@router.get("/{engagement_id}", response_model=EngagementResponse)
+@router.get("/{engagement_id}")
 def get_engagement(
     engagement_id: str,
     repo: EngagementRepository = Depends(get_repo)
@@ -42,6 +42,7 @@ def create_engagement(
     if not engagement:
         raise HTTPException(status_code=500, detail="Engagement created but could not be retrieved")
     return engagement
+
 
 @router.patch("/{engagement_id}/settings")
 def update_settings(

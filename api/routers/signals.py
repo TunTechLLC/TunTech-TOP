@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.signal import SignalRepository
 from api.models.signal import SignalCreate, SignalResponse, DomainSummaryResponse
 
@@ -13,7 +13,7 @@ def get_repo() -> SignalRepository:
     return SignalRepository()
 
 
-@router.get("/{engagement_id}/signals", response_model=list[SignalResponse])
+@router.get("/{engagement_id}/signals")
 def list_signals(
     engagement_id: str,
     repo: SignalRepository = Depends(get_repo)
@@ -22,7 +22,7 @@ def list_signals(
     return repo.get_for_engagement(engagement_id)
 
 
-@router.get("/{engagement_id}/signals/summary", response_model=list[DomainSummaryResponse])
+@router.get("/{engagement_id}/signals/summary")
 def signal_domain_summary(
     engagement_id: str,
     repo: SignalRepository = Depends(get_repo)
@@ -57,7 +57,7 @@ async def process_files(
 ):
     """Scan engagement folders for unprocessed files and extract signals via Claude.
     Writes candidate JSON files to the candidates folder.
-    Returns summary of what was processed."""
+    Returns summary of what was processed including all candidate file paths."""
     from api.db.repositories.engagement import EngagementRepository
     from api.services.document_processor import process_engagement_files
 
@@ -105,10 +105,7 @@ def load_candidates(
 ):
     """Load approved candidates into the Signals table.
     Expects: {candidate_file, approved_indices, candidates}"""
-    import json as json_lib
-
-    candidates       = payload.get('candidates', [])
-    approved_indices = payload.get('approved_indices', [])
+    candidates = payload.get('candidates', [])
 
     if not candidates:
         raise HTTPException(status_code=400, detail="No candidates provided")
@@ -116,16 +113,16 @@ def load_candidates(
     loaded = 0
     for signal in candidates:
         signal_payload = {
-            'engagement_id':     engagement_id,
-            'signal_name':       signal.get('signal_name', ''),
-            'domain':            signal.get('domain', ''),
-            'observed_value':    signal.get('observed_value', ''),
-            'normalized_band':   signal.get('normalized_band', ''),
-            'signal_confidence': signal.get('signal_confidence', 'Medium'),
-            'source':            signal.get('source', 'Interview'),
-            'interview_id':      None,
-            'economic_relevance':signal.get('economic_relevance', ''),
-            'notes':             signal.get('notes', ''),
+            'engagement_id':      engagement_id,
+            'signal_name':        signal.get('signal_name', ''),
+            'domain':             signal.get('domain', ''),
+            'observed_value':     signal.get('observed_value', ''),
+            'normalized_band':    signal.get('normalized_band', ''),
+            'signal_confidence':  signal.get('signal_confidence', 'Medium'),
+            'source':             signal.get('source', 'Interview'),
+            'interview_id':       None,
+            'economic_relevance': signal.get('economic_relevance', ''),
+            'notes':              signal.get('notes', ''),
         }
         repo.create(signal_payload)
         loaded += 1

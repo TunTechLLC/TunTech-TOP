@@ -12,8 +12,7 @@ def get_repo() -> RoadmapRepository:
     return RoadmapRepository()
 
 
-@router.get("/{engagement_id}/roadmap",
-            response_model=list[RoadmapItemResponse])
+@router.get("/{engagement_id}/roadmap")
 def list_roadmap_items(
     engagement_id: str,
     repo: RoadmapRepository = Depends(get_repo)
@@ -22,8 +21,7 @@ def list_roadmap_items(
     return repo.get_all(engagement_id)
 
 
-@router.get("/{engagement_id}/roadmap/{phase}",
-            response_model=list[RoadmapItemResponse])
+@router.get("/{engagement_id}/roadmap/{phase}")
 def list_roadmap_by_phase(
     engagement_id: str,
     phase:         str,

@@ -17,8 +17,7 @@ def get_agent_repo() -> AgentRunRepository:
     return AgentRunRepository()
 
 
-@router.get("/{engagement_id}/findings",
-            response_model=list[FindingResponse])
+@router.get("/{engagement_id}/findings")
 def list_findings(
     engagement_id: str,
     repo: FindingRepository = Depends(get_finding_repo)
@@ -37,7 +36,16 @@ def create_finding(
     agent_repo:   AgentRunRepository = Depends(get_agent_repo)
 ):
     """Create a finding and accept contributing patterns atomically.
-    Requires Synthesizer agent to be accepted first."""
+
+    Requires Synthesizer agent to be accepted first (enforced below).
+
+    This endpoint is called by:
+    1. Manual Add Finding form (current)
+    2. Parse Findings flow — Step 8 Extension 2 (not yet built)
+       Will add: POST /{engagement_id}/findings/parse-synthesizer
+       That endpoint fetches accepted Synthesizer output, calls Claude to extract
+       structured findings, and calls this endpoint for each approved finding.
+    """
     synthesizer = agent_repo.get_accepted_output(engagement_id, 'Synthesizer')
     if not synthesizer:
         raise HTTPException(

@@ -12,8 +12,7 @@ def get_repo() -> KnowledgeRepository:
     return KnowledgeRepository()
 
 
-@router.get("/{engagement_id}/knowledge",
-            response_model=list[KnowledgeResponse])
+@router.get("/{engagement_id}/knowledge")
 def list_knowledge(
     engagement_id: str,
     repo: KnowledgeRepository = Depends(get_repo)
