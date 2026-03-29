@@ -15,8 +15,6 @@ class AgentRunResponse(BaseModel):
     accepted:        int
     created_date:    str
 
-    model_config = {"from_attributes": True}
-
 
 class AgentRegistryEntry(BaseModel):
     """Shape of a single agent entry from the registry."""

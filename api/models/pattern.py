@@ -45,8 +45,6 @@ class EngagementPatternResponse(BaseModel):
     operational_impact:  Optional[str] = None
     economic_model:      Optional[str] = None
 
-    model_config = {"from_attributes": True}
-
 
 class PatternLibraryResponse(BaseModel):
     """Shape of a pattern library entry."""
@@ -59,5 +57,3 @@ class PatternLibraryResponse(BaseModel):
     recommended_improvements: Optional[str] = None
     economic_model:           Optional[str] = None
     economic_formula:         Optional[str] = None
-
-    model_config = {"from_attributes": True}

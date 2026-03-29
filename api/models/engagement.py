@@ -43,5 +43,3 @@ class EngagementResponse(BaseModel):
     candidates_folder: Optional[str] = None
     start_date:        Optional[str] = None
     created_date:      Optional[str] = None
-
-    model_config = {"from_attributes": True}

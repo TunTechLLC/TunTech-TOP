@@ -32,5 +32,3 @@ class RoadmapItemResponse(BaseModel):
     status:           Optional[str] = None
     created_date:     str
     finding_title:    Optional[str] = None
-
-    model_config = {"from_attributes": True}

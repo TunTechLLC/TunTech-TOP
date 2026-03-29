@@ -25,5 +25,3 @@ class KnowledgeResponse(BaseModel):
     created_date:   str
     finding_title:  Optional[str] = None
     pattern_name:   Optional[str] = None
-
-    model_config = {"from_attributes": True}

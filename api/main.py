@@ -34,7 +34,7 @@ app = FastAPI(title="TOP — TunTech Operations Platform")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://localhost:5173"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

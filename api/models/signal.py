@@ -30,7 +30,6 @@ class SignalResponse(BaseModel):
     notes:             Optional[str] = None
     created_date:      str
 
-    model_config = {"from_attributes": True}
 
 
 class DomainSummaryResponse(BaseModel):
@@ -38,5 +37,3 @@ class DomainSummaryResponse(BaseModel):
     domain:           str
     signal_confidence: str
     signal_count:     int
-
-    model_config = {"from_attributes": True}

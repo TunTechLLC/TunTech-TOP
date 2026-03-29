@@ -49,5 +49,3 @@ class FindingResponse(BaseModel):
     opd_section:        Optional[int] = None
     created_date:       str
     pattern_name:       Optional[str] = None
-
-    model_config = {"from_attributes": True}
