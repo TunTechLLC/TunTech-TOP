@@ -7,11 +7,10 @@
 ## Current Status
 
 **Phase A (Backend):** ✅ Complete — Checkpoint 1 passed
-**Phase B (Frontend):** 🔄 In progress — Steps 4–8 Extension 1 complete, Checkpoint 2 passed
+**Phase B (Frontend):** 🔄 In progress — Steps 4–8 Extension 2 complete, Checkpoint 2 passed
 
-**Where we are:** All pre-Claude Code cleanup is complete. Step 8 Extension 1 (file processing
-and signal extraction) is complete and verified. Ready to build Step 8 Extension 1 Cleanup,
-then Step 8 Extension 2.
+**Where we are:** Step 8 Extension 1 Cleanup (multi-file review fix) and Step 8 Extension 2
+(Synthesizer-to-Findings parser) are complete and verified. Ready to build Step 9.
 
 ---
 
@@ -26,12 +25,20 @@ then Step 8 Extension 2.
 | 7 | All panel components (Signal, Pattern, Agent, Finding, Roadmap, Knowledge, Report) | ✅ |
 | 8 | Document processing pipeline | ✅ |
 | 8 Ext 1 | File processing and signal extraction | ✅ Complete and verified |
+| 8 Ext 1 Cleanup | Multi-file review fix (source_file label, parallel fetch) | ✅ |
+| 8 Ext 2 | Synthesizer-to-Findings parser | ✅ Complete and verified |
 
 ---
 
 ## Next Steps (in order)
 
-### NEXT: Step 8 Extension 1 Cleanup — File Type Expansion
+### NEXT: Step 9 — Cross-Engagement Report Screen
+
+*(Step 8 Extension 1 Cleanup — File Type Expansion is queued after Step 9 — see below)*
+
+---
+
+### Step 8 Extension 1 Cleanup — File Type Expansion
 
 **What it does:** Adds three new extraction prompts and updates the document processor
 to handle status reports, resource/utilization documents, and a general delivery document type.

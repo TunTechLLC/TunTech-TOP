@@ -40,7 +40,6 @@ export default function SignalPanel({ engagementId }) {
   const [candidates, setCandidates]       = useState([])
   const [approved, setApproved]           = useState({})
   const [loadingCands, setLoadingCands]   = useState(false)
-  const [candidateFile, setCandidateFile] = useState(null)
 
   const fetchData = () => {
     Promise.all([
@@ -91,26 +90,20 @@ export default function SignalPanel({ engagementId }) {
       const result = await api.signals.processFiles(engagementId)
       setProcessResult(result)
 
-      // TODO Step 8 Ext 1 Cleanup — multi-file review
-      // Currently only loads candidates from the first processed file.
-      // Fix: fetch all candidate file paths from result.files array,
-      // merge into one review list with source_file label on each candidate card.
-      // Backend already returns all candidate_file paths in result.files.
-      if (result.files && result.files.length > 0) {
-        const firstFile = result.files.find(f => f.candidate_file && !f.error)
-        if (firstFile) {
-          const response = await fetch(
-            'http://localhost:8000/api/engagements/' + engagementId +
-            '/signals/read-candidates?file=' + encodeURIComponent(firstFile.candidate_file)
-          )
-          const data = await response.json()
-          const cands = data.candidates || []
-          setCandidateFile(firstFile.candidate_file)
-          setCandidates(cands)
-          const allApproved = {}
-          cands.forEach(function(_, idx) { allApproved[idx] = true })
-          setApproved(allApproved)
-        }
+      const validFiles = (result.files || []).filter(f => f.candidate_file && !f.error)
+      if (validFiles.length > 0) {
+        const responses = await Promise.all(
+          validFiles.map(f => api.signals.readCandidates(engagementId, f.candidate_file))
+        )
+        const merged = []
+        responses.forEach(data => {
+          const sourceFile = data.source_file || ''
+          ;(data.candidates || []).forEach(c => merged.push({ ...c, source_file: sourceFile }))
+        })
+        setCandidates(merged)
+        const allApproved = {}
+        merged.forEach(function(_, idx) { allApproved[idx] = true })
+        setApproved(allApproved)
       }
     } catch (err) {
       setProcessError(err.message)
@@ -136,22 +129,17 @@ export default function SignalPanel({ engagementId }) {
   const handleApproveNone = () => setApproved({})
 
   const handleLoadCandidates = async () => {
-    const approvedIndices = candidates.map((_, idx) => idx).filter(idx => approved[idx])
-    if (approvedIndices.length === 0) {
+    const approvedList = candidates.filter((_, idx) => approved[idx])
+    if (approvedList.length === 0) {
       setProcessError('Select at least one signal to load.')
       return
     }
     setLoadingCands(true)
     setProcessError(null)
     try {
-      await api.signals.loadCandidates(engagementId, {
-        candidate_file:   candidateFile,
-        approved_indices: approvedIndices,
-        candidates:       approvedIndices.map(i => candidates[i]),
-      })
+      await api.signals.loadCandidates(engagementId, { candidates: approvedList })
       setCandidates([])
       setApproved({})
-      setCandidateFile(null)
       setProcessResult(null)
       fetchData()
     } catch (err) {
@@ -228,7 +216,7 @@ export default function SignalPanel({ engagementId }) {
                 {loadingCands ? 'Loading...' : 'Load ' + approvedCount + ' Signal(s)'}
               </button>
               <button
-                onClick={() => { setCandidates([]); setApproved({}); setCandidateFile(null) }}
+                onClick={() => { setCandidates([]); setApproved({}) }}
                 className="text-xs text-gray-400 hover:text-gray-600"
               >
                 Discard
@@ -250,6 +238,11 @@ export default function SignalPanel({ engagementId }) {
                     className="mt-1 shrink-0"
                   />
                   <div className="flex-1 grid grid-cols-2 gap-2">
+                    {c.source_file && (
+                      <div className="col-span-2 text-xs text-gray-400 font-mono -mb-1">
+                        {c.source_file}
+                      </div>
+                    )}
                     <div className="col-span-2">
                       <input
                         value={c.signal_name || ''}

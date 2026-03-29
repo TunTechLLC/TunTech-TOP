@@ -272,3 +272,93 @@ async def extract_signals_from_transcript(transcript: str) -> str:
     clean = clean.strip()
     logger.info(f"Signal extraction complete — {len(clean)} chars")
     return clean
+
+
+FINDINGS_EXTRACTION_PROMPT = """You are extracting structured findings from a completed multi-agent consulting diagnostic synthesis.
+
+The input contains the Synthesizer's integrated output and the list of accepted patterns for this engagement. Extract each distinct finding as a structured record.
+
+Extract between 5 and 10 findings. Findings must be distinct — do not split one finding into multiple overlapping records.
+
+Each item must have exactly these fields:
+- finding_title: string — concise title (e.g. "Chronic Project Overruns")
+- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- confidence: string — exactly "High", "Medium", or "Low"
+- operational_impact: string — 1-3 sentences describing the operational consequence
+- economic_impact: string — quantified where possible. Mark all figures CONFIRMED (from document evidence) or INFERRED (calculated estimate). Use ranges not point estimates.
+- root_cause: string — one sentence root cause statement
+- recommendation: string — one sentence actionable recommendation
+- priority: string — exactly "High", "Medium", or "Low"
+- effort: string — exactly "High", "Medium", or "Low" (implementation effort to address this finding)
+- opd_section: integer — OPD report section this finding is most relevant to (1-8):
+  1 = Executive Summary, 2 = Engagement Overview, 3 = Operational Maturity Overview,
+  4 = Domain Analysis, 5 = Root Cause Analysis, 6 = Economic Impact Analysis,
+  7 = Improvement Opportunities, 8 = Transformation Roadmap.
+  Most findings belong in section 4 or 5.
+- suggested_pattern_ids: list of strings — pattern IDs from the ACCEPTED PATTERNS list that directly support this finding (e.g. ["P12", "P15"]). Only include IDs that appear in the accepted patterns list provided. Do not invent pattern IDs.
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected
+
+Return format:
+[
+  {
+    "finding_title": "Chronic Project Overruns",
+    "domain": "Delivery Operations",
+    "confidence": "High",
+    "operational_impact": "Eight of fourteen active projects are delayed, consuming unplanned delivery capacity and eroding client confidence.",
+    "economic_impact": "$130K-$280K/year in direct overrun cost (INFERRED)",
+    "root_cause": "Projects are scoped without delivery input, producing commitments that cannot be met at current staffing levels.",
+    "recommendation": "Implement a pre-sales delivery review gate before any SOW is signed.",
+    "priority": "High",
+    "effort": "Medium",
+    "opd_section": 4,
+    "suggested_pattern_ids": ["P12", "P15"]
+  }
+]"""
+
+
+async def extract_findings_from_synthesizer(synthesizer_output: str,
+                                            accepted_patterns: list) -> str:
+    """Extract structured findings from an accepted Synthesizer output.
+    Returns raw JSON string — fence stripping handled inside this function."""
+    pattern_lines = [
+        f"- {p['pattern_id']}: {p['pattern_name']} ({p['domain']})"
+        for p in accepted_patterns
+    ]
+    pattern_summary = "\n".join(pattern_lines) if pattern_lines else "(none)"
+    user_message = (
+        f"SYNTHESIZER OUTPUT:\n\n{synthesizer_output}\n\n"
+        f"---\n\n"
+        f"ACCEPTED PATTERNS (use only these IDs in suggested_pattern_ids):\n\n{pattern_summary}"
+    )
+    logger.info(
+        f"Extracting findings from synthesizer — {len(synthesizer_output)} chars, "
+        f"{len(accepted_patterns)} accepted patterns"
+    )
+    message = await async_client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=FINDINGS_EXTRACTION_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    raw = extract_text(message)
+    clean = raw.strip()
+    # Strip code fences first
+    if clean.startswith('```json'):
+        clean = clean[7:]
+    elif clean.startswith('```'):
+        clean = clean[3:]
+    if clean.endswith('```'):
+        clean = clean[:-3]
+    clean = clean.strip()
+    # If Claude added prose before or after the JSON array, extract just the array
+    start = clean.find('[')
+    end   = clean.rfind(']')
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+    logger.info(f"Findings extraction complete — {len(clean)} chars")
+    return clean

@@ -29,22 +29,29 @@ const EMPTY_FORM = {
 }
 
 export default function FindingsPanel({ engagementId }) {
-  const [findings, setFindings]   = useState([])
-  const [patterns, setPatterns]   = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
-  const [expanded, setExpanded]   = useState({})
-  const [showForm, setShowForm]   = useState(false)
-  const [form, setForm]           = useState(EMPTY_FORM)
-  const [saving, setSaving]       = useState(false)
-  const [saveError, setSaveError] = useState(null)
+  const [findings, setFindings]             = useState([])
+  const [patterns, setPatterns]             = useState([])
+  const [agentRuns, setAgentRuns]           = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [error, setError]                   = useState(null)
+  const [expanded, setExpanded]             = useState({})
+  const [showForm, setShowForm]             = useState(false)
+  const [form, setForm]                     = useState(EMPTY_FORM)
+  const [saving, setSaving]                 = useState(false)
+  const [saveError, setSaveError]           = useState(null)
+  const [synthCandidates, setSynthCandidates] = useState([])
+  const [synthApproved, setSynthApproved]   = useState({})
+  const [parsing, setParsing]               = useState(false)
+  const [parseError, setParseError]         = useState(null)
+  const [loadingFindings, setLoadingFindings] = useState(false)
 
   const fetchData = () => {
     Promise.all([
       api.findings.list(engagementId),
       api.patterns.list(engagementId),
+      api.agents.list(engagementId),
     ])
-      .then(([f, p]) => { setFindings(f); setPatterns(p) })
+      .then(([f, p, a]) => { setFindings(f); setPatterns(p); setAgentRuns(a) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -54,9 +61,85 @@ export default function FindingsPanel({ engagementId }) {
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading findings...</div>
   if (error)   return <div className="p-6 text-red-600 text-sm">Error: {error}</div>
 
-  const acceptedPatterns = patterns.filter(p => p.accepted === 1)
+  const acceptedPatterns    = patterns.filter(p => p.accepted === 1)
+  const synthesizerAccepted = agentRuns.some(r => r.agent_name === 'Synthesizer' && r.accepted === 1)
+  const synthApprovedCount  = Object.values(synthApproved).filter(Boolean).length
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
+
+  const handleParseSynthesizer = async () => {
+    setParsing(true)
+    setParseError(null)
+    try {
+      const data = await api.findings.parseSynthesizer(engagementId)
+      const candidatesWithEpIds = (data.candidates || []).map(c => {
+        const suggestedEpIds = (c.suggested_pattern_ids || [])
+          .map(pid => acceptedPatterns.find(p => p.pattern_id === pid))
+          .filter(Boolean)
+          .map(p => p.ep_id)
+        return { ...c, contributing_ep_ids: suggestedEpIds }
+      })
+      setSynthCandidates(candidatesWithEpIds)
+      const allApproved = {}
+      candidatesWithEpIds.forEach((_, idx) => { allApproved[idx] = true })
+      setSynthApproved(allApproved)
+    } catch (err) {
+      setParseError(err.message)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const handleSynthCandidateChange = (idx, field, value) => {
+    setSynthCandidates(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c))
+  }
+
+  const handleSynthPatternToggle = (idx, epId) => {
+    setSynthCandidates(prev => prev.map((c, i) => {
+      if (i !== idx) return c
+      const ids = c.contributing_ep_ids || []
+      return {
+        ...c,
+        contributing_ep_ids: ids.includes(epId)
+          ? ids.filter(id => id !== epId)
+          : [...ids, epId],
+      }
+    }))
+  }
+
+  const handleLoadSynthFindings = async () => {
+    const approvedList = synthCandidates.filter((_, idx) => synthApproved[idx])
+    if (approvedList.length === 0) {
+      setParseError('Select at least one finding to load.')
+      return
+    }
+    setLoadingFindings(true)
+    setParseError(null)
+    try {
+      for (const finding of approvedList) {
+        await api.findings.create(engagementId, {
+          finding_title:       finding.finding_title,
+          domain:              finding.domain,
+          confidence:          finding.confidence,
+          operational_impact:  finding.operational_impact,
+          economic_impact:     finding.economic_impact,
+          root_cause:          finding.root_cause,
+          recommendation:      finding.recommendation,
+          priority:            finding.priority,
+          effort:              finding.effort,
+          opd_section:         finding.opd_section ? parseInt(finding.opd_section, 10) : null,
+          contributing_ep_ids: finding.contributing_ep_ids || [],
+        })
+      }
+      setSynthCandidates([])
+      setSynthApproved({})
+      fetchData()
+    } catch (err) {
+      setParseError(err.message)
+    } finally {
+      setLoadingFindings(false)
+    }
+  }
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -112,10 +195,209 @@ export default function FindingsPanel({ engagementId }) {
         </button>
       </div>
 
-      {/* Parse Findings button — Step 8 Extension 2 (not yet built)
-          Appears here when Synthesizer is accepted and finding count is zero.
-          Calls api.findings.parseSynthesizer() which does not exist yet.
-          Build in Step 8 Extension 2. */}
+      {/* Parse Findings button — visible when Synthesizer accepted, no findings yet, no candidates pending */}
+      {synthesizerAccepted && findings.length === 0 && synthCandidates.length === 0 && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded flex items-center justify-between">
+          <span className="text-xs text-green-800">
+            Synthesizer accepted — parse findings automatically from the synthesis output.
+          </span>
+          <button
+            onClick={handleParseSynthesizer}
+            disabled={parsing}
+            className="px-3 py-1.5 bg-green-700 text-white rounded text-xs font-medium hover:bg-green-800 disabled:opacity-50 ml-4 whitespace-nowrap"
+          >
+            {parsing ? 'Parsing...' : 'Parse Findings'}
+          </button>
+        </div>
+      )}
+
+      {parseError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {parseError}
+        </div>
+      )}
+
+      {/* Synthesizer finding candidates review */}
+      {synthCandidates.length > 0 && (
+        <div className="mb-6 border border-green-200 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-green-50">
+            <div>
+              <span className="text-sm font-semibold text-green-900">
+                {synthCandidates.length} finding candidates
+              </span>
+              <span className="text-xs text-green-600 ml-2">{synthApprovedCount} selected</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { const a = {}; synthCandidates.forEach((_, i) => { a[i] = true }); setSynthApproved(a) }}
+                className="text-xs text-green-700 hover:text-green-900"
+              >
+                Select all
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setSynthApproved({})}
+                className="text-xs text-green-700 hover:text-green-900"
+              >
+                Select none
+              </button>
+              <button
+                onClick={handleLoadSynthFindings}
+                disabled={loadingFindings || synthApprovedCount === 0}
+                className="px-3 py-1 bg-green-700 text-white rounded text-xs font-medium hover:bg-green-800 disabled:opacity-50 ml-2"
+              >
+                {loadingFindings ? 'Loading...' : 'Load ' + synthApprovedCount + ' Finding(s)'}
+              </button>
+              <button
+                onClick={() => { setSynthCandidates([]); setSynthApproved([]); setParseError(null) }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100 max-h-screen overflow-y-auto">
+            {synthCandidates.map((c, idx) => (
+              <div
+                key={idx}
+                className={'p-4 transition-colors ' + (synthApproved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={synthApproved[idx] || false}
+                    onChange={() => setSynthApproved(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                    className="mt-1 shrink-0"
+                  />
+                  <div className="flex-1 space-y-2">
+
+                    {/* Title */}
+                    <input
+                      value={c.finding_title || ''}
+                      onChange={e => handleSynthCandidateChange(idx, 'finding_title', e.target.value)}
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-blue-400"
+                      placeholder="Finding title"
+                    />
+
+                    {/* Domain + confidence */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <select
+                          value={c.domain || 'Delivery Operations'}
+                          onChange={e => handleSynthCandidateChange(idx, 'domain', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        >
+                          {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                      <select
+                        value={c.confidence || 'High'}
+                        onChange={e => handleSynthCandidateChange(idx, 'confidence', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                      >
+                        {FINDING_CONFIDENCES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Priority + effort + OPD section */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={c.priority || 'High'}
+                        onChange={e => handleSynthCandidateChange(idx, 'priority', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                      >
+                        {PRIORITIES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                      <select
+                        value={c.effort || 'Medium'}
+                        onChange={e => handleSynthCandidateChange(idx, 'effort', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                      >
+                        {EFFORTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                      <input
+                        value={c.opd_section || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'opd_section', parseInt(e.target.value, 10) || '')}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        placeholder="OPD §1-8"
+                      />
+                    </div>
+
+                    {/* Impact fields */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <textarea
+                        value={c.operational_impact || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'operational_impact', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        rows={2}
+                        placeholder="Operational impact"
+                      />
+                      <textarea
+                        value={c.economic_impact || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'economic_impact', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        rows={2}
+                        placeholder="Economic impact"
+                      />
+                    </div>
+                    <textarea
+                      value={c.root_cause || ''}
+                      onChange={e => handleSynthCandidateChange(idx, 'root_cause', e.target.value)}
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                      rows={2}
+                      placeholder="Root cause"
+                    />
+                    <textarea
+                      value={c.recommendation || ''}
+                      onChange={e => handleSynthCandidateChange(idx, 'recommendation', e.target.value)}
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                      rows={2}
+                      placeholder="Recommendation"
+                    />
+
+                    {/* Contributing patterns checklist */}
+                    {acceptedPatterns.length > 0 && (
+                      <div>
+                        <div className="text-xs font-medium text-gray-600 mb-1">
+                          Contributing patterns
+                          {c.suggested_pattern_ids && c.suggested_pattern_ids.length > 0 && (
+                            <span className="text-gray-400 font-normal ml-1">
+                              — pre-selected by Claude: {c.suggested_pattern_ids.join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50">
+                          {acceptedPatterns.map(p => (
+                            <label
+                              key={p.ep_id}
+                              className="flex items-start gap-2 cursor-pointer hover:bg-white p-1 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={(c.contributing_ep_ids || []).includes(p.ep_id)}
+                                onChange={() => handleSynthPatternToggle(idx, p.ep_id)}
+                                className="mt-0.5 shrink-0"
+                              />
+                              <div>
+                                <span className="text-xs font-medium text-gray-700">
+                                  {p.pattern_id} — {p.pattern_name}
+                                </span>
+                                <span className="text-xs text-gray-400 ml-2">{p.domain}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Finding form */}
       {showForm && (
