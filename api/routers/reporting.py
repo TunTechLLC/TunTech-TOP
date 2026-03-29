@@ -39,15 +39,24 @@ def get_pattern_library(repo: PatternRepository = Depends(get_pattern_repo)):
 
 @router.get("/{engagement_id}/report/download")
 def download_report(engagement_id: str):
-    """Download the OPD Word document for an engagement.
+    """Generate and download the OPD Transformation Roadmap Word document.
+    Saves to 04_Agent_Outputs folder if derivable from documents_folder path,
+    otherwise saves to the system temp directory."""
+    from api.services.report_generator import ReportGeneratorService
+    from fastapi.responses import FileResponse
 
-    NOT YET IMPLEMENTED — Step 10.
-    Requires api/services/report_generator.py ReportGeneratorService to be built first.
-    Returns 501 until implemented.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Report generation not yet implemented. See Step 10 in PROGRESS.md."
+    try:
+        file_path = ReportGeneratorService(engagement_id).generate()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Report generation failed for {engagement_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+    return FileResponse(
+        file_path,
+        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        filename=f"OPD_Report_{engagement_id}.docx",
     )
 
 

@@ -42,14 +42,11 @@ write operations. Requires F5 page refresh to update.
 When a panel writes data (loads signals, loads patterns, creates finding), it calls
 the refresh callback which re-fetches the engagement header data.
 
-### Multi-File Candidate Review (Merge All Files)
-Currently only the first candidate file displays after multi-file processing.
-Files 2+ are processed and written correctly but the frontend ignores them.
-**Fix:** Merge all candidate files from a processing batch into one review list
-with a `source_file` label on each candidate card so you know which interview
-each signal came from.
-**Files to change:** `document_processor.py`, `signals.py` router, `SignalPanel.jsx`
-This is actually a Step 8 Extension 1 cleanup item — prioritize before Checkpoint 3.
+### Word Report Template Cleanup
+The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
+Needs visual polish before client delivery: column widths, font sizing, header row shading,
+consistent spacing. Consider a custom document template (`.dotx`) as the base for `Document()`.
+Not blocking — the content is correct and readable.
 
 ---
 

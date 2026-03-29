@@ -8,6 +8,14 @@ const handle = async (res) => {
   return res.json();
 };
 
+const handleBlob = async (res) => {
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(error.detail || error.error || res.statusText);
+  }
+  return res.blob();
+};
+
 const json = (data) => ({
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -75,5 +83,6 @@ export const api = {
   },
   reporting: {
     crossEngagement: () => fetch(`${BASE}/cross-engagement`).then(handle),
+    downloadReport:  (id) => fetch(`${BASE}/${id}/report/download`).then(handleBlob),
   },
 };

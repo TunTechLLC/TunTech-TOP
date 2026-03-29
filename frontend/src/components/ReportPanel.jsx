@@ -1,15 +1,41 @@
+import { useState } from 'react'
+import { api } from '../api'
+
 const SECTIONS = [
-  { num: 1, title: 'Executive Summary',            note: 'Written by consultant after download' },
-  { num: 2, title: 'Engagement Overview',          note: 'Auto-generated from engagement record' },
-  { num: 3, title: 'Operational Maturity Overview',note: 'Auto-generated from signal domains' },
-  { num: 4, title: 'Domain Analysis',              note: 'Auto-generated from findings by domain' },
-  { num: 5, title: 'Root Cause Analysis',          note: 'Auto-generated from finding root causes' },
-  { num: 6, title: 'Economic Impact Analysis',     note: 'Auto-generated from finding economic impact' },
-  { num: 7, title: 'Improvement Opportunities',    note: 'Auto-generated from recommendations' },
-  { num: 8, title: 'Transformation Roadmap',       note: 'Auto-generated from roadmap items by phase' },
+  { num: 1, title: 'Executive Summary',             note: 'Written by consultant after download' },
+  { num: 2, title: 'Engagement Overview',           note: 'Auto-generated from engagement record' },
+  { num: 3, title: 'Operational Maturity Overview', note: 'Auto-generated from signal domains' },
+  { num: 4, title: 'Domain Analysis',               note: 'Auto-generated from findings by domain' },
+  { num: 5, title: 'Root Cause Analysis',           note: 'Auto-generated from finding root causes' },
+  { num: 6, title: 'Economic Impact Analysis',      note: 'Auto-generated from finding economic impact' },
+  { num: 7, title: 'Improvement Opportunities',     note: 'Auto-generated from recommendations' },
+  { num: 8, title: 'Transformation Roadmap',        note: 'Auto-generated from roadmap items by phase' },
 ]
 
 export default function ReportPanel({ engagementId }) {
+  const [downloading, setDownloading]       = useState(false)
+  const [downloadError, setDownloadError]   = useState(null)
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    setDownloadError(null)
+    try {
+      const blob = await api.reporting.downloadReport(engagementId)
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `OPD_Report_${engagementId}.docx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setDownloadError(err.message)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -19,16 +45,20 @@ export default function ReportPanel({ engagementId }) {
             Word document generated from engagement data. Section 1 requires manual completion.
           </p>
         </div>
-
-        {/* Download Report — enabled in Step 10 when report_generator.py is built */}
         <button
-          disabled
-          title="Report generation not yet implemented — Step 10"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium opacity-40 cursor-not-allowed"
+          onClick={handleDownload}
+          disabled={downloading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          Download Report
+          {downloading ? 'Generating...' : 'Download Report'}
         </button>
       </div>
+
+      {downloadError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {downloadError}
+        </div>
+      )}
 
       <div className="space-y-2">
         {SECTIONS.map(s => (
