@@ -9,6 +9,17 @@ async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KE
 
 from config import MODEL, MAX_TOKENS
 
+
+def extract_text(message: anthropic.types.Message) -> str:
+    """Extract text content from a Claude API response.
+    Finds the first TextBlock in the content list.
+    Raises ValueError if no text block is found."""
+    for block in message.content:
+        if hasattr(block, 'text'):
+            return block.text
+    raise ValueError("No text block found in Claude API response")
+
+
 DIAGNOSTICIAN_PROMPT = """You are the Diagnostician agent in the TOP multi-agent consulting diagnostic system.
 
 Analyze the case packet and produce a structured diagnostic assessment with these required sections:
@@ -235,7 +246,7 @@ async def call_claude(
         system=prompt,
         messages=[{"role": "user", "content": user_message}],
     )
-    response = message.content[0].text
+    response = extract_text(message)
     logger.info(f"Claude API response received — {len(response)} chars")
     return response
 
@@ -250,7 +261,7 @@ async def extract_signals_from_transcript(transcript: str) -> str:
         system=SIGNAL_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": f"INTERVIEW TRANSCRIPT:\n\n{transcript}"}],
     )
-    raw = message.content[0].text
+    raw = extract_text(message)
     clean = raw.strip()
     if clean.startswith('```json'):
         clean = clean[7:]

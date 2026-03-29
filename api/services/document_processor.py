@@ -7,6 +7,7 @@ from datetime import date
 
 from api.db.repositories.processed_files import ProcessedFilesRepository
 from api.utils.domains import VALID_DOMAINS, VALID_CONFIDENCES
+from api.services.claude import extract_text
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +273,7 @@ async def process_file(file_info: dict, engagement_id: str,
             system=prompt,
             messages=[{"role": "user", "content": f"DOCUMENT:\n\n{content}"}],
         )
-        raw = message.content[0].text
+        raw = extract_text(message)
 
     clean = strip_json_fences(raw)
 
