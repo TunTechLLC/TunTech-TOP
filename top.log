@@ -5350,3 +5350,5 @@ sqlite3.IntegrityError: UNIQUE constraint failed: EngagementPatterns.ep_id
            e.engagement_name,
            e.status,
 
+2026-03-29 13:45:25,071 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-03-29 13:46:30,093 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log

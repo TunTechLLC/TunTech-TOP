@@ -13,7 +13,8 @@ GET_ALL = """
            c.firm_size,
            COUNT(DISTINCT s.signal_id)   AS signal_count,
            COUNT(DISTINCT ep.ep_id)      AS pattern_count,
-           COUNT(DISTINCT f.finding_id)  AS finding_count
+           COUNT(DISTINCT f.finding_id)  AS finding_count,
+           COUNT(DISTINCT r.item_id)     AS roadmap_count
     FROM   Engagements e
     JOIN   Clients c
            ON e.client_id = c.client_id
@@ -23,6 +24,8 @@ GET_ALL = """
            ON ep.engagement_id = e.engagement_id
     LEFT JOIN OPDFindings f
            ON f.engagement_id = e.engagement_id
+    LEFT JOIN RoadmapItems r
+           ON r.engagement_id = e.engagement_id
     GROUP  BY e.engagement_id
     ORDER  BY e.start_date DESC
 """
@@ -34,7 +37,8 @@ GET_BY_ID = """
            c.service_model,
            COUNT(DISTINCT s.signal_id)   AS signal_count,
            COUNT(DISTINCT ep.ep_id)      AS pattern_count,
-           COUNT(DISTINCT f.finding_id)  AS finding_count
+           COUNT(DISTINCT f.finding_id)  AS finding_count,
+           COUNT(DISTINCT r.item_id)     AS roadmap_count
     FROM   Engagements e
     JOIN   Clients c
            ON e.client_id = c.client_id
@@ -44,6 +48,8 @@ GET_BY_ID = """
            ON ep.engagement_id = e.engagement_id
     LEFT JOIN OPDFindings f
            ON f.engagement_id = e.engagement_id
+    LEFT JOIN RoadmapItems r
+           ON r.engagement_id = e.engagement_id
     WHERE  e.engagement_id = ?
     GROUP  BY e.engagement_id
 """

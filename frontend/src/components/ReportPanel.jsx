@@ -1,5 +1,5 @@
 const SECTIONS = [
-  { num: 1, title: 'Executive Summary',           note: 'Written by consultant after download' },
+  { num: 1, title: 'Executive Summary',            note: 'Written by consultant after download' },
   { num: 2, title: 'Engagement Overview',          note: 'Auto-generated from engagement record' },
   { num: 3, title: 'Operational Maturity Overview',note: 'Auto-generated from signal domains' },
   { num: 4, title: 'Domain Analysis',              note: 'Auto-generated from findings by domain' },
@@ -19,8 +19,11 @@ export default function ReportPanel({ engagementId }) {
             Word document generated from engagement data. Section 1 requires manual completion.
           </p>
         </div>
+
+        {/* Download Report — enabled in Step 10 when report_generator.py is built */}
         <button
           disabled
+          title="Report generation not yet implemented — Step 10"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium opacity-40 cursor-not-allowed"
         >
           Download Report
