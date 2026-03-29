@@ -9,8 +9,8 @@
 **Phase A (Backend):** ✅ Complete — Checkpoint 1 passed
 **Phase B (Frontend):** 🔄 In progress — Steps 4–8 Extension 2 complete, Checkpoint 2 passed
 
-**Where we are:** Step 8 Extension 1 Cleanup (multi-file review fix) and Step 8 Extension 2
-(Synthesizer-to-Findings parser) are complete and verified. Ready to build Step 9.
+**Where we are:** Steps 8 Extension 1 Cleanup, 8 Extension 2, and 9 are complete and verified.
+Ready to build Step 10 (Word report download).
 
 ---
 
@@ -27,6 +27,7 @@
 | 8 Ext 1 | File processing and signal extraction | ✅ Complete and verified |
 | 8 Ext 1 Cleanup | Multi-file review fix (source_file label, parallel fetch) | ✅ |
 | 8 Ext 2 | Synthesizer-to-Findings parser | ✅ Complete and verified |
+| 9 | Cross-engagement report screen | ✅ Complete and verified |
 
 ---
 
