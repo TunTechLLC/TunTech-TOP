@@ -19,6 +19,7 @@ class EngagementSettingsUpdate(BaseModel):
     interviews_folder: Optional[str] = None
     documents_folder:  Optional[str] = None
     candidates_folder: Optional[str] = None
+    reports_folder:    Optional[str] = None
 
 
 class EngagementResponse(BaseModel):
@@ -41,5 +42,6 @@ class EngagementResponse(BaseModel):
     interviews_folder: Optional[str] = None
     documents_folder:  Optional[str] = None
     candidates_folder: Optional[str] = None
+    reports_folder:    Optional[str] = None
     start_date:        Optional[str] = None
     created_date:      Optional[str] = None

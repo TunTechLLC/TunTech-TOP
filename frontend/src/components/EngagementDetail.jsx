@@ -39,6 +39,7 @@ export default function EngagementDetail() {
     interviews_folder: '',
     documents_folder:  '',
     candidates_folder: '',
+    reports_folder:    '',
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsError, setSettingsError]   = useState(null)
@@ -51,6 +52,7 @@ export default function EngagementDetail() {
         interviews_folder: eng.interviews_folder || '',
         documents_folder:  eng.documents_folder  || '',
         candidates_folder: eng.candidates_folder || '',
+        reports_folder:    eng.reports_folder    || '',
       })
     })
     .catch(err => setError(err.message))
@@ -146,6 +148,7 @@ const handleSettingsSave = async () => {
               { key: 'interviews_folder', label: 'Interviews folder' },
               { key: 'documents_folder',  label: 'Client documents folder' },
               { key: 'candidates_folder', label: 'Candidates folder' },
+              { key: 'reports_folder',    label: 'Reports folder' },
             ].map(field => (
               <div key={field.key}>
                 <label className="block text-xs font-medium text-gray-600 mb-1">

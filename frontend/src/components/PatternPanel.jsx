@@ -15,6 +15,7 @@ export default function PatternPanel({ engagementId }) {
   const [detecting, setDetecting]     = useState(false)
   const [detectError, setDetectError] = useState(null)
   const [detected, setDetected]       = useState(null)
+  const [approved, setApproved]       = useState({})
   const [loading2, setLoading2]       = useState(false)
 
   const fetchPatterns = () => {
@@ -47,6 +48,9 @@ export default function PatternPanel({ engagementId }) {
     try {
       const results = await api.patterns.detect(engagementId)
       setDetected(results)
+      const all = {}
+      results.forEach((_, i) => { all[i] = true })
+      setApproved(all)
     } catch (err) {
       setDetectError(err.message)
     } finally {
@@ -56,9 +60,11 @@ export default function PatternPanel({ engagementId }) {
 
   const handleLoad = async () => {
     if (!detected) return
+    const toLoad = detected.filter((_, i) => approved[i])
+    if (toLoad.length === 0) return
     setLoading2(true)
     try {
-      await api.patterns.load(engagementId, detected)
+      await api.patterns.load(engagementId, toLoad)
       setDetected(null)
       setDetectError(null)
       fetchPatterns()
@@ -101,27 +107,48 @@ export default function PatternPanel({ engagementId }) {
               <span className="text-sm font-semibold text-blue-900">
                 {detected.length} patterns detected by Claude
               </span>
-              <span className="text-xs text-blue-600 ml-2">Review before loading</span>
+              <span className="text-xs text-blue-600 ml-2">
+                {Object.values(approved).filter(Boolean).length} selected
+              </span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setDetected(null)}
+                onClick={() => { const a = {}; detected.forEach((_, i) => { a[i] = true }); setApproved(a) }}
+                className="text-xs text-blue-700 hover:text-blue-900"
+              >
+                Select all
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setApproved({})}
+                className="text-xs text-blue-700 hover:text-blue-900"
+              >
+                Select none
+              </button>
+              <button
+                onClick={() => { setDetected(null); setApproved({}) }}
                 className="px-3 py-1 border border-blue-300 text-blue-600 rounded text-xs hover:bg-blue-100"
               >
                 Discard
               </button>
               <button
                 onClick={handleLoad}
-                disabled={loading2}
+                disabled={loading2 || Object.values(approved).filter(Boolean).length === 0}
                 className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading2 ? 'Loading...' : 'Load Patterns'}
+                {loading2 ? 'Loading...' : `Load ${Object.values(approved).filter(Boolean).length} Pattern(s)`}
               </button>
             </div>
           </div>
           <div className="divide-y divide-gray-100">
             {detected.map((p, idx) => (
-              <div key={idx} className="px-4 py-3 flex items-start gap-3">
+              <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${approved[idx] ? '' : 'opacity-50 bg-gray-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={approved[idx] || false}
+                  onChange={() => setApproved(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                  className="mt-0.5 shrink-0"
+                />
                 <span className="text-xs font-mono text-gray-400 w-10 shrink-0 pt-0.5">{p.pattern_id}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">

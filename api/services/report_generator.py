@@ -58,13 +58,12 @@ class ReportGeneratorService:
     # ------------------------------------------------------------------
 
     def _output_path(self, eng: dict) -> str:
-        """Derive 04_Agent_Outputs folder from documents_folder.
-        Falls back to the system temp directory if path cannot be derived."""
-        docs = eng.get('documents_folder') or ''
-        if docs and '03_Client_Documents' in docs:
-            output_dir = docs.replace('03_Client_Documents', '04_Agent_Outputs')
-            os.makedirs(output_dir, exist_ok=True)
-            return os.path.join(output_dir, f"OPD_Report_{self.engagement_id}.docx")
+        """Save report to the engagement's reports_folder.
+        Falls back to the system temp directory if reports_folder is not set."""
+        reports_dir = eng.get('reports_folder') or ''
+        if reports_dir:
+            os.makedirs(reports_dir, exist_ok=True)
+            return os.path.join(reports_dir, f"OPD_Report_{self.engagement_id}.docx")
         return os.path.join(
             tempfile.gettempdir(),
             f"OPD_Report_{self.engagement_id}.docx"

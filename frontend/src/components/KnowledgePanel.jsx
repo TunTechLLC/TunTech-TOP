@@ -44,7 +44,7 @@ export default function KnowledgePanel({ engagementId }) {
       .then(([k, f, p]) => {
         setPromotions(k)
         setFindings(f)
-        setPatterns(p.filter(p => p.accepted === 1))
+        setPatterns(p)
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))

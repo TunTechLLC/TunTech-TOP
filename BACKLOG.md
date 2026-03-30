@@ -5,6 +5,108 @@
 
 ## Deferred to After Checkpoint 3
 
+### Auto-Suggest Knowledge Promotions from Synthesizer Output
+**Problem:** Knowledge promotions are fully manual — consultant must identify and
+type insights worth promoting. Should follow the same detect-review-load pattern
+as findings and roadmap.
+
+**Design:** After Synthesizer is accepted, add a "Suggest Knowledge" button that
+calls Claude to extract 3–5 reusable insights from the Synthesizer output —
+observations that would be useful across future engagements, not just this one.
+Present as cards with Accept / Reject per item. Accepted items call the existing
+knowledge create endpoint.
+
+**New prompt needed:** KNOWLEDGE_EXTRACTION_PROMPT in claude.py
+**New endpoint needed:** `POST /{engagement_id}/knowledge/suggest`
+
+---
+
+### Replace Report Browser Download with Save-and-Show-Path
+**Problem:** Download Report streams the file to the browser, which saves a redundant
+copy to the Downloads folder. For a locally hosted single-user tool, the file is already
+saved to reports_folder on disk — the browser download adds no value.
+
+**Fix:** Change the Report tab to show a confirmation message with the full file path
+after generation instead of triggering a browser download. Add an "Open folder" button
+that calls a new backend endpoint to open the reports_folder in Windows Explorer
+(via `os.startfile(reports_folder)`). Remove the FileResponse streaming from the
+download endpoint or keep it as a secondary option.
+
+**New endpoint:** `POST /{engagement_id}/report/generate` — saves file, returns
+`{"saved_to": "C:\\...\\OPD_Report_E003.docx"}`. Frontend displays the path.
+**Optional:** `POST /{engagement_id}/report/open-folder` — calls `os.startfile()`.
+
+---
+
+### Roadmap Item Edit and Delete
+**Problem:** Once a roadmap item is saved there is no way to edit or delete it
+from the browser. Typos and wrong field values require DB Browser to fix.
+
+**Fix:** Add an Edit button per row that opens an inline edit form (same fields as
+the add form), and a Delete button with a confirmation prompt.
+**New endpoint needed:** `DELETE /{engagement_id}/roadmap/{item_id}`
+PATCH already exists for update.
+
+---
+
+### Add Field Labels to Finding Candidate Review Cards
+**Problem:** The Parse Findings candidate review cards show unlabeled text inputs.
+The OPD section number field shows "4" with no context. Users cannot tell which
+field is which without counting positions.
+
+**Fix:** Add a small label above each input/textarea/select in the candidate card,
+matching the labels used in the manual Add Finding form. Minimal change —
+just add `<div className="text-xs text-gray-500 mb-0.5">Label</div>` above each field.
+
+---
+
+### Improve PATTERN_DETECTION_PROMPT for New Domain Coverage
+**Problem:** Second pattern detection run on E003 (102 signals, including clear AI Readiness
+signals) returned zero AI Readiness patterns. First run detected 3, but errored before loading.
+Claude is non-deterministic and with a large signal set tends to anchor on the most
+numerically dominant domains (Sales-to-Delivery, Delivery Operations) and under-detect
+sparse new domains.
+
+**Fix:** Add few-shot examples to PATTERN_DETECTION_PROMPT showing correct detection of
+AI Readiness, Human Resources, and Finance and Commercial patterns. Add an explicit
+instruction: "Ensure coverage across all domains represented in the signals — do not
+omit a domain simply because it has fewer signals than others."
+
+---
+
+### Disable Agent Buttons While Any Agent Is Running
+**Problem:** Re-run buttons on earlier agents remain enabled while the Skeptic or
+Synthesizer is actively running. Accidentally re-running an earlier agent mid-sequence
+would invalidate the in-progress agent's context.
+
+**Fix:** Track a single `anyRunning` boolean in AgentPanel. When any agent call is
+in flight, disable all run/re-run buttons across the panel until the call completes.
+**Implementation:** One shared `useState` in AgentPanel passed as a prop or managed
+via a running agent name string — if `runningAgent !== null`, all buttons disabled.
+
+---
+
+### Auto-Cull Signal Candidates Before Review
+**Problem:** Claude over-extracts signals from rich transcripts. 110 candidates from 6 files
+is unworkable for manual review. The consultant should only see a pre-filtered set.
+
+**Design:**
+- After extraction, score each candidate against two criteria:
+  1. Deduplicate — if two candidates from different files have the same domain +
+     similar signal_name (fuzzy match or exact domain+observed_value), keep the
+     higher-confidence one and drop the duplicate
+  2. Filter by confidence — drop all Hypothesis signals by default; show count of
+     dropped signals so the consultant can opt back in if needed
+- Apply in `document_processor.py` after all files are processed, before writing
+  the merged candidate list to the frontend
+- Target output: 25–40 candidates regardless of input file count
+
+**UI addition:** Show "X Hypothesis signals hidden — show all" toggle above the review list.
+
+**Commit scope:** document_processor.py dedup logic + SignalPanel.jsx toggle
+
+---
+
 ### Enforce Pattern-to-Finding Mapping
 **Requirement:**
 - Every finding must reference 1+ patterns (Pxx)

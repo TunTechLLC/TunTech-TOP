@@ -72,6 +72,12 @@ async def detect_patterns(
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Pattern validation failed: {str(e)}")
 
+    # Normalize pattern IDs — Claude sometimes returns P1 instead of P01.
+    # P01-P09 need zero-padding; P10+ are already correct length.
+    for r in results:
+        if len(r.pattern_id) == 2 and r.pattern_id[0] == 'P' and r.pattern_id[1].isdigit():
+            r.pattern_id = 'P0' + r.pattern_id[1]
+
     library_ids = {p['pattern_id'] for p in pattern_repo.get_library()}
     invalid = [r.pattern_id for r in results if r.pattern_id not in library_ids]
     if invalid:
