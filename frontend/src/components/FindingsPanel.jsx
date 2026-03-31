@@ -273,16 +273,20 @@ export default function FindingsPanel({ engagementId }) {
                   <div className="flex-1 space-y-2">
 
                     {/* Title */}
-                    <input
-                      value={c.finding_title || ''}
-                      onChange={e => handleSynthCandidateChange(idx, 'finding_title', e.target.value)}
-                      className="w-full border border-gray-200 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-blue-400"
-                      placeholder="Finding title"
-                    />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">Finding title</div>
+                      <input
+                        value={c.finding_title || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'finding_title', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-blue-400"
+                        placeholder="Finding title"
+                      />
+                    </div>
 
                     {/* Domain + confidence */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-2">
+                        <div className="text-xs text-gray-500 mb-0.5">Domain</div>
                         <select
                           value={c.domain || 'Delivery Operations'}
                           onChange={e => handleSynthCandidateChange(idx, 'domain', e.target.value)}
@@ -291,70 +295,90 @@ export default function FindingsPanel({ engagementId }) {
                           {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                       </div>
-                      <select
-                        value={c.confidence || 'High'}
-                        onChange={e => handleSynthCandidateChange(idx, 'confidence', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                      >
-                        {FINDING_CONFIDENCES.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Confidence</div>
+                        <select
+                          value={c.confidence || 'High'}
+                          onChange={e => handleSynthCandidateChange(idx, 'confidence', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        >
+                          {FINDING_CONFIDENCES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Priority + effort + OPD section */}
                     <div className="grid grid-cols-3 gap-2">
-                      <select
-                        value={c.priority || 'High'}
-                        onChange={e => handleSynthCandidateChange(idx, 'priority', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                      >
-                        {PRIORITIES.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                      <select
-                        value={c.effort || 'Medium'}
-                        onChange={e => handleSynthCandidateChange(idx, 'effort', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                      >
-                        {EFFORTS.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                      <input
-                        value={c.opd_section || ''}
-                        onChange={e => handleSynthCandidateChange(idx, 'opd_section', parseInt(e.target.value, 10) || '')}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                        placeholder="OPD §1-8"
-                      />
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Priority</div>
+                        <select
+                          value={c.priority || 'High'}
+                          onChange={e => handleSynthCandidateChange(idx, 'priority', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        >
+                          {PRIORITIES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Effort</div>
+                        <select
+                          value={c.effort || 'Medium'}
+                          onChange={e => handleSynthCandidateChange(idx, 'effort', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        >
+                          {EFFORTS.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">OPD section (1–8)</div>
+                        <input
+                          value={c.opd_section || ''}
+                          onChange={e => handleSynthCandidateChange(idx, 'opd_section', parseInt(e.target.value, 10) || '')}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          placeholder="1–8"
+                        />
+                      </div>
                     </div>
 
                     {/* Impact fields */}
                     <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Operational impact</div>
+                        <textarea
+                          value={c.operational_impact || ''}
+                          onChange={e => handleSynthCandidateChange(idx, 'operational_impact', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Economic impact</div>
+                        <textarea
+                          value={c.economic_impact || ''}
+                          onChange={e => handleSynthCandidateChange(idx, 'economic_impact', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">Root cause</div>
                       <textarea
-                        value={c.operational_impact || ''}
-                        onChange={e => handleSynthCandidateChange(idx, 'operational_impact', e.target.value)}
+                        value={c.root_cause || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'root_cause', e.target.value)}
                         className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
                         rows={2}
-                        placeholder="Operational impact"
-                      />
-                      <textarea
-                        value={c.economic_impact || ''}
-                        onChange={e => handleSynthCandidateChange(idx, 'economic_impact', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                        rows={2}
-                        placeholder="Economic impact"
                       />
                     </div>
-                    <textarea
-                      value={c.root_cause || ''}
-                      onChange={e => handleSynthCandidateChange(idx, 'root_cause', e.target.value)}
-                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                      rows={2}
-                      placeholder="Root cause"
-                    />
-                    <textarea
-                      value={c.recommendation || ''}
-                      onChange={e => handleSynthCandidateChange(idx, 'recommendation', e.target.value)}
-                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                      rows={2}
-                      placeholder="Recommendation"
-                    />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">Recommendation</div>
+                      <textarea
+                        value={c.recommendation || ''}
+                        onChange={e => handleSynthCandidateChange(idx, 'recommendation', e.target.value)}
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        rows={2}
+                      />
+                    </div>
 
                     {/* Contributing patterns checklist */}
                     {acceptedPatterns.length > 0 && (
