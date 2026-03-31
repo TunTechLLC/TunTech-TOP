@@ -37,6 +37,8 @@ export default function AgentPanel({ engagementId }) {
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading agent runs...</div>
   if (error)   return <div className="p-6 text-red-600 text-sm">Error: {error}</div>
 
+  const anyRunning = Object.values(running).some(Boolean)
+
   const acceptedAgents = new Set(
     runs.filter(r => r.accepted === 1).map(r => r.agent_name)
   )
@@ -162,7 +164,8 @@ export default function AgentPanel({ engagementId }) {
                   {(!run || run.accepted === 1) && prereqsMet && !isRunning && (
                     <button
                       onClick={() => handleRun(agentName)}
-                      className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      disabled={anyRunning}
+                      className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {run ? 'Re-run' : 'Run'}
                     </button>
