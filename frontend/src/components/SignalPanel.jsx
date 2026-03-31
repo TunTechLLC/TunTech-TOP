@@ -34,12 +34,15 @@ export default function SignalPanel({ engagementId }) {
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [saving, setSaving]               = useState(false)
   const [saveError, setSaveError]         = useState(null)
-  const [processing, setProcessing]       = useState(false)
-  const [processResult, setProcessResult] = useState(null)
-  const [processError, setProcessError]   = useState(null)
-  const [candidates, setCandidates]       = useState([])
-  const [approved, setApproved]           = useState({})
-  const [loadingCands, setLoadingCands]   = useState(false)
+  const [processing, setProcessing]               = useState(false)
+  const [processResult, setProcessResult]         = useState(null)
+  const [processError, setProcessError]           = useState(null)
+  const [candidates, setCandidates]               = useState([])
+  const [hypothesisCandidates, setHypothesisCands] = useState([])
+  const [showHypothesis, setShowHypothesis]       = useState(false)
+  const [cullStats, setCullStats]                 = useState(null)
+  const [approved, setApproved]                   = useState({})
+  const [loadingCands, setLoadingCands]           = useState(false)
 
   const fetchData = () => {
     Promise.all([
@@ -86,23 +89,26 @@ export default function SignalPanel({ engagementId }) {
     setProcessError(null)
     setProcessResult(null)
     setCandidates([])
+    setHypothesisCands([])
+    setShowHypothesis(false)
+    setCullStats(null)
     try {
       const result = await api.signals.processFiles(engagementId)
       setProcessResult(result)
 
-      const validFiles = (result.files || []).filter(f => f.candidate_file && !f.error)
-      if (validFiles.length > 0) {
-        const responses = await Promise.all(
-          validFiles.map(f => api.signals.readCandidates(engagementId, f.candidate_file))
-        )
-        const merged = []
-        responses.forEach(data => {
-          const sourceFile = data.source_file || ''
-          ;(data.candidates || []).forEach(c => merged.push({ ...c, source_file: sourceFile }))
+      if (result.merged_candidate_file) {
+        const data = await api.signals.readCandidates(engagementId, result.merged_candidate_file)
+        const main = data.candidates || []
+        const hypo = data.hypothesis_candidates || []
+        setCandidates(main)
+        setHypothesisCands(hypo)
+        setCullStats({
+          dedupCount:      data.dedup_count       ?? result.dedup_count       ?? 0,
+          domainCapCount:  data.domain_cap_count  ?? result.domain_cap_count  ?? 0,
+          hypothesisCount: data.hypothesis_count  ?? result.hypothesis_count  ?? 0,
         })
-        setCandidates(merged)
         const allApproved = {}
-        merged.forEach(function(_, idx) { allApproved[idx] = true })
+        main.forEach(function(_, idx) { allApproved[idx] = true })
         setApproved(allApproved)
       }
     } catch (err) {
@@ -113,23 +119,32 @@ export default function SignalPanel({ engagementId }) {
   }
 
   const handleCandidateChange = (idx, field, value) => {
-    setCandidates(prev => prev.map((c, i) => i === idx ? Object.assign({}, c, { [field]: value }) : c))
+    if (idx < candidates.length) {
+      setCandidates(prev => prev.map((c, i) => i === idx ? Object.assign({}, c, { [field]: value }) : c))
+    } else {
+      const hypoIdx = idx - candidates.length
+      setHypothesisCands(prev => prev.map((c, i) => i === hypoIdx ? Object.assign({}, c, { [field]: value }) : c))
+    }
   }
 
   const handleApproveToggle = (idx) => {
     setApproved(prev => Object.assign({}, prev, { [idx]: !prev[idx] }))
   }
 
+  const displayCandidates = showHypothesis
+    ? [...candidates, ...hypothesisCandidates]
+    : candidates
+
   const handleApproveAll = () => {
     const all = {}
-    candidates.forEach(function(_, idx) { all[idx] = true })
+    displayCandidates.forEach(function(_, idx) { all[idx] = true })
     setApproved(all)
   }
 
   const handleApproveNone = () => setApproved({})
 
   const handleLoadCandidates = async () => {
-    const approvedList = candidates.filter((_, idx) => approved[idx])
+    const approvedList = displayCandidates.filter((_, idx) => approved[idx])
     if (approvedList.length === 0) {
       setProcessError('Select at least one signal to load.')
       return
@@ -139,7 +154,9 @@ export default function SignalPanel({ engagementId }) {
     try {
       await api.signals.loadCandidates(engagementId, { candidates: approvedList })
       setCandidates([])
+      setHypothesisCands([])
       setApproved({})
+      setCullStats(null)
       setProcessResult(null)
       fetchData()
     } catch (err) {
@@ -191,12 +208,12 @@ export default function SignalPanel({ engagementId }) {
         </div>
       )}
 
-      {candidates.length > 0 && (
+      {(candidates.length > 0 || cullStats) && (
         <div className="mb-6 border border-blue-200 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 bg-blue-50">
             <div>
               <span className="text-sm font-semibold text-blue-900">
-                {candidates.length} signal candidates
+                {displayCandidates.length} signal candidates
               </span>
               <span className="text-xs text-blue-600 ml-2">{approvedCount} selected</span>
             </div>
@@ -216,7 +233,7 @@ export default function SignalPanel({ engagementId }) {
                 {loadingCands ? 'Loading...' : 'Load ' + approvedCount + ' Signal(s)'}
               </button>
               <button
-                onClick={() => { setCandidates([]); setApproved({}) }}
+                onClick={() => { setCandidates([]); setHypothesisCands([]); setApproved({}); setCullStats(null) }}
                 className="text-xs text-gray-400 hover:text-gray-600"
               >
                 Discard
@@ -224,75 +241,100 @@ export default function SignalPanel({ engagementId }) {
             </div>
           </div>
 
+          {cullStats && (
+            <div className="px-4 py-2 bg-gray-50 border-b border-blue-100 flex items-center gap-4 text-xs text-gray-500">
+              <span>{cullStats.dedupCount} duplicate{cullStats.dedupCount !== 1 ? 's' : ''} removed</span>
+              <span className="text-gray-300">·</span>
+              <span>{cullStats.domainCapCount} capped by domain</span>
+              <span className="text-gray-300">·</span>
+              <span>
+                {cullStats.hypothesisCount} hypothesis signal{cullStats.hypothesisCount !== 1 ? 's' : ''} hidden
+                {cullStats.hypothesisCount > 0 && (
+                  <button
+                    onClick={() => setShowHypothesis(v => !v)}
+                    className="ml-2 text-blue-500 hover:text-blue-700 underline"
+                  >
+                    {showHypothesis ? 'Hide' : 'Show'}
+                  </button>
+                )}
+              </span>
+            </div>
+          )}
+
           <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-            {candidates.map((c, idx) => (
-              <div
-                key={idx}
-                className={'p-3 transition-colors ' + (approved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}
-              >
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={approved[idx] || false}
-                    onChange={() => handleApproveToggle(idx)}
-                    className="mt-1 shrink-0"
-                  />
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    {c.source_file && (
-                      <div className="col-span-2 text-xs text-gray-400 font-mono -mb-1">
-                        {c.source_file}
+            {displayCandidates.map((c, idx) => (
+              <div key={idx}>
+                {showHypothesis && idx === candidates.length && (
+                  <div className="px-4 py-2 bg-gray-100 border-y border-gray-200 flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500">Hypothesis signals</span>
+                    <span className="text-xs text-gray-400">— not selected by default</span>
+                  </div>
+                )}
+                <div className={'p-3 transition-colors ' + (approved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={approved[idx] || false}
+                      onChange={() => handleApproveToggle(idx)}
+                      className="mt-1 shrink-0"
+                    />
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      {c.source_file && (
+                        <div className="col-span-2 text-xs text-gray-400 font-mono -mb-1">
+                          {c.source_file}
+                        </div>
+                      )}
+                      <div className="col-span-2">
+                        <input
+                          value={c.signal_name || ''}
+                          onChange={e => handleCandidateChange(idx, 'signal_name', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:border-blue-400"
+                          placeholder="Signal name"
+                        />
                       </div>
-                    )}
-                    <div className="col-span-2">
-                      <input
-                        value={c.signal_name || ''}
-                        onChange={e => handleCandidateChange(idx, 'signal_name', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:border-blue-400"
-                        placeholder="Signal name"
-                      />
-                    </div>
-                    <div>
-                      <select
-                        value={c.domain || 'Delivery Operations'}
-                        onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
-                        className={sel}
-                      >
-                        {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <select
-                        value={c.signal_confidence || 'Medium'}
-                        onChange={e => handleCandidateChange(idx, 'signal_confidence', e.target.value)}
-                        className={sel}
-                      >
-                        {CONFIDENCE_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <input
-                        value={c.observed_value || ''}
-                        onChange={e => handleCandidateChange(idx, 'observed_value', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                        placeholder="Observed value"
-                      />
-                    </div>
-                    <div>
-                      <input
-                        value={c.normalized_band || ''}
-                        onChange={e => handleCandidateChange(idx, 'normalized_band', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                        placeholder="Normalized band"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <textarea
-                        value={c.notes || ''}
-                        onChange={e => handleCandidateChange(idx, 'notes', e.target.value)}
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-                        rows={2}
-                        placeholder="Supporting quote and notes"
-                      />
+                      <div>
+                        <select
+                          value={c.domain || 'Delivery Operations'}
+                          onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
+                          className={sel}
+                        >
+                          {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <select
+                          value={c.signal_confidence || 'Medium'}
+                          onChange={e => handleCandidateChange(idx, 'signal_confidence', e.target.value)}
+                          className={sel}
+                        >
+                          {CONFIDENCE_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <input
+                          value={c.observed_value || ''}
+                          onChange={e => handleCandidateChange(idx, 'observed_value', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          placeholder="Observed value"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          value={c.normalized_band || ''}
+                          onChange={e => handleCandidateChange(idx, 'normalized_band', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          placeholder="Normalized band"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <textarea
+                          value={c.notes || ''}
+                          onChange={e => handleCandidateChange(idx, 'notes', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                          rows={2}
+                          placeholder="Supporting quote and notes"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

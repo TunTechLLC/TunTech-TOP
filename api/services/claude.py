@@ -151,8 +151,9 @@ SIGNAL_EXTRACTION_PROMPT = """You are analyzing an interview transcript from a c
 
 Extract signals that are directly supported by evidence in the transcript. A signal is a specific, observable indicator of operational health or dysfunction.
 
-Extract between 5 and 25 signals per transcript. Only include signals where the evidence
-is clear and specific. Do not extract speculative signals to reach a minimum count.
+Extract between 5 and 10 signals per transcript. If you identify more than 10, keep only
+the 10 most operationally significant. Only include signals where the evidence is clear
+and specific. Do not extract speculative signals to reach a minimum count.
 Do not over-extract weak inferences from thin evidence.
 
 Each item must have exactly these fields:

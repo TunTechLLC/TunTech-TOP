@@ -33,6 +33,7 @@ Each item must have exactly these fields:
 - notes: string — include the specific data point from the document that supports this signal
 
 Only extract signals with direct document evidence.
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
 
 CRITICAL OUTPUT FORMAT:
 Your response must begin with the character [ and end with the character ]
@@ -62,6 +63,8 @@ Each item must have exactly these fields:
 - economic_relevance: string
 - notes: string — include the specific data point from the document
 
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+
 CRITICAL OUTPUT FORMAT:
 Your response must begin with the character [ and end with the character ]
 Do not include any text, explanation, or markdown before or after the JSON array
@@ -90,6 +93,8 @@ Each item must have exactly these fields:
 - economic_relevance: string
 - notes: string — include the specific language from the SOW that supports this signal
 
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+
 CRITICAL OUTPUT FORMAT:
 Your response must begin with the character [ and end with the character ]
 Do not include any text, explanation, or markdown before or after the JSON array
@@ -115,6 +120,7 @@ Budget overruns with specific percentages are High confidence Consulting Economi
 
 Return only signals that are clearly observable in the document. Do not infer signals
 that are not supported by specific text.
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
 
 Each item must have exactly these fields:
 - signal_name: string — short descriptive name (e.g., "Multiple projects Red status")
@@ -148,6 +154,7 @@ Specific numbers are high-value signals. A utilization rate of 71% against a 78%
 is a High confidence Resource Management signal. Extract it with the exact numbers as observed_value.
 
 Return only signals that are clearly observable in the document.
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
 
 Each item must have exactly these fields:
 - signal_name: string — short descriptive name
@@ -315,7 +322,51 @@ async def process_file(file_info: dict, engagement_id: str,
         'file_type':       file_type,
         'candidate_count': len(cleaned),
         'candidate_file':  candidate_file,
+        'candidates':      cleaned,
     }
+
+
+def _apply_domain_cap(candidates: list[dict], cap: int = 5) -> tuple[list[dict], int]:
+    """Cap candidates per domain, keeping highest-confidence entries first.
+    Confidence order: High > Medium > Hypothesis.
+    Returns (capped_list, count_removed)."""
+    CONFIDENCE_RANK = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+    by_domain: dict[str, list[dict]] = {}
+    for c in candidates:
+        domain = c.get('domain', '')
+        by_domain.setdefault(domain, []).append(c)
+    capped = []
+    for domain_candidates in by_domain.values():
+        sorted_dc = sorted(
+            domain_candidates,
+            key=lambda c: CONFIDENCE_RANK.get(c.get('signal_confidence', ''), 0),
+            reverse=True,
+        )
+        capped.extend(sorted_dc[:cap])
+    return capped, len(candidates) - len(capped)
+
+
+def _deduplicate_candidates(candidates: list[dict]) -> tuple[list[dict], int]:
+    """Deduplicate candidates by (domain, normalized signal_name).
+    When two candidates share the same domain and signal name (case-insensitive,
+    stripped), keep the higher-confidence one (High > Medium > Hypothesis).
+    Returns (deduped_list, count_removed)."""
+    CONFIDENCE_RANK = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+    seen: dict[tuple, dict] = {}
+    for candidate in candidates:
+        key = (
+            candidate.get('domain', ''),
+            candidate.get('signal_name', '').lower().strip(),
+        )
+        if key not in seen:
+            seen[key] = candidate
+        else:
+            existing_rank = CONFIDENCE_RANK.get(seen[key].get('signal_confidence', ''), 0)
+            incoming_rank = CONFIDENCE_RANK.get(candidate.get('signal_confidence', ''), 0)
+            if incoming_rank > existing_rank:
+                seen[key] = candidate
+    deduped = list(seen.values())
+    return deduped, len(candidates) - len(deduped)
 
 
 async def process_engagement_files(engagement_id: str,
@@ -323,13 +374,15 @@ async def process_engagement_files(engagement_id: str,
                                    documents_folder: str,
                                    candidates_folder: str) -> dict:
     """Main entry point — scan both folders, process all unprocessed files.
-    Returns summary of what was processed including all candidate file paths."""
+    Returns summary of what was processed including merged candidate file path
+    and cull counts (dedup_count, hypothesis_count)."""
     all_files = []
     all_files.extend(scan_folder(interviews_folder, engagement_id))
     all_files.extend(scan_folder(documents_folder, engagement_id))
 
     if not all_files:
-        return {'files_processed': 0, 'total_candidates': 0, 'files': []}
+        return {'files_processed': 0, 'total_candidates': 0, 'files': [],
+                'merged_candidate_file': None, 'dedup_count': 0, 'hypothesis_count': 0}
 
     pf_repo = ProcessedFilesRepository()
     results = []
@@ -351,11 +404,52 @@ async def process_engagement_files(engagement_id: str,
                 'file_name':       file_info['name'],
                 'error':           str(e),
                 'candidate_count': 0,
+                'candidates':      [],
             })
+
+    # Collect all candidates from all files, annotating each with its source file
+    all_candidates = []
+    for result in results:
+        source_file = result.get('file_name', '')
+        for c in result.get('candidates', []):
+            all_candidates.append({**c, 'source_file': source_file})
+
+    # Deduplicate across files
+    deduped, dedup_count = _deduplicate_candidates(all_candidates)
+
+    # Per-domain cap: keep top 5 per domain by confidence
+    capped, domain_cap_count = _apply_domain_cap(deduped, cap=5)
+
+    # Separate High/Medium from Hypothesis
+    main_candidates = [c for c in capped if c.get('signal_confidence') != 'Hypothesis']
+    hypothesis_candidates = [c for c in capped if c.get('signal_confidence') == 'Hypothesis']
+    hypothesis_count = len(hypothesis_candidates)
+
+    # Write merged candidate file
+    merged_file = os.path.join(candidates_folder, f"{engagement_id}_merged_candidates.json")
+    with open(merged_file, 'w', encoding='utf-8') as f:
+        json.dump({
+            'engagement_id':         engagement_id,
+            'candidates':            main_candidates,
+            'hypothesis_candidates': hypothesis_candidates,
+            'dedup_count':           dedup_count,
+            'domain_cap_count':      domain_cap_count,
+            'hypothesis_count':      hypothesis_count,
+        }, f, indent=2)
+
+    logger.info(
+        f"Merged candidates for {engagement_id}: "
+        f"{len(main_candidates)} main, {hypothesis_count} hypothesis, "
+        f"{dedup_count} duplicates removed, {domain_cap_count} removed by domain cap"
+    )
 
     total_candidates = sum(r.get('candidate_count', 0) for r in results)
     return {
-        'files_processed':  len(results),
-        'total_candidates': total_candidates,
-        'files':            results,
+        'files_processed':       len(results),
+        'total_candidates':      total_candidates,
+        'files':                 results,
+        'merged_candidate_file': merged_file,
+        'dedup_count':           dedup_count,
+        'domain_cap_count':      domain_cap_count,
+        'hypothesis_count':      hypothesis_count,
     }
