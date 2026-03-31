@@ -52,3 +52,32 @@ def create_roadmap_item(
     if not item:
         raise HTTPException(status_code=500, detail="Roadmap item created but could not be retrieved")
     return item
+
+
+@router.patch("/{engagement_id}/roadmap/{item_id}")
+def update_roadmap_item(
+    engagement_id: str,
+    item_id:       str,
+    data:          dict,
+    repo:          RoadmapRepository = Depends(get_repo)
+):
+    """Update a roadmap item."""
+    items = repo.get_all(engagement_id)
+    if not any(i['item_id'] == item_id for i in items):
+        raise HTTPException(status_code=404, detail="Roadmap item not found")
+    repo.update(item_id, engagement_id, data)
+    items = repo.get_all(engagement_id)
+    return next(i for i in items if i['item_id'] == item_id)
+
+
+@router.delete("/{engagement_id}/roadmap/{item_id}", status_code=204)
+def delete_roadmap_item(
+    engagement_id: str,
+    item_id:       str,
+    repo:          RoadmapRepository = Depends(get_repo)
+):
+    """Delete a roadmap item."""
+    items = repo.get_all(engagement_id)
+    if not any(i['item_id'] == item_id for i in items):
+        raise HTTPException(status_code=404, detail="Roadmap item not found")
+    repo.delete(item_id, engagement_id)

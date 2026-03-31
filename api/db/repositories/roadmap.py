@@ -56,6 +56,28 @@ INSERT_ROADMAP_ITEM = """
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
+UPDATE_ROADMAP_ITEM = """
+    UPDATE RoadmapItems
+    SET    initiative_name  = ?,
+           domain           = ?,
+           phase            = ?,
+           priority         = ?,
+           effort           = ?,
+           estimated_impact = ?,
+           owner            = ?,
+           target_date      = ?,
+           status           = ?,
+           finding_id       = ?
+    WHERE  item_id = ?
+    AND    engagement_id = ?
+"""
+
+DELETE_ROADMAP_ITEM = """
+    DELETE FROM RoadmapItems
+    WHERE  item_id = ?
+    AND    engagement_id = ?
+"""
+
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -106,3 +128,26 @@ class RoadmapRepository(BaseRepository):
         ))
 
         return item_id
+
+    def update(self, item_id: str, engagement_id: str, data: dict) -> None:
+        """Update a roadmap item. All fields overwritten from data."""
+        logger.info(f"Updating roadmap item: {item_id}")
+        self._write(UPDATE_ROADMAP_ITEM, (
+            data['initiative_name'],
+            data['domain'],
+            data['phase'],
+            data.get('priority', 'Medium'),
+            data.get('effort', 'Medium'),
+            data.get('estimated_impact', ''),
+            data.get('owner', ''),
+            data.get('target_date'),
+            data.get('status', 'Proposed'),
+            data.get('finding_id') or None,
+            item_id,
+            engagement_id,
+        ))
+
+    def delete(self, item_id: str, engagement_id: str) -> None:
+        """Delete a roadmap item."""
+        logger.info(f"Deleting roadmap item: {item_id}")
+        self._write(DELETE_ROADMAP_ITEM, (item_id, engagement_id))

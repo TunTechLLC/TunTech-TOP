@@ -34,10 +34,15 @@ export default function RoadmapPanel({ engagementId }) {
   const [findings, setFindings]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
-  const [showForm, setShowForm]   = useState(false)
-  const [form, setForm]           = useState(EMPTY_FORM)
-  const [saving, setSaving]       = useState(false)
-  const [saveError, setSaveError] = useState(null)
+  const [showForm, setShowForm]         = useState(false)
+  const [form, setForm]                 = useState(EMPTY_FORM)
+  const [saving, setSaving]             = useState(false)
+  const [saveError, setSaveError]       = useState(null)
+  const [editingId, setEditingId]       = useState(null)
+  const [editForm, setEditForm]         = useState(EMPTY_FORM)
+  const [editSaving, setEditSaving]     = useState(false)
+  const [editError, setEditError]       = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const fetchData = () => {
     Promise.all([
@@ -77,6 +82,58 @@ export default function RoadmapPanel({ engagementId }) {
       setSaveError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleEditOpen = (item) => {
+    setEditingId(item.item_id)
+    setEditForm({
+      initiative_name:  item.initiative_name  || '',
+      domain:           item.domain           || 'Delivery Operations',
+      phase:            item.phase            || 'Stabilize',
+      priority:         item.priority         || 'High',
+      effort:           item.effort           || 'Medium',
+      estimated_impact: item.estimated_impact || '',
+      finding_id:       item.finding_id       || '',
+      owner:            item.owner            || '',
+      target_date:      item.target_date      || '',
+      status:           item.status           || 'Proposed',
+    })
+    setEditError(null)
+  }
+
+  const handleEditChange = (e) => {
+    setEditForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const handleEditSave = async (itemId) => {
+    if (!editForm.initiative_name) {
+      setEditError('Initiative name is required.')
+      return
+    }
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      await api.roadmap.update(engagementId, itemId, {
+        ...editForm,
+        finding_id: editForm.finding_id || null,
+      })
+      setEditingId(null)
+      fetchData()
+    } catch (err) {
+      setEditError(err.message)
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const handleDelete = async (itemId) => {
+    try {
+      await api.roadmap.delete(engagementId, itemId)
+      setConfirmDeleteId(null)
+      fetchData()
+    } catch (err) {
+      setEditError(err.message)
     }
   }
 
@@ -235,31 +292,155 @@ export default function RoadmapPanel({ engagementId }) {
                 {phaseItems.map(item => (
                   <div
                     key={item.item_id}
-                    className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors"
+                    className="border border-gray-200 rounded-lg bg-white overflow-hidden"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[item.priority] || 'bg-gray-100'}`}>
-                            {item.priority}
-                          </span>
-                          <span className="text-xs text-gray-400">{item.domain}</span>
+                    {editingId === item.item_id ? (
+                      /* ── Inline edit form ── */
+                      <div className="p-4 bg-blue-50 border-b border-blue-200">
+                        {editError && (
+                          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                            {editError}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Initiative name *</label>
+                            <input name="initiative_name" value={editForm.initiative_name} onChange={handleEditChange} className={inp} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Domain</label>
+                            <select name="domain" value={editForm.domain} onChange={handleEditChange} className={sel}>
+                              {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Phase</label>
+                            <select name="phase" value={editForm.phase} onChange={handleEditChange} className={sel}>
+                              {PHASES.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                            <select name="priority" value={editForm.priority} onChange={handleEditChange} className={sel}>
+                              {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Effort</label>
+                            <select name="effort" value={editForm.effort} onChange={handleEditChange} className={sel}>
+                              {EFFORTS.map(e => <option key={e} value={e}>{e}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                            <select name="status" value={editForm.status} onChange={handleEditChange} className={sel}>
+                              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Target date</label>
+                            <input name="target_date" value={editForm.target_date} onChange={handleEditChange} className={inp} placeholder="e.g. 2026-06-30" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Owner</label>
+                            <input name="owner" value={editForm.owner} onChange={handleEditChange} className={inp} />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Linked finding</label>
+                            <select name="finding_id" value={editForm.finding_id} onChange={handleEditChange} className={sel}>
+                              <option value="">— none —</option>
+                              {findings.map(f => (
+                                <option key={f.finding_id} value={f.finding_id}>
+                                  {f.finding_id} — {f.finding_title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Estimated impact</label>
+                            <input name="estimated_impact" value={editForm.estimated_impact} onChange={handleEditChange} className={inp} />
+                          </div>
                         </div>
-                        <p className="font-medium text-gray-900 text-sm">{item.initiative_name}</p>
-                        {item.estimated_impact && (
-                          <p className="text-xs text-gray-500 mt-1">{item.estimated_impact}</p>
-                        )}
-                        {item.finding_title && (
-                          <p className="text-xs text-blue-600 mt-1">Finding: {item.finding_title}</p>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => { setEditingId(null); setEditError(null) }}
+                            className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded text-xs hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleEditSave(item.item_id)}
+                            disabled={editSaving}
+                            className="px-4 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {editSaving ? 'Saving...' : 'Save Changes'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-right text-xs text-gray-400 whitespace-nowrap">
-                        {item.owner && <div className="font-medium text-gray-600">{item.owner}</div>}
-                        {item.target_date && <div>{item.target_date}</div>}
-                        <div className="mt-1">{item.effort} effort</div>
-                        <div className="mt-1">{item.status}</div>
+                    ) : (
+                      /* ── Read-only row ── */
+                      <div className="p-4 hover:border-gray-300 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[item.priority] || 'bg-gray-100'}`}>
+                                {item.priority}
+                              </span>
+                              <span className="text-xs text-gray-400">{item.domain}</span>
+                            </div>
+                            <p className="font-medium text-gray-900 text-sm">{item.initiative_name}</p>
+                            {item.estimated_impact && (
+                              <p className="text-xs text-gray-500 mt-1">{item.estimated_impact}</p>
+                            )}
+                            {item.finding_title && (
+                              <p className="text-xs text-blue-600 mt-1">Finding: {item.finding_title}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="text-right text-xs text-gray-400 whitespace-nowrap">
+                              {item.owner && <div className="font-medium text-gray-600">{item.owner}</div>}
+                              {item.target_date && <div>{item.target_date}</div>}
+                              <div className="mt-1">{item.effort} effort</div>
+                              <div className="mt-1">{item.status}</div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              {confirmDeleteId === item.item_id ? (
+                                <>
+                                  <span className="text-xs text-red-600">Delete?</span>
+                                  <button
+                                    onClick={() => handleDelete(item.item_id)}
+                                    className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    className="text-xs px-2 py-0.5 border border-gray-300 text-gray-600 rounded hover:bg-gray-50"
+                                  >
+                                    No
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleEditOpen(item)}
+                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteId(item.item_id)}
+                                    className="text-xs text-red-400 hover:text-red-600"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>

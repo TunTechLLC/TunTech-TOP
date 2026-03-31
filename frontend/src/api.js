@@ -74,8 +74,11 @@ export const api = {
                                           { method: 'POST' }).then(handle),
   },
   roadmap: {
-    list:   (id)       => fetch(`${BASE}/engagements/${id}/roadmap`).then(handle),
-    create: (id, data) => fetch(`${BASE}/engagements/${id}/roadmap`, json(data)).then(handle),
+    list:   (id)            => fetch(`${BASE}/engagements/${id}/roadmap`).then(handle),
+    create: (id, data)      => fetch(`${BASE}/engagements/${id}/roadmap`, json(data)).then(handle),
+    update: (id, iid, data) => fetch(`${BASE}/engagements/${id}/roadmap/${iid}`, patch(data)).then(handle),
+    delete: (id, iid)       => fetch(`${BASE}/engagements/${id}/roadmap/${iid}`,
+                                 { method: 'DELETE' }).then(res => { if (!res.ok) throw new Error(res.statusText) }),
   },
   knowledge: {
     list:   (id)       => fetch(`${BASE}/engagements/${id}/knowledge`).then(handle),
