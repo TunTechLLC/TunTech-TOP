@@ -6,6 +6,9 @@ from datetime import date
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+from docx.shared import Inches
 
 from api.db.repositories.engagement import EngagementRepository
 from api.db.repositories.finding import FindingRepository
@@ -17,6 +20,26 @@ from api.services.claude import generate_report_narrative
 logger = logging.getLogger(__name__)
 
 PRIORITY_ORDER = {'High': 0, 'Medium': 1, 'Low': 2}
+
+_TEMPLATE = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'roadmap_template.docx')
+
+
+def _shade_cell(cell, hex_color: str):
+    """Apply a solid background fill to a table cell. hex_color e.g. 'D9D9D9'."""
+    tc   = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    shd  = OxmlElement('w:shd')
+    shd.set(qn('w:val'),   'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'),  hex_color)
+    tcPr.append(shd)
+
+
+def _set_col_widths(table, widths_inches: list):
+    """Set explicit column widths. widths_inches must match table column count."""
+    for col_idx, width in enumerate(widths_inches):
+        for cell in table.columns[col_idx].cells:
+            cell.width = Inches(width)
 
 
 class ReportGeneratorService:
@@ -56,7 +79,11 @@ class ReportGeneratorService:
 
         narrative = await generate_report_narrative(synth_output, findings, roadmap, eng)
 
-        doc = Document()
+        if os.path.exists(_TEMPLATE):
+            doc = Document(_TEMPLATE)
+        else:
+            logger.warning(f"Template not found at {_TEMPLATE} — using default styles")
+            doc = Document()
         self._build(doc, eng, findings, roadmap, signals, narrative)
 
         file_path = self._output_path(eng)
@@ -88,7 +115,7 @@ class ReportGeneratorService:
         firm_name = eng.get('firm_name') or self.engagement_id
 
         # Cover line
-        doc.add_heading('OPD Transformation Roadmap', 0)
+        doc.add_heading('OPD Transformation Roadmap', level=1)
         sub = doc.add_paragraph(
             f"{firm_name}  |  {date.today().strftime('%B %Y')}"
         )
@@ -217,7 +244,9 @@ class ReportGeneratorService:
             row = table.add_row()
             row.cells[0].text = key
             row.cells[0].paragraphs[0].runs[0].bold = True
+            _shade_cell(row.cells[0], 'F2F2F2')
             row.cells[1].text = value
+        _set_col_widths(table, [1.6, 4.9])
 
     def _signal_table(self, doc, signals: list):
         """Domain summary: domain, total signals, counts by confidence."""
@@ -239,6 +268,8 @@ class ReportGeneratorService:
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [2.5, 0.7, 0.7, 0.8, 0.8])
 
         for domain in sorted(counts):
             c = counts[domain]
@@ -302,6 +333,8 @@ class ReportGeneratorService:
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [2.5, 1.3, 0.7, 0.7, 1.3])
 
         for item in items:
             row = table.add_row()
