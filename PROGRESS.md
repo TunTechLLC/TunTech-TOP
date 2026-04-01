@@ -9,9 +9,9 @@
 **Phase A (Backend):** ✅ Complete — Checkpoint 1 passed
 **Phase B (Frontend):** ✅ Complete — Checkpoint 3 passed 2026-03-30
 
-**Where we are:** Checkpoint 3 complete. Full end-to-end diagnostic run verified with
-E003 Vantage Point Consulting. All Phase 2 features validated. Next work is BACKLOG.md
-post-Checkpoint 3 items.
+**Where we are:** Post-Checkpoint 3 backlog work in progress. Report Narrator and
+Synthesizer-to-Roadmap Parser complete and validated. Word report template wired in —
+formatting issues remain (see next steps below).
 
 ---
 
@@ -28,6 +28,9 @@ post-Checkpoint 3 items.
 | 8 Ext 1 | File processing and signal extraction | ✅ Complete and verified |
 | 8 Ext 1 Cleanup | Multi-file review fix (source_file label, parallel fetch) | ✅ |
 | 8 Ext 2 | Synthesizer-to-Findings parser | ✅ Complete and verified |
+| Backlog | Report Narrator — narrative prose layer for OPD report | ✅ Complete and validated (E002, E003) |
+| Backlog | Synthesizer-to-Roadmap Parser — detect-review-load for roadmap items | ✅ Complete and validated (E002) |
+| Backlog | Word report template — custom .docx, table column widths, header shading | 🔄 In progress — template wired, formatting issues remain |
 | 9 | Cross-engagement report screen | ✅ Complete and verified |
 | 10 | Word report download | ✅ Complete and verified |
 
@@ -35,9 +38,24 @@ post-Checkpoint 3 items.
 
 ## Next Steps (in order)
 
-### NEXT: Step 9 — Cross-Engagement Report Screen
+### NEXT: Word Report Template Cleanup — Resolve Remaining Formatting Issues
 
-*(Step 8 Extension 1 Cleanup — File Type Expansion is queued after Step 9 — see below)*
+The template is wired in (`assets/roadmap_template.docx`) and generates without errors.
+Formatting issues were observed but not fully catalogued before the session ended.
+
+**Next session procedure:**
+1. Generate report for E002 or E003
+2. Open the Word doc and catalogue every formatting issue (list them explicitly)
+3. Fix each one — likely candidates: table style conflicts with template, column widths
+   need adjustment, heading spacing, cover page layout
+4. Test `validate_template.py` still passes after any template changes
+5. Commit when the document looks clean
+
+**After template cleanup:** Replace Report Download with Save-and-Show-Path (BACKLOG.md)
+
+---
+
+### NEXT (previously):
 
 ---
 
