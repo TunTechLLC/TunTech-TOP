@@ -107,6 +107,96 @@ is unworkable for manual review. The consultant should only see a pre-filtered s
 
 ---
 
+### Report Narrator — Narrative Layer for the OPD Report
+**Problem:** The current report generator produces a diagnostic database formatted as a
+Word document — structured tables and bullet lists assembled from field values. The output
+is factually accurate but reads like a database printout, not a consulting deliverable.
+A senior consultant would need hours to transform it into something presentable to a CEO.
+
+**Design:** Add a Report Narrator agent that runs before `report_generator.py` assembles
+the Word document. The Narrator receives the full Synthesizer output plus all accepted
+findings and roadmap data, and writes the narrative prose sections of the report. The
+structured tables stay exactly as they are — generated from structured data. The Narrator
+writes the connective tissue around them.
+
+**Quality target:** The output should be 80% ready to send after 30–60 minutes of
+consultant review and polish. Mark-up quality, not rewrite quality.
+
+**Inputs to the Narrator:**
+- Full accepted Synthesizer output (primary narrative input — this is the story)
+- All accepted findings with structured fields (grounding — these are the facts)
+- Roadmap items grouped by phase (sequencing — these are the actions)
+- Engagement record (context — firm name, stated problem, client hypothesis)
+
+**Narrator-generated sections:**
+- Section 1: Executive Summary — 4–5 paragraphs of prose. Lead with the finding, not
+  background. Paragraph 1: strategic situation. Paragraph 2: client hypothesis vs
+  diagnostic reality. Paragraph 3: economic stakes. Paragraph 4: Priority Zero items
+  and sequencing. Paragraph 5: what successful execution positions the firm to achieve.
+- Section 4: Domain Analysis — each domain opens with a 2–3 sentence narrative paragraph
+  before the finding table. After the table, 2–3 sentences connecting this domain's
+  findings to other domains.
+- Section 5: Root Cause Analysis — connected prose narrative, not a bullet list of
+  repeated finding titles. Show the causal chain across findings.
+- Section 6: Economic Impact — a summary table of all confirmed and inferred figures
+  plus 3–4 sentences of narrative connecting the numbers to business stakes.
+- Section 7: Improvement Opportunities — a short narrative paragraph per finding
+  explaining the recommendation in context, not just the recommendation field repeated.
+- Section 8: Transformation Roadmap — a brief rationale paragraph before each phase
+  table explaining why these items are sequenced this way.
+
+**Sections that stay as structured data (no Narrator):**
+- Section 2: Engagement Overview — auto-generated table from engagement record
+- Section 3: Operational Maturity Overview — auto-generated signal domain summary table
+- Roadmap tables within Section 8 — auto-generated from RoadmapItems
+
+**Writing rules for the REPORT_NARRATOR_PROMPT:**
+- Write as a senior consultant, not as an AI summarizing data
+- Lead with the most important insight, not with background
+- Use specific numbers and signal references — do not generalize
+- Use CONFIRMED/INFERRED notation on all dollar figures exactly as they appear in source
+- Balance prose with structure — tables where data is tabular, prose where analysis is narrative
+- Do not repeat the same content across sections
+- Do not hedge excessively — state conclusions clearly where evidence supports them
+- Tone: direct, evidence-grounded, written for a CEO audience
+
+**Quality reference — example Executive Summary opening paragraph (target quality):**
+"Vantage Point Consulting is experiencing a structural profitability crisis that is
+accelerating. Gross margin has declined from 33.1% in FY2023 to 27.8% in Q1 2026 —
+a three-year directional trend, not a cyclical dip — while EBITDA has compressed from
+11.2% to 7.6% over the same period. At the current trajectory, annualized EBITDA falls
+below $300,000 INFERRED, which constrains the firm's ability to reinvest, absorb delivery
+failures, or sustain the talent required to stop the decline."
+
+Key characteristics of target quality: leads with the finding not the background, uses
+specific confirmed figures, states the business consequence clearly, no hedging.
+
+**Implementation:**
+- New prompt: `REPORT_NARRATOR_PROMPT` in `api/services/claude.py`
+- New async function: `generate_report_narrative(engagement_id)` in `claude.py`
+  - Assembles Synthesizer output + all findings + roadmap items + engagement context
+  - Calls Claude with REPORT_NARRATOR_PROMPT
+  - Returns structured dict with keys for each narrator-generated section
+- Update `ReportGeneratorService.generate()` in `api/services/report_generator.py`
+  - Call `generate_report_narrative()` first
+  - Use returned narrative sections as prose content in the document
+  - Weave narrative paragraphs before/after structured tables in each section
+- No new endpoints, no database changes, no frontend changes
+
+**Test procedure:**
+1. Run against E001 Meridian — it has accepted Synthesizer, findings, and roadmap
+2. Download the report
+3. Read Section 1 — should be 4–5 paragraphs of prose that tell the story, not a placeholder
+4. Read one Domain Analysis section — should open with a narrative paragraph before the table
+5. Check that CONFIRMED/INFERRED notation is preserved from the Synthesizer output
+6. Assess: would you mark this up or rewrite it? Target is mark-up quality.
+7. Run against E003 to validate across a different engagement profile
+
+**Prompt refinement:** Expect 2–3 iterations on REPORT_NARRATOR_PROMPT before quality
+is consistently at the mark-up threshold. This is normal — prompt quality is the variable.
+
+---
+
 ### Enforce Pattern-to-Finding Mapping
 **Requirement:**
 - Every finding must reference 1+ patterns (Pxx)
@@ -115,7 +205,8 @@ is unworkable for manual review. The consultant should only see a pre-filtered s
 
 **Rules:**
 - No orphan findings — must map to at least one pattern
-- If multiple patterns, they must share a common root cause OR be explicitly grouped under a single control point
+- If multiple patterns, they must share a common root cause OR be explicitly grouped
+  under a single control point
 
 **Output (internal, not UI yet):**
 ```
@@ -128,6 +219,8 @@ Economic Models: Delivery Overrun Loss, Delay / Start Lag
 **Implementation:**
 - Require at least one `contributing_ep_id` when creating a finding (currently optional)
 - Store the inherited economic model types from contributing patterns on the finding record
+
+---
 
 ### Standardize Economic Output Generation
 This is the most consequential system improvement. Every number in the report becomes
@@ -162,6 +255,8 @@ Range Logic:
 
 Build after the pattern-to-finding mapping is enforced.
 
+---
+
 ### Lightweight Evidence Summary on Findings
 Keep this simple. Do not over-engineer.
 
@@ -176,12 +271,16 @@ Supported by P06, P08, P10 across sales-to-delivery transition;
 - Must include: pattern IDs, signal count (optional but strong), confirmation mix if available
 - This becomes straightforward once pattern-to-finding mapping is enforced
 
+---
+
 ### Synthesizer-to-Roadmap Parser
 Same detect-review-load pattern as the findings parser (Step 8 Extension 2).
 Auto-generate roadmap items from accepted Synthesizer output.
 Build after findings parser is validated in Checkpoint 3.
 The Synthesizer output contains roadmap suggestions but they are less structured than
 the findings section — parsing is harder and should be validated separately.
+
+---
 
 ### PDF Processing
 `document_processor.py` currently only handles `.txt` files.
@@ -190,6 +289,8 @@ Real client documents are PDFs.
 **Where conversion happens:** `document_processor.py` — detect `.pdf` extension,
 convert to text automatically before sending to Claude. No change to the rest of the pipeline.
 Install: `pip install pymupdf`
+
+---
 
 ### Candidate File Cleanup (Archive After Loading)
 Candidate JSON files accumulate in the candidates folder indefinitely.
@@ -200,11 +301,15 @@ what was approved, what notes were attached.
 call `shutil.move(candidate_file_path, candidates_folder/processed/)`.
 One line of Python.
 
+---
+
 ### Reprocess Button
 Currently must delete from ProcessedFiles table in DB Browser to reprocess a file.
 Add a Reprocess button to SignalPanel that clears the specific file hash from
 ProcessedFiles table through the browser.
 **New endpoint needed:** `DELETE /{engagement_id}/signals/processed-files/{file_hash}`
+
+---
 
 ### Engagement Header Count Refresh
 Signal/pattern/finding counts in the EngagementDetail header do not refresh after
@@ -213,11 +318,14 @@ write operations. Requires F5 page refresh to update.
 When a panel writes data (loads signals, loads patterns, creates finding), it calls
 the refresh callback which re-fetches the engagement header data.
 
+---
+
 ### Word Report Template Cleanup
 The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
 Needs visual polish before client delivery: column widths, font sizing, header row shading,
 consistent spacing. Consider a custom document template (`.dotx`) as the base for `Document()`.
-Not blocking — the content is correct and readable.
+Not blocking — the content is correct and readable. Build after Report Narrator is validated —
+the template cleanup and the narrative layer are separate concerns.
 
 ---
 
