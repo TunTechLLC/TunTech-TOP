@@ -32,6 +32,7 @@ const EMPTY_FORM = {
 export default function RoadmapPanel({ engagementId }) {
   const [items, setItems]         = useState([])
   const [findings, setFindings]   = useState([])
+  const [agentRuns, setAgentRuns] = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
   const [showForm, setShowForm]         = useState(false)
@@ -43,13 +44,19 @@ export default function RoadmapPanel({ engagementId }) {
   const [editSaving, setEditSaving]     = useState(false)
   const [editError, setEditError]       = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [roadmapCandidates, setRoadmapCandidates] = useState([])
+  const [candidateApproved, setCandidateApproved] = useState({})
+  const [parsing, setParsing]           = useState(false)
+  const [parseError, setParseError]     = useState(null)
+  const [loadingItems, setLoadingItems] = useState(false)
 
   const fetchData = () => {
     Promise.all([
       api.roadmap.list(engagementId),
       api.findings.list(engagementId),
+      api.agents.list(engagementId),
     ])
-      .then(([r, f]) => { setItems(r); setFindings(f) })
+      .then(([r, f, a]) => { setItems(r); setFindings(f); setAgentRuns(a) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -137,6 +144,59 @@ export default function RoadmapPanel({ engagementId }) {
     }
   }
 
+  const synthesizerAccepted = agentRuns.some(r => r.agent_name === 'Synthesizer' && r.accepted === 1)
+  const approvedCount = Object.values(candidateApproved).filter(Boolean).length
+
+  const handleParseRoadmap = async () => {
+    setParsing(true)
+    setParseError(null)
+    try {
+      const data = await api.roadmap.parseSynthesizer(engagementId)
+      const candidates = data.candidates || []
+      setRoadmapCandidates(candidates)
+      const allApproved = {}
+      candidates.forEach((_, idx) => { allApproved[idx] = true })
+      setCandidateApproved(allApproved)
+    } catch (err) {
+      setParseError(err.message)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const handleCandidateChange = (idx, field, value) => {
+    setRoadmapCandidates(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c))
+  }
+
+  const handleLoadRoadmapItems = async () => {
+    const approvedList = roadmapCandidates.filter((_, idx) => candidateApproved[idx])
+    if (approvedList.length === 0) {
+      setParseError('Select at least one item to load.')
+      return
+    }
+    setLoadingItems(true)
+    setParseError(null)
+    try {
+      for (const item of approvedList) {
+        await api.roadmap.create(engagementId, {
+          initiative_name:  item.initiative_name,
+          domain:           item.domain,
+          phase:            item.phase,
+          priority:         item.priority,
+          effort:           item.effort,
+          estimated_impact: item.estimated_impact || '',
+        })
+      }
+      setRoadmapCandidates([])
+      setCandidateApproved({})
+      fetchData()
+    } catch (err) {
+      setParseError(err.message)
+    } finally {
+      setLoadingItems(false)
+    }
+  }
+
   const inp = "w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
   const sel = "w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
 
@@ -153,6 +213,175 @@ export default function RoadmapPanel({ engagementId }) {
           {showForm ? 'Cancel' : '+ Add Item'}
         </button>
       </div>
+
+      {/* Parse Roadmap button — visible when Synthesizer accepted, no items yet, no candidates pending */}
+      {synthesizerAccepted && items.length === 0 && roadmapCandidates.length === 0 && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded flex items-center justify-between">
+          <span className="text-xs text-green-800">
+            Synthesizer accepted — extract roadmap initiatives automatically from the synthesis output.
+          </span>
+          <button
+            onClick={handleParseRoadmap}
+            disabled={parsing}
+            className="px-3 py-1.5 bg-green-700 text-white rounded text-xs font-medium hover:bg-green-800 disabled:opacity-50 ml-4 whitespace-nowrap"
+          >
+            {parsing ? 'Parsing...' : 'Parse Roadmap'}
+          </button>
+        </div>
+      )}
+
+      {parseError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {parseError}
+        </div>
+      )}
+
+      {/* Roadmap candidates review */}
+      {roadmapCandidates.length > 0 && (
+        <div className="mb-6 border border-green-200 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-green-50">
+            <div>
+              <span className="text-sm font-semibold text-green-900">
+                {roadmapCandidates.length} roadmap candidates
+              </span>
+              <span className="text-xs text-green-600 ml-2">{approvedCount} selected</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { const a = {}; roadmapCandidates.forEach((_, i) => { a[i] = true }); setCandidateApproved(a) }}
+                className="text-xs text-green-700 hover:text-green-900"
+              >
+                Select all
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => setCandidateApproved({})}
+                className="text-xs text-green-700 hover:text-green-900"
+              >
+                Select none
+              </button>
+              <button
+                onClick={handleLoadRoadmapItems}
+                disabled={loadingItems || approvedCount === 0}
+                className="px-3 py-1 bg-green-700 text-white rounded text-xs font-medium hover:bg-green-800 disabled:opacity-50 ml-2"
+              >
+                {loadingItems ? 'Loading...' : `Load ${approvedCount} Item(s)`}
+              </button>
+              <button
+                onClick={() => { setRoadmapCandidates([]); setCandidateApproved({}); setParseError(null) }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100 max-h-screen overflow-y-auto">
+            {['Stabilize', 'Optimize', 'Scale'].map(phase => {
+              const phaseIdxs = roadmapCandidates
+                .map((c, i) => ({ c, i }))
+                .filter(({ c }) => c.phase === phase)
+              if (phaseIdxs.length === 0) return null
+              return (
+                <div key={phase}>
+                  <div className={`px-4 py-2 text-xs font-semibold border-b ${phaseColors[phase]}`}>
+                    {phase} — {phaseIdxs.length} initiative{phaseIdxs.length !== 1 ? 's' : ''}
+                  </div>
+                  {phaseIdxs.map(({ c, i: idx }) => (
+                    <div
+                      key={idx}
+                      className={'p-4 transition-colors ' + (candidateApproved[idx] ? 'bg-white' : 'bg-gray-50 opacity-60')}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={candidateApproved[idx] || false}
+                          onChange={() => setCandidateApproved(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                          className="mt-1 shrink-0"
+                        />
+                        <div className="flex-1 space-y-2">
+
+                          {/* Initiative name */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Initiative name</div>
+                            <input
+                              value={c.initiative_name || ''}
+                              onChange={e => handleCandidateChange(idx, 'initiative_name', e.target.value)}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-blue-400"
+                            />
+                          </div>
+
+                          {/* Domain / Phase / Priority / Effort */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-0.5">Domain</div>
+                              <select
+                                value={c.domain || 'Delivery Operations'}
+                                onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                              >
+                                {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-0.5">Phase</div>
+                              <select
+                                value={c.phase || 'Stabilize'}
+                                onChange={e => handleCandidateChange(idx, 'phase', e.target.value)}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                              >
+                                {PHASES.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-0.5">Priority</div>
+                              <select
+                                value={c.priority || 'Medium'}
+                                onChange={e => handleCandidateChange(idx, 'priority', e.target.value)}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                              >
+                                {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-0.5">Effort</div>
+                              <select
+                                value={c.effort || 'Medium'}
+                                onChange={e => handleCandidateChange(idx, 'effort', e.target.value)}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                              >
+                                {EFFORTS.map(e => <option key={e} value={e}>{e}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Estimated impact */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Estimated impact</div>
+                            <input
+                              value={c.estimated_impact || ''}
+                              onChange={e => handleCandidateChange(idx, 'estimated_impact', e.target.value)}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                            />
+                          </div>
+
+                          {/* Rationale — read only */}
+                          {c.rationale && (
+                            <div className="text-xs text-gray-400 italic border-l-2 border-gray-200 pl-2">
+                              {c.rationale}
+                            </div>
+                          )}
+
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Add item form */}
       {showForm && (

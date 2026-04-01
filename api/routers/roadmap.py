@@ -1,15 +1,30 @@
+import json as json_lib
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.roadmap import RoadmapRepository
+from api.db.repositories.agent_run import AgentRunRepository
+from api.db.repositories.finding import FindingRepository
 from api.models.roadmap import RoadmapItemCreate, RoadmapItemResponse
+from api.utils.domains import VALID_DOMAINS, VALID_PRIORITIES, VALID_EFFORTS
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
+VALID_PHASES = {'Stabilize', 'Optimize', 'Scale'}
+
+
 def get_repo() -> RoadmapRepository:
     return RoadmapRepository()
+
+
+def get_agent_repo() -> AgentRunRepository:
+    return AgentRunRepository()
+
+
+def get_finding_repo() -> FindingRepository:
+    return FindingRepository()
 
 
 @router.get("/{engagement_id}/roadmap")
@@ -19,6 +34,59 @@ def list_roadmap_items(
 ):
     """Return all roadmap items for an engagement ordered by phase and priority."""
     return repo.get_all(engagement_id)
+
+
+@router.post("/{engagement_id}/roadmap/parse-synthesizer")
+async def parse_synthesizer_roadmap(
+    engagement_id: str,
+    agent_repo:    AgentRunRepository = Depends(get_agent_repo),
+    finding_repo:  FindingRepository  = Depends(get_finding_repo),
+):
+    """Extract structured roadmap candidates from the accepted Synthesizer output.
+    Returns candidates array held in frontend state — nothing is persisted until
+    the user loads approved items via POST /{engagement_id}/roadmap."""
+    from api.services.claude import extract_roadmap_from_synthesizer
+
+    synthesizer_output = agent_repo.get_accepted_output(engagement_id, 'Synthesizer')
+    if not synthesizer_output:
+        raise HTTPException(
+            status_code=400,
+            detail="Synthesizer agent must be accepted before parsing roadmap"
+        )
+    if len(synthesizer_output) < 100:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Synthesizer output is too short ({len(synthesizer_output)} chars) — "
+                   f"re-run and accept the Synthesizer agent."
+        )
+
+    findings = finding_repo.get_all(engagement_id)
+
+    raw = await extract_roadmap_from_synthesizer(synthesizer_output, findings)
+
+    try:
+        candidates = json_lib.loads(raw)
+    except json_lib.JSONDecodeError:
+        logger.error(f"Claude returned invalid JSON for roadmap extraction: {raw[:200]}")
+        raise HTTPException(
+            status_code=500,
+            detail="Claude returned invalid JSON — try again"
+        )
+
+    cleaned = []
+    for item in candidates:
+        if item.get('domain') not in VALID_DOMAINS:
+            item['domain'] = 'Delivery Operations'
+        if item.get('phase') not in VALID_PHASES:
+            item['phase'] = 'Stabilize'
+        if item.get('priority') not in VALID_PRIORITIES:
+            item['priority'] = 'Medium'
+        if item.get('effort') not in VALID_EFFORTS:
+            item['effort'] = 'Medium'
+        cleaned.append(item)
+
+    logger.info(f"parse-synthesizer roadmap: {len(cleaned)} candidates for {engagement_id}")
+    return {'candidates': cleaned}
 
 
 @router.get("/{engagement_id}/roadmap/{phase}")

@@ -365,6 +365,66 @@ async def extract_findings_from_synthesizer(synthesizer_output: str,
     return clean
 
 
+ROADMAP_EXTRACTION_PROMPT = """You are extracting a structured transformation roadmap from a completed multi-agent consulting diagnostic synthesis.
+
+The input contains the Synthesizer's integrated output and the accepted findings for this engagement.
+Extract actionable improvement initiatives and assign each to a transformation phase.
+
+Extract between 8 and 16 initiatives total. Each initiative must be distinct and actionable —
+not a restatement of a finding, but a specific thing the firm must do to address it.
+
+Each item must have exactly these fields:
+- initiative_name: string — specific, action-oriented name (e.g. "Implement Pre-Sales Delivery Review Gate", not "Improve Sales Process")
+- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- phase: string — must be exactly "Stabilize", "Optimize", or "Scale" (see phase rules below)
+- priority: string — exactly "High", "Medium", or "Low"
+- effort: string — exactly "High", "Medium", or "Low" (implementation effort)
+- estimated_impact: string — one sentence on what this initiative achieves when complete (e.g. "Eliminates below-cost deals from pipeline before SOW signature")
+- rationale: string — one sentence citing the specific finding or Synthesizer evidence that drives this initiative
+
+PHASE ASSIGNMENT RULES — apply these strictly:
+
+Stabilize: Items that stop active damage or remove blockers that make other work impossible.
+  - Active margin bleed, delivery authority failures, governance blockers
+  - Data collection required before board presentation or planning decisions
+  - Anything where delay makes the situation measurably worse each week
+  - Target: 4–6 items. If you have more than 6 Stabilize items, move the least urgent to Optimize.
+
+Optimize: Items that improve operational performance on a foundation that Stabilize has made viable.
+  - Process design, operating model changes, methodology implementation
+  - Capacity planning, pipeline discipline, delivery standards
+  - Items that require Stabilize work to be in place before they can hold
+  - Target: 4–6 items.
+
+Scale: Items that expand capability, capacity, or market position once operations are stable.
+  - Revenue mix rebalancing, service line development, rate recovery
+  - Client relationship upgrades, market positioning improvements
+  - Items that require Optimize work to be credible or executable
+  - Target: 2–4 items.
+
+Do not put everything in Stabilize. If an initiative improves a process rather than stopping bleeding,
+it belongs in Optimize. If it expands the business rather than fixing it, it belongs in Scale.
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected
+
+Return format:
+[
+  {
+    "initiative_name": "Reinstate Delivery Director Authority with CEO Endorsement",
+    "domain": "Project Governance / PMO",
+    "phase": "Stabilize",
+    "priority": "High",
+    "effort": "Low",
+    "estimated_impact": "Removes organizational veto on delivery improvements and enables all subsequent delivery-dependent initiatives",
+    "rationale": "Two prior improvement initiatives were blocked by the CEO bypass dynamic; all delivery fixes depend on this structural change"
+  }
+]"""
+
+
 REPORT_NARRATOR_PROMPT = """You are the Report Narrator for a consulting diagnostic report.
 Your job is to write the narrative prose sections of an OPD (Operational Performance Diagnostic)
 report that will be delivered to a CEO. You are writing as a senior consultant — not as an AI
@@ -601,3 +661,52 @@ async def generate_report_narrative(
     sections = _parse_narrator_sections(raw)
     logger.info(f"Narrator sections parsed — {list(sections.keys())}")
     return sections
+
+
+async def extract_roadmap_from_synthesizer(
+    synthesizer_output: str,
+    findings: list,
+) -> str:
+    """Extract structured roadmap candidates from an accepted Synthesizer output.
+    Findings are provided as context so initiative names align with the diagnostic.
+    Returns raw JSON string — fence stripping and array extraction handled inside."""
+    findings_lines = ["ACCEPTED FINDINGS (for context — use to inform initiative naming and phase assignment):\n"]
+    for f in findings:
+        findings_lines.append(
+            f"- [{f.get('finding_id', '')}] {f['finding_title']} | "
+            f"Domain: {f.get('domain', '')} | "
+            f"Priority: {f.get('priority', '')} | "
+            f"Root Cause: {f.get('root_cause', '')}"
+        )
+
+    user_message = (
+        f"SYNTHESIZER OUTPUT:\n\n{synthesizer_output}\n\n"
+        f"---\n\n"
+        f"{chr(10).join(findings_lines)}"
+    )
+
+    logger.info(
+        f"Extracting roadmap from synthesizer — {len(synthesizer_output)} chars, "
+        f"{len(findings)} findings"
+    )
+    message = await async_client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=ROADMAP_EXTRACTION_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    raw = extract_text(message)
+    clean = raw.strip()
+    if clean.startswith('```json'):
+        clean = clean[7:]
+    elif clean.startswith('```'):
+        clean = clean[3:]
+    if clean.endswith('```'):
+        clean = clean[:-3]
+    clean = clean.strip()
+    start = clean.find('[')
+    end   = clean.rfind(']')
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+    logger.info(f"Roadmap extraction complete — {len(clean)} chars")
+    return clean
