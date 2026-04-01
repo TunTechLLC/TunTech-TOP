@@ -1,27 +1,83 @@
 # TOP — Backlog
-## Items deferred from Phase 2 — build after Checkpoint 3 unless noted
+## Build order: work top to bottom. Checkpoints are end-to-end dry runs with a new client.
 
 ---
 
-## Deferred to After Checkpoint 3
+## In Progress
 
-### Auto-Suggest Knowledge Promotions from Synthesizer Output
-**Problem:** Knowledge promotions are fully manual — consultant must identify and
-type insights worth promoting. Should follow the same detect-review-load pattern
-as findings and roadmap.
+### Word Report Template Cleanup
+The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
+Template is wired in (`assets/roadmap_template.docx`) and generates without errors.
+Formatting issues were observed but not fully catalogued.
 
-**Design:** After Synthesizer is accepted, add a "Suggest Knowledge" button that
-calls Claude to extract 3–5 reusable insights from the Synthesizer output —
-observations that would be useful across future engagements, not just this one.
-Present as cards with Accept / Reject per item. Accepted items call the existing
-knowledge create endpoint.
-
-**New prompt needed:** KNOWLEDGE_EXTRACTION_PROMPT in claude.py
-**New endpoint needed:** `POST /{engagement_id}/knowledge/suggest`
+**Next session procedure:**
+1. Generate report for E002 or E003
+2. Open the Word doc and catalogue every formatting issue (list them explicitly)
+3. Fix each one — likely: table style conflicts with template, column widths,
+   heading spacing, cover page layout
+4. Test `validate_template.py` still passes after any template changes
+5. Commit when the document looks clean
 
 ---
 
-### Replace Report Browser Download with Save-and-Show-Path
+## Before Checkpoint 4
+
+### DELIVERY_DOCUMENT_EXTRACTION_PROMPT
+**Status:** File type expansion is otherwise complete — STATUS and RESOURCE prompts are
+implemented and mapped. The delivery type falls back to SIGNAL_EXTRACTION_PROMPT with a
+comment noting it is deferred.
+
+**Fix:** Write DELIVERY_DOCUMENT_EXTRACTION_PROMPT in `api/services/claude.py` targeting
+risk registers, retrospectives, portfolio summaries, and proposals. Update the PROMPT_MAP
+in `api/services/document_processor.py` to use it instead of the fallback.
+
+**Files:** `api/services/claude.py`, `api/services/document_processor.py:182`
+
+**Commit message:** Step 8 Ext 1 Cleanup — DELIVERY_DOCUMENT_EXTRACTION_PROMPT
+
+---
+
+### Reprocess Button
+Currently must delete from ProcessedFiles table in DB Browser to reprocess a file.
+
+**Fix:**
+- Add `DELETE /{engagement_id}/signals/processed-files/{file_hash}` endpoint in `api/routers/signals.py`
+- Add delete method to `ProcessedFilesRepository`
+- Add Reprocess button per file in SignalPanel.jsx (shows processed files list with a Reprocess button on each row)
+
+**Commit message:** Reprocess button — endpoint + frontend
+
+---
+
+### Candidate File Cleanup (Archive After Loading)
+Candidate JSON files accumulate in the candidates folder indefinitely.
+**Decision locked in:** Archive to `processed/` subfolder after loading, not delete.
+The candidate file is a useful audit trail.
+
+**Fix:** In the `load-candidates` endpoint in `api/routers/signals.py`, after signals
+are written, call `shutil.move(candidate_file_path, candidates_folder/processed/)`.
+Create the `processed/` subfolder if it does not exist.
+
+**Commit message:** Candidate file cleanup — archive to processed/ after loading
+
+---
+
+### Engagement Header Count Refresh
+Signal/pattern/finding counts in the EngagementDetail header do not refresh after
+write operations. Requires F5 page refresh to update.
+
+**Fix:** Pass an `onRefresh` callback from EngagementDetail down to each panel component.
+When a panel writes data (loads signals, loads patterns, creates finding, etc.), it calls
+`onRefresh()` which re-fetches the engagement header data. EngagementDetail already has
+a `fetchEngagement()` function — expose it as the callback.
+
+**Files:** `frontend/src/components/EngagementDetail.jsx`, all panel components
+
+**Commit message:** Engagement header count refresh after write operations
+
+---
+
+### Replace Report Download with Save-and-Show-Path
 **Problem:** Download Report streams the file to the browser, which saves a redundant
 copy to the Downloads folder. For a locally hosted single-user tool, the file is already
 saved to reports_folder on disk — the browser download adds no value.
@@ -29,387 +85,377 @@ saved to reports_folder on disk — the browser download adds no value.
 **Fix:** Change the Report tab to show a confirmation message with the full file path
 after generation instead of triggering a browser download. Add an "Open folder" button
 that calls a new backend endpoint to open the reports_folder in Windows Explorer
-(via `os.startfile(reports_folder)`). Remove the FileResponse streaming from the
-download endpoint or keep it as a secondary option.
+(via `os.startfile(reports_folder)`).
 
 **New endpoint:** `POST /{engagement_id}/report/generate` — saves file, returns
 `{"saved_to": "C:\\...\\OPD_Report_E003.docx"}`. Frontend displays the path.
 **Optional:** `POST /{engagement_id}/report/open-folder` — calls `os.startfile()`.
 
----
-
-### Roadmap Item Edit and Delete
-**Problem:** Once a roadmap item is saved there is no way to edit or delete it
-from the browser. Typos and wrong field values require DB Browser to fix.
-
-**Fix:** Add an Edit button per row that opens an inline edit form (same fields as
-the add form), and a Delete button with a confirmation prompt.
-**New endpoint needed:** `DELETE /{engagement_id}/roadmap/{item_id}`
-PATCH already exists for update.
-
----
-
-### Add Field Labels to Finding Candidate Review Cards
-**Problem:** The Parse Findings candidate review cards show unlabeled text inputs.
-The OPD section number field shows "4" with no context. Users cannot tell which
-field is which without counting positions.
-
-**Fix:** Add a small label above each input/textarea/select in the candidate card,
-matching the labels used in the manual Add Finding form. Minimal change —
-just add `<div className="text-xs text-gray-500 mb-0.5">Label</div>` above each field.
+**Commit message:** Report panel — replace browser download with save-and-show-path
 
 ---
 
 ### Improve PATTERN_DETECTION_PROMPT for New Domain Coverage
-**Problem:** Second pattern detection run on E003 (102 signals, including clear AI Readiness
-signals) returned zero AI Readiness patterns. First run detected 3, but errored before loading.
-Claude is non-deterministic and with a large signal set tends to anchor on the most
-numerically dominant domains (Sales-to-Delivery, Delivery Operations) and under-detect
-sparse new domains.
+**Problem:** On large signal sets, Claude anchors on numerically dominant domains
+(Sales-to-Delivery, Delivery Operations) and under-detects sparse new domains
+(AI Readiness, Human Resources, Finance and Commercial).
 
 **Fix:** Add few-shot examples to PATTERN_DETECTION_PROMPT showing correct detection of
 AI Readiness, Human Resources, and Finance and Commercial patterns. Add an explicit
 instruction: "Ensure coverage across all domains represented in the signals — do not
 omit a domain simply because it has fewer signals than others."
 
----
+**File:** `api/services/claude.py` — PATTERN_DETECTION_PROMPT
 
-### Disable Agent Buttons While Any Agent Is Running
-**Problem:** Re-run buttons on earlier agents remain enabled while the Skeptic or
-Synthesizer is actively running. Accidentally re-running an earlier agent mid-sequence
-would invalidate the in-progress agent's context.
+**Test:** Run on E003 (102 signals including AI Readiness signals). Verify AI Readiness
+patterns are detected on the first run.
 
-**Fix:** Track a single `anyRunning` boolean in AgentPanel. When any agent call is
-in flight, disable all run/re-run buttons across the panel until the call completes.
-**Implementation:** One shared `useState` in AgentPanel passed as a prop or managed
-via a running agent name string — if `runningAgent !== null`, all buttons disabled.
+**Commit message:** Improve PATTERN_DETECTION_PROMPT — few-shot examples and domain coverage
 
 ---
 
-### Auto-Cull Signal Candidates Before Review
-**Problem:** Claude over-extracts signals from rich transcripts. 110 candidates from 6 files
-is unworkable for manual review. The consultant should only see a pre-filtered set.
+### Quick Wins Section in the Report
+**Problem:** The report surfaces all roadmap items in three phase tables but does not
+call out which items the client can act on immediately. Executives leave the presentation
+wanting something concrete to do next week — the report should give them that explicitly.
+
+**Design:** Add a "Quick Wins" section in the report immediately before the phase tables
+in Section 8. Filter roadmap items where priority=High AND effort=Low. Display as a
+short highlighted table — title, domain, and one-line description. Cap at 5 items.
+
+If no items meet the criteria, omit the section entirely — do not show an empty table.
+
+**Implementation:** Pure report generation logic in `api/services/report_generator.py`.
+No schema changes. No frontend changes. No new endpoints.
+
+**Commit message:** Quick wins section in report — high priority, low effort roadmap items
+
+---
+
+## Checkpoint 4 — Dry Run 4 (New Client End-to-End)
+
+**Goal:** Complete end-to-end run through browser with a brand new fictional client
+(Dry Run 4). Validates all Checkpoint 4 improvements under realistic conditions.
+
+**Pre-run setup:**
+- Create a new fictional client folder structure on OneDrive
+- Write 3–4 fictional interview transcripts (CEO, Director of Delivery, VP Sales minimum)
+- Include 1–2 fictional documents (financial summary + at least one delivery document type)
+- Include at least one AI Readiness signal to validate new domain coverage
+
+**The run (entirely through browser):**
+1. Create engagement via New Engagement form
+2. Set folder paths via Edit Settings
+3. Process Files — verify candidate count is in the 25–40 range (auto-cull working)
+4. Review candidates, load signals
+5. Detect Patterns — verify AI Readiness patterns are detected if signals are present
+6. Review patterns, load
+7. Run all 5 agents in sequence, review and accept each
+8. Parse Findings, assign contributing patterns, load (expect 5–8 findings)
+9. Parse Roadmap, review, load (expect 10–16 items)
+10. Generate Report — verify file saved to disk and path shown (not browser download)
+11. Open Word doc — verify all 8 sections populated with narrative prose
+
+**Pass criteria:**
+- All 5 AgentRuns with accepted=1
+- 5–8 OPDFindings created
+- 10–16 RoadmapItems created
+- Signal candidate count was in the 25–40 range
+- AI Readiness patterns detected (if signals present)
+- Word doc saves to disk, path shown in Report panel
+- Report narrative sections are mark-up quality, not placeholder text
+- Zero DB Browser operations required
+- Zero Claude.ai copy-pasting
+- Total API cost under $2.00
+- Cross-engagement report shows new engagement alongside E001, E002, E003
+
+---
+
+## After Checkpoint 4
+
+### Auto-Suggest Knowledge Promotions
+**Problem:** Knowledge promotions are the only panel that remains fully manual.
+Every other panel (Signals, Patterns, Findings, Roadmap) follows the detect-review-load
+pattern. Knowledge should too. Also, existing knowledge promotions have no Edit or Delete.
+
+**Design — Suggest flow (mirrors Findings parse pattern):**
+- "Suggest Knowledge" button in KnowledgePanel — show after Synthesizer is accepted
+- Calls Claude with KNOWLEDGE_EXTRACTION_PROMPT
+- Claude receives: full Synthesizer output + all accepted findings + engagement context
+- Returns 3–5 reusable insights as reviewable cards — observations useful across future
+  engagements, not specific to this one
+- Each card is editable before saving (inline text edit on the card)
+- Accept / Reject per card
+- "Load Approved" saves accepted items via existing knowledge create endpoint
+- On success: clear candidates, refresh knowledge list
+
+**Design — Edit/Delete on existing promotions:**
+- Edit button per row — inline edit form (same fields as the Add form)
+- Delete button with confirmation prompt
+- New endpoint needed: `DELETE /{engagement_id}/knowledge/{knowledge_id}`
+- Check whether `PATCH /{engagement_id}/knowledge/{knowledge_id}` exists — add if not
+
+**New prompt:** `KNOWLEDGE_EXTRACTION_PROMPT` in `api/services/claude.py`
+**New endpoints:**
+- `POST /{engagement_id}/knowledge/suggest`
+- `DELETE /{engagement_id}/knowledge/{knowledge_id}`
+- `PATCH /{engagement_id}/knowledge/{knowledge_id}` (if not already present)
+
+**Commit message:** Knowledge panel — suggest-review-load + edit/delete on existing promotions
+
+---
+
+### Findings Enhancements — Pattern Enforcement, Evidence Summary, and Key Quotes
+Build all three in one session. All three modify FINDINGS_EXTRACTION_PROMPT, OPDFindings
+schema, and FindingsPanel. Separating them means touching the same files three times.
+
+**Part 1 — Enforce Pattern-to-Finding Mapping:**
+Every finding must reference at least one pattern (EP ID). Currently optional.
+- Add validation in `api/routers/findings.py`: if `contributing_ep_ids` is empty, return 422
+- Add client-side guard in FindingsPanel.jsx: disable Load Approved if any approved
+  candidate has zero contributing patterns selected
+- Parse Findings cards already show the checklist — this makes selection mandatory
+
+**Part 2 — Evidence Summary:**
+Each finding gets a 1–2 line evidence summary derived from its contributing patterns:
+```
+Supported by P06, P08, P10 across Sales-to-Delivery Transition;
+6 signals (2 confirmed, 4 inferred)
+```
+- Computed at finding creation time from contributing pattern and signal count data
+- Stored on the finding record (new `evidence_summary TEXT` column on OPDFindings)
+- Displayed in FindingsPanel and in the report under each finding
+
+**Part 3 — Key Quotes (Signal Attribution):**
+Surface 2–3 direct verbatim quotes per finding in the Domain Analysis section of the report.
+Transforms the deliverable from "consultant tells you what's wrong" to "your own people told
+us what's wrong."
+
+- Signal scope: fetch signals in the same domain as the finding. Each signal's `notes` field
+  already contains a verbatim quote from the source transcript, captured at extraction time
+  (format: "Quote: '[exact words]' — Interpretation: [note]"). No raw transcripts needed.
+- During Parse Findings, Claude receives the domain-scoped signal notes alongside the
+  Synthesizer output, and selects the 2–3 most compelling quotes per finding.
+- Store as `key_quotes TEXT` (JSON array of strings) on the finding record.
+- Surfaced in the report's Domain Analysis section after each finding's narrative paragraph.
+- Displayed on the finding candidate card for review before loading.
+
+**Schema changes (one migration, run together):**
+- Add `evidence_summary TEXT` to OPDFindings
+- Add `key_quotes TEXT` to OPDFindings
+
+**Commit message:** Findings enhancements — pattern enforcement, evidence summary, key quotes
+
+---
+
+### Roadmap Enhancements — Capability, Economic Linkage, and Dependencies
+Build all three in one session. All three modify ROADMAP_EXTRACTION_PROMPT, RoadmapItems
+schema, and RoadmapPanel. **Build after Findings Enhancements** — economic linkage requires
+findings to exist and be clean before roadmap items can reference them.
+
+**Prerequisite note:** addressing_finding_ids is populated by Claude at parse time using
+the findings already in the database. If Parse Roadmap is run before Parse Findings,
+addressing_finding_ids will be empty and economic display will be omitted gracefully.
+For best results, parse findings before parsing the roadmap.
+
+**Part 1 — Capability Statement:**
+Each roadmap item describes what the organization will be able to do once the item is done.
+
+Methodology: A capability → one or more deliverables → one or more requirements.
+The roadmap captures the capability. Deliverables and requirements are defined in the
+implementation engagement — that is a separate scope of work.
+
+Example:
+- Item: "Implement project intake process"
+- Capability: "The ability to consistently scope, price, and initiate client engagements
+  before delivery begins, such that every project enters delivery with a signed SOW,
+  defined scope, and agreed success criteria."
+
+- Add `capability TEXT` column to RoadmapItems
+- Generated by Claude at Synthesizer-to-Roadmap parse time as a structured output field
+- Editable on the candidate review card before loading
+- Displayed in RoadmapPanel under each item and in the report labeled "Capability:"
+
+**Part 2 — Economic Linkage:**
+Each roadmap item identifies which findings it addresses. This makes per-item ROI visible
+and enables phase-level economic context.
+
+- Add `addressing_finding_ids TEXT` (JSON array of finding IDs) to RoadmapItems
+- Populated by Claude at parse time — Claude receives the existing findings list and
+  identifies which findings each roadmap item addresses
+- At report time: display the economic_impact text from linked findings under each item
+- Phase-level summary: Claude generates a 1–2 sentence narrative synthesis of the economic
+  stakes for each phase, based on the economic_impact text from all findings linked to items
+  in that phase. This is a narrative synthesis, not an arithmetic sum — economic_impact is
+  free text (e.g. "$200K–400K INFERRED") and cannot be summed reliably.
+- Maintain CONFIRMED/INFERRED notation throughout
+
+**Part 3 — Dependency Mapping:**
+Answers "why this order?" and "what breaks if we skip ahead?" — the two questions every
+client asks when reviewing a roadmap.
+
+- Add `depends_on TEXT` (JSON array of RoadmapItem IDs) to RoadmapItems — not a single FK.
+  Items commonly have multiple prerequisites.
+- In RoadmapPanel, add a "Depends on" multi-select to the add/edit form
+- In the report, surface dependencies in two places:
+  1. Section 8 opening paragraph — sequencing rationale explaining why the phases are
+     ordered as they are and which items are load-bearing for others ("why this order?")
+  2. Under each dependent item in the phase tables — "Prerequisites: [item A], [item B]"
+     ("what breaks if you skip ahead?")
+- No circular dependency validation needed — single-user tool, trust the consultant
+
+**Schema changes (one migration, run together):**
+- Add `capability TEXT` to RoadmapItems
+- Add `addressing_finding_ids TEXT` to RoadmapItems
+- Add `depends_on TEXT` to RoadmapItems
+
+**Confirm:** `PATCH /{engagement_id}/roadmap/{item_id}` already exists — verify it handles
+all new fields, add if not.
+
+**Commit message:** Roadmap enhancements — capability, economic linkage, dependencies
+
+---
+
+### Domain Maturity Scoring
+**Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
+no maturity score. Clients respond to scorecards in a way they don't respond to tables.
 
 **Design:**
-- After extraction, score each candidate against two criteria:
-  1. Deduplicate — if two candidates from different files have the same domain +
-     similar signal_name (fuzzy match or exact domain+observed_value), keep the
-     higher-confidence one and drop the duplicate
-  2. Filter by confidence — drop all Hypothesis signals by default; show count of
-     dropped signals so the consultant can opt back in if needed
-- Apply in `document_processor.py` after all files are processed, before writing
-  the merged candidate list to the frontend
-- Target output: 25–40 candidates regardless of input file count
+- Compute a 1–5 maturity score per domain at report generation time from existing data:
+  - Pattern count (more patterns = more problems = lower score)
+  - Average pattern confidence (High-confidence patterns weight more heavily)
+  - Finding severity (High-priority findings pull score down)
+- Domains with zero signals AND zero patterns show "No data" — a score of 5 would be
+  misleading since it could mean genuinely healthy or simply unexamined
+- Show as a scorecard table in Section 3 alongside the existing signal count table
+- No new database columns — computed entirely at report time
+- Future value: as TOP accumulates data across engagements, scoring becomes benchmarked
 
-**UI addition:** Show "X Hypothesis signals hidden — show all" toggle above the review list.
+**Scoring formula (starting point — refine after first use):**
+- Base score: 5
+- Subtract 0.5 per accepted High-confidence pattern in the domain
+- Subtract 0.25 per accepted Medium-confidence pattern
+- Subtract 0.5 per High-priority finding in the domain
+- Floor at 1; show "No data" if zero signals and zero patterns
 
-**Commit scope:** document_processor.py dedup logic + SignalPanel.jsx toggle
+**File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
 
----
-
-### Report Narrator — Narrative Layer for the OPD Report
-**Problem:** The current report generator produces a diagnostic database formatted as a
-Word document — structured tables and bullet lists assembled from field values. The output
-is factually accurate but reads like a database printout, not a consulting deliverable.
-A senior consultant would need hours to transform it into something presentable to a CEO.
-
-**Design:** Add a Report Narrator agent that runs before `report_generator.py` assembles
-the Word document. The Narrator receives the full Synthesizer output plus all accepted
-findings and roadmap data, and writes the narrative prose sections of the report. The
-structured tables stay exactly as they are — generated from structured data. The Narrator
-writes the connective tissue around them.
-
-**Quality target:** The output should be 80% ready to send after 30–60 minutes of
-consultant review and polish. Mark-up quality, not rewrite quality.
-
-**Inputs to the Narrator:**
-- Full accepted Synthesizer output (primary narrative input — this is the story)
-- All accepted findings with structured fields (grounding — these are the facts)
-- Roadmap items grouped by phase (sequencing — these are the actions)
-- Engagement record (context — firm name, stated problem, client hypothesis)
-
-**Narrator-generated sections:**
-- Section 1: Executive Summary — 4–5 paragraphs of prose. Lead with the finding, not
-  background. Paragraph 1: strategic situation. Paragraph 2: client hypothesis vs
-  diagnostic reality. Paragraph 3: economic stakes. Paragraph 4: Priority Zero items
-  and sequencing. Paragraph 5: what successful execution positions the firm to achieve.
-- Section 4: Domain Analysis — each domain opens with a 2–3 sentence narrative paragraph
-  before the finding table. After the table, 2–3 sentences connecting this domain's
-  findings to other domains.
-- Section 5: Root Cause Analysis — connected prose narrative, not a bullet list of
-  repeated finding titles. Show the causal chain across findings.
-- Section 6: Economic Impact — a summary table of all confirmed and inferred figures
-  plus 3–4 sentences of narrative connecting the numbers to business stakes.
-- Section 7: Improvement Opportunities — a short narrative paragraph per finding
-  explaining the recommendation in context, not just the recommendation field repeated.
-- Section 8: Transformation Roadmap — a brief rationale paragraph before each phase
-  table explaining why these items are sequenced this way.
-
-**Sections that stay as structured data (no Narrator):**
-- Section 2: Engagement Overview — auto-generated table from engagement record
-- Section 3: Operational Maturity Overview — auto-generated signal domain summary table
-- Roadmap tables within Section 8 — auto-generated from RoadmapItems
-
-**Writing rules for the REPORT_NARRATOR_PROMPT:**
-- Write as a senior consultant, not as an AI summarizing data
-- Lead with the most important insight, not with background
-- Use specific numbers and signal references — do not generalize
-- Use CONFIRMED/INFERRED notation on all dollar figures exactly as they appear in source
-- Balance prose with structure — tables where data is tabular, prose where analysis is narrative
-- Do not repeat the same content across sections
-- Do not hedge excessively — state conclusions clearly where evidence supports them
-- Tone: direct, evidence-grounded, written for a CEO audience
-
-**Quality reference — example Executive Summary opening paragraph (target quality):**
-"Vantage Point Consulting is experiencing a structural profitability crisis that is
-accelerating. Gross margin has declined from 33.1% in FY2023 to 27.8% in Q1 2026 —
-a three-year directional trend, not a cyclical dip — while EBITDA has compressed from
-11.2% to 7.6% over the same period. At the current trajectory, annualized EBITDA falls
-below $300,000 INFERRED, which constrains the firm's ability to reinvest, absorb delivery
-failures, or sustain the talent required to stop the decline."
-
-Key characteristics of target quality: leads with the finding not the background, uses
-specific confirmed figures, states the business consequence clearly, no hedging.
-
-**Implementation:**
-- New prompt: `REPORT_NARRATOR_PROMPT` in `api/services/claude.py`
-- New async function: `generate_report_narrative(engagement_id)` in `claude.py`
-  - Assembles Synthesizer output + all findings + roadmap items + engagement context
-  - Calls Claude with REPORT_NARRATOR_PROMPT
-  - Returns structured dict with keys for each narrator-generated section
-- Update `ReportGeneratorService.generate()` in `api/services/report_generator.py`
-  - Call `generate_report_narrative()` first
-  - Use returned narrative sections as prose content in the document
-  - Weave narrative paragraphs before/after structured tables in each section
-- No new endpoints, no database changes, no frontend changes
-
-**Test procedure:**
-1. Run against E001 Meridian — it has accepted Synthesizer, findings, and roadmap
-2. Download the report
-3. Read Section 1 — should be 4–5 paragraphs of prose that tell the story, not a placeholder
-4. Read one Domain Analysis section — should open with a narrative paragraph before the table
-5. Check that CONFIRMED/INFERRED notation is preserved from the Synthesizer output
-6. Assess: would you mark this up or rewrite it? Target is mark-up quality.
-7. Run against E003 to validate across a different engagement profile
-
-**Prompt refinement:** Expect 2–3 iterations on REPORT_NARRATOR_PROMPT before quality
-is consistently at the mark-up threshold. This is normal — prompt quality is the variable.
+**Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
 
 ---
 
-### Enforce Pattern-to-Finding Mapping
-**Requirement:**
-- Every finding must reference 1+ patterns (Pxx)
-- Patterns must be explicitly linked, not inferred
-- Finding inherits domain (if consistent across patterns) and economic model types
+### PowerPoint Export
+**Problem:** Every engagement requires a PowerPoint presentation to the client. Victor
+currently builds this manually from the Word document — typically after the roadmap is
+finalized and before the client meeting. This is significant manual work per engagement
+and creates a risk that the deck and the Word doc drift apart if the roadmap is updated
+after the presentation.
 
-**Rules:**
-- No orphan findings — must map to at least one pattern
-- If multiple patterns, they must share a common root cause OR be explicitly grouped
-  under a single control point
+**Design:** Generate a starting-point PPTX from the same data that drives the Word report.
+Victor tweaks it to presentation quality before the client meeting — same expectation as
+the Word document. The goal is to eliminate the blank-slide starting point, not the
+consultant's judgment.
 
-**Output (internal, not UI yet):**
-```
-Finding F001:
-Patterns: P06, P08, P10
-Domains: Sales-to-Delivery Transition
-Economic Models: Delivery Overrun Loss, Delay / Start Lag
-```
+**Suggested slide structure:**
+1. Situation and client hypothesis vs. diagnostic reality
+2. Domain maturity scorecard
+3. Key findings by domain (one slide per domain)
+4. Economic stakes summary
+5. Transformation roadmap — Stabilize phase
+6. Transformation roadmap — Optimize phase
+7. Transformation roadmap — Scale phase
+8. Quick wins — immediate actions
 
 **Implementation:**
-- Require at least one `contributing_ep_id` when creating a finding (currently optional)
-- Store the inherited economic model types from contributing patterns on the finding record
+- New function `generate_pptx(engagement_id)` in `api/services/report_generator.py`
+- Uses python-pptx library — check if already in requirements.txt, add if not
+- New endpoint `POST /{engagement_id}/report/generate-pptx` — saves file alongside the
+  Word doc in reports_folder, returns `{"saved_to": "C:\\...\\OPD_Roadmap_E004.pptx"}`
+- New button in ReportPanel.jsx — "Generate Presentation" alongside Generate Report
+- Content pulled from same data as Word report — no new data sources needed
+
+**Build after:** Roadmap Enhancements (capability, economic linkage, dependencies) —
+the slides should include capability statements and economic context per roadmap item.
+Content quality features should be in place before the presentation layer is built.
+
+**Commit message:** PowerPoint export — generate starting-point presentation from roadmap data
 
 ---
 
 ### Standardize Economic Output Generation
-This is the most consequential system improvement. Every number in the report becomes
-reproducible. For each economic formula type in the pattern library, define:
-
-**A. Inputs**
-- Required variables (e.g. Idle Hours, Bill Rate)
-- Source: Confirmed (from data) or Estimated (from interview / assumption)
-
-**B. Assumptions**
-- Default values if inputs are missing
-- Acceptable ranges
-- Override rules
-
-**C. Range Logic**
-- When to output a point estimate vs a range
-- How the range is calculated (Low = conservative assumption, High = aggressive assumption)
+For each economic formula type in the pattern library, define inputs, assumptions,
+default values, acceptable ranges, and range logic (point estimate vs range).
 
 **Example — Delivery Overrun Loss:**
 ```
-Inputs:
-  - Overrun Hours (estimated or confirmed)
-  - Cost Rate (confirmed or estimated)
-
-Assumptions:
-  - Overrun % range: 10%–25% if not explicitly measured
-
-Range Logic:
-  - Low = 10% overrun scenario
-  - High = 25% overrun scenario
+Inputs: Overrun Hours (estimated or confirmed), Cost Rate (confirmed or estimated)
+Assumptions: Overrun % range 10%–25% if not explicitly measured
+Range Logic: Low = 10% scenario, High = 25% scenario
 ```
 
-Build after the pattern-to-finding mapping is enforced.
+**Build after:** Findings Enhancements — finding economic data must be clean first.
 
 ---
 
-### Lightweight Evidence Summary on Findings
-Keep this simple. Do not over-engineer.
+## Checkpoint 5 — Dry Run 5 (Full Feature Validation)
 
-**Requirement:** Each finding includes 1–2 lines:
-```
-Evidence Summary:
-Supported by P06, P08, P10 across sales-to-delivery transition;
-6 signals (2 confirmed, 4 inferred); observed across 3 projects
-```
+**Goal:** End-to-end run with a new fictional client validating all post-Checkpoint 4
+features: key quotes, roadmap capabilities, economic linkage, dependency mapping, and
+domain maturity scoring.
 
-**Rules:**
-- Must include: pattern IDs, signal count (optional but strong), confirmation mix if available
-- This becomes straightforward once pattern-to-finding mapping is enforced
+**Pre-run setup:**
+- New fictional client with 3–4 interview transcripts and 1–2 supporting documents
+- Transcripts should use named fictional roles (CEO, Director of Delivery, etc.) so
+  key quotes are attributable in the report
 
----
-
-### Synthesizer-to-Roadmap Parser
-Same detect-review-load pattern as the findings parser (Step 8 Extension 2).
-Auto-generate roadmap items from accepted Synthesizer output.
-Build after findings parser is validated in Checkpoint 3.
-The Synthesizer output contains roadmap suggestions but they are less structured than
-the findings section — parsing is harder and should be validated separately.
-
----
-
-### PDF Processing
-`document_processor.py` currently only handles `.txt` files.
-Real client documents are PDFs.
-**Library decision locked in:** PyMuPDF (also called `fitz`).
-**Where conversion happens:** `document_processor.py` — detect `.pdf` extension,
-convert to text automatically before sending to Claude. No change to the rest of the pipeline.
-Install: `pip install pymupdf`
-
----
-
-### Candidate File Cleanup (Archive After Loading)
-Candidate JSON files accumulate in the candidates folder indefinitely.
-**Decision locked in:** Archive to `processed/` subfolder after loading, not delete.
-The candidate file is a useful audit trail — shows exactly what Claude extracted,
-what was approved, what notes were attached.
-**Implementation:** In the `load-candidates` endpoint, after signals are written,
-call `shutil.move(candidate_file_path, candidates_folder/processed/)`.
-One line of Python.
-
----
-
-### Reprocess Button
-Currently must delete from ProcessedFiles table in DB Browser to reprocess a file.
-Add a Reprocess button to SignalPanel that clears the specific file hash from
-ProcessedFiles table through the browser.
-**New endpoint needed:** `DELETE /{engagement_id}/signals/processed-files/{file_hash}`
-
----
-
-### Engagement Header Count Refresh
-Signal/pattern/finding counts in the EngagementDetail header do not refresh after
-write operations. Requires F5 page refresh to update.
-**Fix:** Pass a refresh callback from EngagementDetail down to each panel component.
-When a panel writes data (loads signals, loads patterns, creates finding), it calls
-the refresh callback which re-fetches the engagement header data.
-
----
-
-### Word Report Template Cleanup
-The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
-Needs visual polish before client delivery: column widths, font sizing, header row shading,
-consistent spacing. Consider a custom document template (`.dotx`) as the base for `Document()`.
-Not blocking — the content is correct and readable. Build after Report Narrator is validated —
-the template cleanup and the narrative layer are separate concerns.
+**Pass criteria:**
+- Every finding has an evidence summary (P-codes) and 2–3 key quotes in the report
+- Every roadmap item has a capability statement in the report
+- Economic impact context appears under roadmap items and as a phase-level narrative
+- At least one roadmap item has dependencies set — prerequisites appear in report
+- Quick wins section appears in Section 8 (if qualifying items exist)
+- Domain maturity scorecard appears in Section 3 — "No data" shown for unexamined domains
+- PowerPoint generated without errors — opens correctly with all slides populated
+- All Checkpoint 4 pass criteria still met
 
 ---
 
 ## Phase 3 Items
 
+### Background Task Processing for Document Files
+Current `process-files` endpoint runs synchronously — for long transcripts or many files
+this could approach timeout limits. For Phase 2 dry runs, synchronous is acceptable.
+**Phase 3 design:** Background task with job table, polling endpoint, and status tracking.
+Workaround: split large transcripts into two files.
+
 ### PostgreSQL Migration
 Only two changes needed when the time comes:
 1. `BaseRepository._get_connection()` — swap `sqlite3` for `psycopg2`, update connection string
 2. Parameter placeholders — `?` becomes `%s` throughout all SQL constants
-Everything else — repositories, routers, services — is database-agnostic and unchanged.
-**Config:** Set `TOP_DB_PATH` env var to PostgreSQL connection string.
 
-### Background Task Processing for Document Files
-Current `process-files` endpoint runs synchronously — FastAPI awaits full Claude processing
-before returning. For long transcripts or many files this could approach timeout limits.
-**Phase 3 design:** Background task with job table, polling endpoint, and status tracking.
-For Phase 2 dry runs, synchronous is acceptable. If a transcript causes a timeout, split it
-into two files as a workaround.
+Everything else — repositories, routers, services — is database-agnostic and unchanged.
 
 ### Agent Registry URL Cleanup
 `GET /api/engagements/agents/registry` is registered under the engagements prefix but is
-not engagement-specific. Cosmetic issue only — the frontend calls it correctly.
-**Phase 3 fix:** Move to `/api/agents/registry` in a dedicated agents router registered
-under `/api`. Update `api.js` and `AgentPanel.jsx` accordingly.
+not engagement-specific. Cosmetic issue only.
+**Phase 3 fix:** Move to `/api/agents/registry`. Update `api.js` and `AgentPanel.jsx`.
 
 ### AWS Hosting
-When moving to AWS:
-- `_get_connection()` uses RDS connection string — set via `TOP_DB_PATH` env var
-- File processing reads from S3 instead of local filesystem — `document_processor.py` gets S3 client
-- Log path set via `TOP_LOG_PATH` env var pointing to CloudWatch or mounted volume
+- `_get_connection()` uses RDS connection string via `TOP_DB_PATH` env var
+- File processing reads from S3 — `document_processor.py` gets S3 client
 - `main.py` CORS origins updated to production domain
 - Frontend built with `VITE_API_URL=https://top.tuntechllc.com/api`
-No architectural changes required — all configuration driven.
+No architectural changes required.
 
 ### Multi-User Auth
-When adding a second user:
 1. Add `users` table
 2. Add `user_id` column to `Engagements` table
-3. Add WHERE filter to all engagement queries: `WHERE user_id = ?`
-4. Add auth layer (FastAPI middleware + JWT or session)
-Nothing in the current schema conflicts with this — `engagement_id` is already the
-correct scoping key for all user data.
+3. Add `WHERE user_id = ?` filter to all engagement queries
+4. Add auth middleware (FastAPI + JWT or session)
 
 ### Custom Domain
-`top.tuntechllc.com` — add DNS record pointing to AWS load balancer when hosted.
-No code changes needed — driven by `VITE_API_URL` build env var.
-
----
-
-## New Patterns (Run Before Dry Run 3)
-
-SQL INSERT statements ready in `TOP_New_Domain_Expansion.docx` (OneDrive\100_TunTech\Admin\).
-Run in DB Browser against TOP.db before dry run 3.
-
-| Pattern ID | Name | Domain |
-|-----------|------|--------|
-| P48 | No AI Delivery Capability | AI Readiness |
-| P49 | No AI Service Offering | AI Readiness |
-| P50 | AI Governance Absence | AI Readiness |
-| P51 | Business Model Not AI-Ready | AI Readiness |
-| P52 | High Voluntary Turnover | Human Resources |
-| P53 | No Career Development Framework | Human Resources |
-| P54 | Weak Hiring Process | Human Resources |
-| P55 | Immature HR Function | Human Resources |
-| P56 | Weak Manager Development | Human Resources |
-| P57 | Weak Collections Discipline | Finance and Commercial |
-| P58 | No Cash Flow Visibility | Finance and Commercial |
-| P59 | Weak Contract Governance | Finance and Commercial |
-| P60 | Immature Financial Infrastructure | Finance and Commercial |
-
-After running: `SELECT COUNT(*) FROM Patterns` should return 58.
-
----
-
-## Prompt Improvements (Lower Priority — After Checkpoint 3)
-
-- **DELIVERY_DOCUMENT_EXTRACTION_PROMPT** — general purpose prompt for risk registers,
-  retrospectives, portfolio summaries, proposals. Not needed for dry run 3 if those
-  document types are not included.
-- **PATTERN_DETECTION_PROMPT** — add examples of good vs weak detections to calibrate
-  confidence levels more precisely.
-- **Delivery Operations agent prompt** — expand from current single paragraph to
-  multi-section instruction matching original Phase 1 quality. Current version is adequate
-  but thinner than the original Google Doc prompt.
+`top.tuntechllc.com` — DNS record pointing to AWS load balancer.
+No code changes — driven by `VITE_API_URL` build env var.
 
 ---
 
@@ -420,5 +466,3 @@ After running: `SELECT COUNT(*) FROM Patterns` should return 58.
 - **Do not add global state** — all data must be scoped to `engagement_id`.
   Cross-engagement reporting queries across all engagements by design — that is intentional.
   Any new feature should be scoped to an engagement, not global.
-- **Knowledge promotions stay manual** — auto-extraction is possible but these are
-  qualitative judgments requiring consultant review. The form is the right interface permanently.

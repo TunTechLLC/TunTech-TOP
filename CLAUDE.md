@@ -24,8 +24,8 @@ maintainability and clarity, not scale or polish.
 
 ## Current Phase
 
-**Phase 2 — Browser-based diagnostic tool**
-Read PROGRESS.md for detailed current status, next steps, and test procedures.
+**Phase 2 — Post-Checkpoint 3 backlog work in progress**
+Read PROGRESS.md for completed steps. Read BACKLOG.md for what to build next and in what order.
 
 ---
 
@@ -70,15 +70,22 @@ A file can be renamed without triggering reprocessing. If content changes, hash 
 **The sequential loop in bulk_create()** — List comprehension generated duplicate IDs.
 Sequential loop with next_id() call per iteration is the correct pattern.
 
-**The two-step detect-then-load for pattern detection** — Detect returns results for human review.
-Load saves them. Prevents bad Claude output from automatically entering the database.
+**The detect-review-load pattern** — Used across Signals, Patterns, Findings, and Roadmap.
+Claude returns candidates for human review; nothing is written to the database until the
+consultant explicitly loads approved items. Prevents bad Claude output from entering the
+database automatically.
 
 **The Synthesizer prerequisite on finding creation** — Findings must always be informed by
 complete agent analysis. The Synthesizer must be accepted before any finding can be created,
-whether via Parse Findings (Step 8 Extension 2) or manual Add Finding form.
+whether via Parse Findings or the manual Add Finding form.
 
 **interview_id is nulled out on all signal creates** — Foreign key constraint fix.
 Empty string is not a valid foreign key value.
+
+**Auto-cull before candidate review** — After extraction, candidates are deduplicated by
+domain + signal_name, capped at 5 per domain, and Hypothesis-confidence signals are
+separated into a hidden "show all" toggle. Target: 25–40 main candidates regardless of
+input file count.
 
 ---
 
@@ -89,10 +96,11 @@ Empty string is not a valid foreign key value.
 ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH directly.
 
 **Dry run data:**
-- E001 — Meridian Consulting Group (33 signals, 32 patterns — modified by testing: findings and roadmap counts differ from original)
+- E001 — Meridian Consulting Group (33 signals, 32 patterns — modified by testing)
 - E002 — Apex Technology Solutions (33 signals, 21 patterns, 5 agent runs, 7 findings, 16 roadmap items)
+- E003 — Used for Report Narrator and Synthesizer-to-Roadmap validation (102 signals)
 
-**Patterns:** P01–P60 after new domain inserts (58 total)
+**Patterns:** P01–P60 (58 total)
 - P01–P47: Original 7 domains
 - P48–P51: AI Readiness
 - P52–P56: Human Resources
@@ -114,21 +122,30 @@ ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH 
 
 | Issue | Location | Fix Timing |
 |-------|----------|------------|
-| Engagement header counts don't refresh after write operations | EngagementDetail.jsx | After Checkpoint 3 |
-| No reprocess button — must use DB Browser to clear ProcessedFiles | SignalPanel.jsx | After Checkpoint 3 |
-| Candidate JSON files accumulate in candidates folder | document_processor.py | After Checkpoint 3 — archive to processed/ subfolder |
+| Engagement header counts don't refresh after write operations | EngagementDetail.jsx | Before Checkpoint 4 |
+| No reprocess button — must use DB Browser to clear ProcessedFiles | signals.py + SignalPanel.jsx | Before Checkpoint 4 |
+| Candidate JSON files accumulate in candidates folder | signals.py load-candidates | Before Checkpoint 4 — archive to processed/ subfolder |
+| DELIVERY_DOCUMENT_EXTRACTION_PROMPT not yet written — falls back to SIGNAL_EXTRACTION_PROMPT | document_processor.py:182 | Before Checkpoint 4 |
 | Agent registry URL is under /api/engagements but is not engagement-specific | agents.py | Phase 3 cosmetic fix — do not move without updating api.js |
 | process-files endpoint runs synchronously — long transcripts could timeout | signals.py | Phase 3 — background tasks |
-| Word report uses default python-docx styles — needs visual polish | report_generator.py | After Checkpoint 3 |
 
 ---
 
 ## What Is Not Yet Built
 
-All Phase 2 features are complete. Remaining work is post-Checkpoint 3:
-- Synthesizer-to-Roadmap parser (BACKLOG.md)
-- Word report visual polish (BACKLOG.md)
-- PDF file support (BACKLOG.md)
+See BACKLOG.md for full specs and build order. Summary of items before Checkpoint 4:
+
+- Word report template formatting cleanup (in progress)
+- DELIVERY_DOCUMENT_EXTRACTION_PROMPT
+- Reprocess button (frontend + backend)
+- Candidate file archival after loading
+- Engagement header count refresh
+- Replace report browser download with save-and-show-path
+- Improve PATTERN_DETECTION_PROMPT for new domain coverage
+
+After Checkpoint 4: Knowledge auto-suggest, Findings Enhancements (pattern enforcement +
+evidence summary + key quotes), Roadmap Enhancements (capability + economic linkage +
+dependencies), Domain Maturity Scoring, PowerPoint export.
 
 ---
 
