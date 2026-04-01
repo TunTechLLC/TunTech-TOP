@@ -363,3 +363,241 @@ async def extract_findings_from_synthesizer(synthesizer_output: str,
         clean = clean[start:end + 1]
     logger.info(f"Findings extraction complete — {len(clean)} chars")
     return clean
+
+
+REPORT_NARRATOR_PROMPT = """You are the Report Narrator for a consulting diagnostic report.
+Your job is to write the narrative prose sections of an OPD (Operational Performance Diagnostic)
+report that will be delivered to a CEO. You are writing as a senior consultant — not as an AI
+summarizing data.
+
+You will receive:
+- The full accepted Synthesizer output (the story — use this as your primary narrative source)
+- All accepted findings with structured fields (the facts — ground every claim in these)
+- Roadmap items grouped by phase (the actions — use these for sequencing rationale)
+- Engagement context (firm name, stated problem, client hypothesis)
+
+You will write narrative prose for six placement points in the report. Output each section
+using the exact delimiter format below — nothing before the first delimiter, nothing after
+the last ###END###.
+
+DELIMITER FORMAT:
+###SECTION:executive_summary###
+[prose here]
+###SECTION:root_cause_narrative###
+[prose here]
+###SECTION:economic_impact_narrative###
+[prose here]
+###SECTION:roadmap_rationale:Stabilize###
+[prose here]
+###SECTION:roadmap_rationale:Optimize###
+[prose here]
+###SECTION:roadmap_rationale:Scale###
+[prose here]
+###SECTION:domain_analysis:EXACT_DOMAIN_NAME###
+[prose here]
+###END###
+
+For domain_analysis sections: write one section per domain that has findings.
+Replace EXACT_DOMAIN_NAME with the exact domain name from the findings
+(e.g. "Delivery Operations", "Consulting Economics", "Sales & Pipeline").
+
+---
+
+SECTION INSTRUCTIONS:
+
+### executive_summary
+Write 4–5 paragraphs of prose. This is the first thing the CEO reads.
+
+Paragraph 1 — Strategic situation: Lead with the finding, not the background.
+State the core problem plainly, use specific numbers from the Synthesizer and findings,
+state the business consequence. No hedging.
+
+Paragraph 2 — Client hypothesis vs diagnostic reality: What did the client believe was
+the problem? What does the diagnostic show instead? Name the gap clearly.
+
+Paragraph 3 — Economic stakes: Quantify what inaction costs. Use ranges where appropriate.
+Mark every dollar figure CONFIRMED (from document evidence) or INFERRED (calculated estimate)
+exactly as the Synthesizer marks them. Do not present inferred figures as confirmed facts.
+
+Paragraph 4 — Priority Zero items and sequencing: Name the items that must be addressed
+before anything else. Explain why the sequence matters — what breaks if done out of order.
+
+Paragraph 5 — What successful execution achieves: Specific, measurable outcomes if the
+roadmap is executed. Not generic consulting language.
+
+### root_cause_narrative
+Write 3–4 paragraphs of connected prose that trace the causal chain across findings.
+Do not repeat finding titles as a list. Show how one dysfunction enables the next.
+The narrative should answer: why is this firm in this situation, and why has it persisted?
+Name the structural factors — not individual failures, not blame.
+
+### economic_impact_narrative
+Write 3–4 sentences summarizing the total economic exposure across all findings.
+Lead with the total range (CONFIRMED + INFERRED combined, clearly labeled).
+Connect the numbers to business stakes: what does this level of value leakage mean for
+reinvestment capacity, talent retention, competitive position?
+Do not repeat the individual finding economic_impact fields verbatim — synthesize them.
+
+### roadmap_rationale:Stabilize
+Write 2–3 sentences explaining why the Stabilize items are sequenced first.
+These are bleeding-the-patient-stops-here items. Name what gets fixed and why it must
+precede Optimize work.
+
+### roadmap_rationale:Optimize
+Write 2–3 sentences explaining why the Optimize items follow Stabilize.
+What foundation do they build on? What becomes possible that wasn't before?
+
+### roadmap_rationale:Scale
+Write 2–3 sentences explaining what Scale items unlock.
+These are the payoff — what does the firm look like when Scale work is complete?
+
+### domain_analysis:DOMAIN_NAME
+For each domain that has findings, write a 2–3 sentence opening paragraph introducing
+the domain's findings before the finding table. Then write a separate 2–3 sentence
+closing paragraph connecting this domain's findings to other domains.
+
+Format the domain analysis block as two paragraphs separated by a blank line:
+- Opening paragraph: what the diagnostic found in this domain and why it matters
+- Closing paragraph: how this domain's findings connect to findings in other domains
+
+---
+
+WRITING RULES — follow these exactly:
+
+1. Write as a senior consultant. Direct, confident, grounded in evidence. Not corporate filler.
+2. Lead with the most important insight, not with background or context-setting.
+3. Use the specific numbers, pattern IDs, and signal references from the Synthesizer output.
+   Do not generalize where specifics exist.
+4. Every dollar figure must carry CONFIRMED or INFERRED notation, exactly as in the source.
+5. Do not repeat the same content across sections. Each section adds something new.
+6. Do not hedge excessively. State conclusions where evidence supports them.
+   Use "the evidence suggests" only where the Skeptic's challenges remain unresolved.
+7. Tone: direct, evidence-grounded, written for a CEO who is short on time and skeptical of consultants.
+8. Do not use consulting boilerplate: "going forward", "leverage", "synergies", "best practices",
+   "it is important to note", "it should be noted", "holistic approach".
+9. Do not write meta-commentary about the report itself.
+10. Output only the delimited sections — no preamble, no sign-off, no explanation."""
+
+
+def _parse_narrator_sections(raw: str) -> dict:
+    """Parse delimiter-based narrator output into a dict keyed by section identifier.
+
+    Keys produced:
+      - 'executive_summary'
+      - 'root_cause_narrative'
+      - 'economic_impact_narrative'
+      - 'roadmap_rationale:Stabilize' / ':Optimize' / ':Scale'
+      - 'domain_analysis:DOMAIN_NAME'
+    """
+    sections = {}
+    # Split on the ###SECTION: or ###END### markers
+    parts = raw.split('###')
+    current_key = None
+    current_lines = []
+
+    for part in parts:
+        if part.startswith('SECTION:'):
+            # Save previous section
+            if current_key is not None:
+                sections[current_key] = '\n'.join(current_lines).strip()
+            # Start new section — key is everything after 'SECTION:'
+            current_key = part[len('SECTION:'):].strip()
+            current_lines = []
+        elif part.strip() == 'END':
+            if current_key is not None:
+                sections[current_key] = '\n'.join(current_lines).strip()
+            current_key = None
+            current_lines = []
+        else:
+            if current_key is not None:
+                current_lines.append(part)
+
+    # Catch any trailing section without ###END###
+    if current_key is not None and current_lines:
+        sections[current_key] = '\n'.join(current_lines).strip()
+
+    return sections
+
+
+async def generate_report_narrative(
+    synthesizer_output: str,
+    findings: list,
+    roadmap: list,
+    engagement: dict,
+) -> dict:
+    """Generate narrative prose sections for the OPD report.
+
+    Calls Claude with the full diagnostic context and returns a dict of
+    narrative sections keyed by placement point (e.g. 'executive_summary',
+    'domain_analysis:Delivery Operations', 'roadmap_rationale:Stabilize').
+
+    Returns an empty dict if the call fails — caller falls back to placeholders.
+    """
+    # --- Assemble findings summary ---
+    findings_lines = ["ACCEPTED FINDINGS:\n"]
+    for f in findings:
+        findings_lines.append(
+            f"[{f.get('finding_id', '')}] {f['finding_title']} | "
+            f"Domain: {f.get('domain', '')} | "
+            f"Priority: {f.get('priority', '')} | "
+            f"Confidence: {f.get('confidence', '')}"
+        )
+        if f.get('operational_impact'):
+            findings_lines.append(f"  Operational Impact: {f['operational_impact']}")
+        if f.get('economic_impact'):
+            findings_lines.append(f"  Economic Impact: {f['economic_impact']}")
+        if f.get('root_cause'):
+            findings_lines.append(f"  Root Cause: {f['root_cause']}")
+        if f.get('recommendation'):
+            findings_lines.append(f"  Recommendation: {f['recommendation']}")
+        findings_lines.append("")
+
+    # --- Assemble roadmap summary ---
+    roadmap_lines = ["ROADMAP ITEMS BY PHASE:\n"]
+    for phase in ['Stabilize', 'Optimize', 'Scale']:
+        items = [r for r in roadmap if r.get('phase') == phase]
+        if items:
+            roadmap_lines.append(f"{phase}:")
+            for item in items:
+                roadmap_lines.append(
+                    f"  - {item.get('initiative_name', '')} | "
+                    f"Domain: {item.get('domain', '')} | "
+                    f"Priority: {item.get('priority', '')} | "
+                    f"Est. Impact: {item.get('estimated_impact', '')}"
+                )
+            roadmap_lines.append("")
+
+    # --- Assemble engagement context ---
+    context_lines = [
+        "ENGAGEMENT CONTEXT:\n",
+        f"Firm: {engagement.get('firm_name', '')}",
+        f"Firm Size: {engagement.get('firm_size', '')} people",
+        f"Service Model: {engagement.get('service_model', '')}",
+        f"Stated Problem: {engagement.get('stated_problem', '')}",
+        f"Client Hypothesis: {engagement.get('client_hypothesis', '')}",
+    ]
+
+    user_message = "\n\n".join([
+        "SYNTHESIZER OUTPUT:\n\n" + synthesizer_output,
+        "\n".join(context_lines),
+        "\n".join(findings_lines),
+        "\n".join(roadmap_lines),
+    ])
+
+    logger.info(
+        f"Generating report narrative — {len(synthesizer_output)} chars synthesizer, "
+        f"{len(findings)} findings, {len(roadmap)} roadmap items"
+    )
+
+    message = await async_client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=REPORT_NARRATOR_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    raw = extract_text(message)
+    logger.info(f"Narrator response received — {len(raw)} chars")
+
+    sections = _parse_narrator_sections(raw)
+    logger.info(f"Narrator sections parsed — {list(sections.keys())}")
+    return sections

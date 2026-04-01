@@ -12,6 +12,7 @@ from api.db.repositories.finding import FindingRepository
 from api.db.repositories.roadmap import RoadmapRepository
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.reporting import ReportingRepository
+from api.services.claude import generate_report_narrative
 
 logger = logging.getLogger(__name__)
 
@@ -22,31 +23,41 @@ class ReportGeneratorService:
     """Generates the OPD Transformation Roadmap Word document.
 
     Eight sections:
-    1. Executive Summary — blank placeholder (consultant writes manually)
+    1. Executive Summary — narrator prose
     2. Engagement Overview — from engagement record
     3. Operational Maturity Overview — signal domain summary table
-    4. Domain Analysis — findings grouped by domain
-    5. Root Cause Analysis — finding root_cause fields as list
-    6. Economic Impact Analysis — finding economic_impact fields as list
+    4. Domain Analysis — narrator opening/closing paragraphs + finding tables
+    5. Root Cause Analysis — narrator prose + finding root_cause bullet list
+    6. Economic Impact Analysis — narrator prose + finding economic_impact bullet list
     7. Improvement Opportunities — recommendations in priority order
-    8. Transformation Roadmap — RoadmapItems as three tables (Stabilize/Optimize/Scale)
+    8. Transformation Roadmap — narrator phase rationale + RoadmapItems tables
     """
 
     def __init__(self, engagement_id: str):
         self.engagement_id = engagement_id
 
-    def generate(self) -> str:
-        """Generate the OPD Word document. Returns the saved file path."""
-        eng        = EngagementRepository().get_by_id(self.engagement_id)
+    async def generate(self) -> str:
+        """Generate the OPD Word document. Returns the saved file path.
+        Raises ValueError if the engagement is not found or has no accepted Synthesizer output."""
+        eng = EngagementRepository().get_by_id(self.engagement_id)
         if not eng:
             raise ValueError(f"Engagement {self.engagement_id} not found")
 
-        findings   = FindingRepository().get_all(self.engagement_id)
-        roadmap    = RoadmapRepository().get_all(self.engagement_id)
-        signals    = ReportingRepository().get_engagement_signals(self.engagement_id)
+        synth_output = AgentRunRepository().get_accepted_output(self.engagement_id, "Synthesizer")
+        if not synth_output:
+            raise ValueError(
+                f"Engagement {self.engagement_id} has no accepted Synthesizer output. "
+                "Complete and accept all five agents before generating the report."
+            )
+
+        findings = FindingRepository().get_all(self.engagement_id)
+        roadmap  = RoadmapRepository().get_all(self.engagement_id)
+        signals  = ReportingRepository().get_engagement_signals(self.engagement_id)
+
+        narrative = await generate_report_narrative(synth_output, findings, roadmap, eng)
 
         doc = Document()
-        self._build(doc, eng, findings, roadmap, signals)
+        self._build(doc, eng, findings, roadmap, signals, narrative)
 
         file_path = self._output_path(eng)
         doc.save(file_path)
@@ -63,17 +74,17 @@ class ReportGeneratorService:
         reports_dir = eng.get('reports_folder') or ''
         if reports_dir:
             os.makedirs(reports_dir, exist_ok=True)
-            return os.path.join(reports_dir, f"OPD_Report_{self.engagement_id}.docx")
+            return os.path.join(reports_dir, f"OPD_Transformation_Roadmap_{self.engagement_id}.docx")
         return os.path.join(
             tempfile.gettempdir(),
-            f"OPD_Report_{self.engagement_id}.docx"
+            f"OPD_Transformation_Roadmap_{self.engagement_id}.docx"
         )
 
     # ------------------------------------------------------------------
     # Document assembly
     # ------------------------------------------------------------------
 
-    def _build(self, doc, eng, findings, roadmap, signals):
+    def _build(self, doc, eng, findings, roadmap, signals, narrative: dict):
         firm_name = eng.get('firm_name') or self.engagement_id
 
         # Cover line
@@ -86,10 +97,14 @@ class ReportGeneratorService:
 
         # 1 — Executive Summary
         doc.add_heading('1. Executive Summary', level=1)
-        doc.add_paragraph(
-            '[To be completed by consultant. '
-            'Summarize the engagement context, key findings, and recommended priorities.]'
-        ).italic = True
+        exec_summary = narrative.get('executive_summary', '')
+        if exec_summary:
+            self._add_narrative_paragraphs(doc, exec_summary)
+        else:
+            doc.add_paragraph(
+                '[To be completed by consultant. '
+                'Summarize the engagement context, key findings, and recommended priorities.]'
+            ).italic = True
         doc.add_paragraph()
 
         # 2 — Engagement Overview
@@ -114,11 +129,15 @@ class ReportGeneratorService:
 
         # 4 — Domain Analysis
         doc.add_heading('4. Domain Analysis', level=1)
-        self._findings_by_domain(doc, findings)
+        self._findings_by_domain(doc, findings, narrative)
         doc.add_paragraph()
 
         # 5 — Root Cause Analysis
         doc.add_heading('5. Root Cause Analysis', level=1)
+        root_cause = narrative.get('root_cause_narrative', '')
+        if root_cause:
+            self._add_narrative_paragraphs(doc, root_cause)
+            doc.add_paragraph()
         if findings:
             for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
                 p = doc.add_paragraph(style='List Bullet')
@@ -130,6 +149,10 @@ class ReportGeneratorService:
 
         # 6 — Economic Impact Analysis
         doc.add_heading('6. Economic Impact Analysis', level=1)
+        econ_narrative = narrative.get('economic_impact_narrative', '')
+        if econ_narrative:
+            self._add_narrative_paragraphs(doc, econ_narrative)
+            doc.add_paragraph()
         if findings:
             for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
                 if f.get('economic_impact'):
@@ -159,10 +182,25 @@ class ReportGeneratorService:
                 items = [r for r in roadmap if r.get('phase') == phase]
                 if items:
                     doc.add_heading(phase, level=2)
+                    rationale = narrative.get(f'roadmap_rationale:{phase}', '')
+                    if rationale:
+                        self._add_narrative_paragraphs(doc, rationale)
+                        doc.add_paragraph()
                     self._roadmap_table(doc, items)
                     doc.add_paragraph()
         else:
             doc.add_paragraph('No roadmap items recorded.')
+
+    # ------------------------------------------------------------------
+    # Narrative helpers
+    # ------------------------------------------------------------------
+
+    def _add_narrative_paragraphs(self, doc, text: str):
+        """Add each double-newline-separated paragraph as a Word paragraph."""
+        for para in text.split('\n\n'):
+            para = para.strip()
+            if para:
+                doc.add_paragraph(para)
 
     # ------------------------------------------------------------------
     # Table helpers
@@ -211,8 +249,9 @@ class ReportGeneratorService:
             row.cells[3].text = str(c['Medium'])
             row.cells[4].text = str(c['Hypothesis'])
 
-    def _findings_by_domain(self, doc, findings: list):
-        """Findings grouped by domain, each as a mini key-value table."""
+    def _findings_by_domain(self, doc, findings: list, narrative: dict):
+        """Findings grouped by domain.
+        Each domain opens with a narrator paragraph, then finding tables, then a closing paragraph."""
         if not findings:
             doc.add_paragraph('No findings recorded.')
             return
@@ -223,6 +262,20 @@ class ReportGeneratorService:
 
         for domain in sorted(by_domain):
             doc.add_heading(domain, level=2)
+
+            # Narrator domain analysis — split opening and closing paragraphs
+            domain_prose = narrative.get(f'domain_analysis:{domain}', '')
+            if domain_prose:
+                paras = [p.strip() for p in domain_prose.split('\n\n') if p.strip()]
+                opening = paras[0] if paras else ''
+                closing = paras[1] if len(paras) > 1 else ''
+            else:
+                opening = closing = ''
+
+            if opening:
+                doc.add_paragraph(opening)
+                doc.add_paragraph()
+
             for f in by_domain[domain]:
                 doc.add_heading(f.get('finding_title', ''), level=3)
                 self._kv_table(doc, [
@@ -234,6 +287,10 @@ class ReportGeneratorService:
                     ('Root Cause',         f.get('root_cause') or ''),
                     ('Recommendation',     f.get('recommendation') or ''),
                 ])
+                doc.add_paragraph()
+
+            if closing:
+                doc.add_paragraph(closing)
                 doc.add_paragraph()
 
     def _roadmap_table(self, doc, items: list):

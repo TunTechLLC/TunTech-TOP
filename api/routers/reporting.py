@@ -38,7 +38,7 @@ def get_pattern_library(repo: PatternRepository = Depends(get_pattern_repo)):
 
 
 @router.get("/{engagement_id}/report/download")
-def download_report(engagement_id: str):
+async def download_report(engagement_id: str):
     """Generate and download the OPD Transformation Roadmap Word document.
     Saves to 04_Agent_Outputs folder if derivable from documents_folder path,
     otherwise saves to the system temp directory."""
@@ -46,7 +46,7 @@ def download_report(engagement_id: str):
     from fastapi.responses import FileResponse
 
     try:
-        file_path = ReportGeneratorService(engagement_id).generate()
+        file_path = await ReportGeneratorService(engagement_id).generate()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -56,7 +56,7 @@ def download_report(engagement_id: str):
     return FileResponse(
         file_path,
         media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        filename=f"OPD_Report_{engagement_id}.docx",
+        filename=f"OPD_Transformation_Roadmap_{engagement_id}.docx",
     )
 
 
