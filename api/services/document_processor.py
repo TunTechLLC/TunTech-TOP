@@ -172,6 +172,60 @@ Do not include any text, explanation, or markdown before or after the JSON array
 Do not use code fences or backticks of any kind
 If your response does not begin with [, it is invalid and will be rejected"""
 
+DELIVERY_DOCUMENT_EXTRACTION_PROMPT = """You are analyzing a delivery document from a consulting firm diagnostic engagement.
+
+Delivery documents include risk registers, project retrospectives, portfolio summaries, and proposals.
+Extract signals that are directly supported by evidence in the document.
+
+Focus on:
+
+Risk registers:
+- Open risk count and severity distribution — how many High/Medium/Low risks are open?
+- Mitigation coverage — are risks listed without mitigations or owners?
+- Risk ownership gaps — risks with no assigned owner
+- Escalated risks — items flagged for management attention
+
+Retrospectives:
+- Recurring issues — problems that appear across multiple retrospectives
+- Action item completion — were prior retro actions actually resolved?
+- Process improvement adoption — were changes from past retros implemented?
+- Team health indicators — morale, capacity, or workload signals in retro language
+
+Portfolio summaries:
+- Aggregate delivery health — overall on-track / at-risk / red counts across the portfolio
+- Capacity vs pipeline alignment — is current staffing sufficient for the active portfolio?
+- Revenue recognition patterns — delayed milestones affecting invoicing
+
+Proposals:
+- Scope definition quality — are deliverables specific and measurable, or vague?
+- Delivery methodology — is how delivery will be executed described, or absent?
+- Assumptions coverage — is there an explicit assumptions section?
+- Pricing structure — fixed fee, T&M, or hybrid; any margin risk indicators in the structure
+
+Confidence rules for delivery documents:
+- High: explicitly stated with specific data (e.g., "14 of 22 risks have no assigned owner")
+- Medium: implied by pattern or stated without specific numbers
+- Hypothesis: a single indicator suggests the issue but evidence is thin
+
+Return only signals that are clearly observable in the document.
+Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+
+Each item must have exactly these fields:
+- signal_name: string — short descriptive name (e.g., "High open risk count with no mitigations")
+- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- observed_value: string — the specific observation (e.g., "14 of 22 risks unmitigated")
+- normalized_band: string — context for the value (e.g., "Above acceptable threshold")
+- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- source: string — always "Document"
+- economic_relevance: string — brief note on economic impact, or empty string
+- notes: string — direct reference or quote from the document that supports this signal
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected"""
+
 PROMPT_MAP = {
     'interview':  None,       # uses SIGNAL_EXTRACTION_PROMPT from claude.py
     'financial':  FINANCIAL_EXTRACTION_PROMPT,
@@ -179,7 +233,7 @@ PROMPT_MAP = {
     'sow':        SOW_EXTRACTION_PROMPT,
     'status':     STATUS_EXTRACTION_PROMPT,
     'resource':   RESOURCE_EXTRACTION_PROMPT,
-    'delivery':   None,       # uses SIGNAL_EXTRACTION_PROMPT until DELIVERY_DOCUMENT_EXTRACTION_PROMPT built (post-Checkpoint 3)
+    'delivery':   DELIVERY_DOCUMENT_EXTRACTION_PROMPT,
     'other':      None,       # uses SIGNAL_EXTRACTION_PROMPT from claude.py
 }
 

@@ -285,6 +285,7 @@ export default function SignalPanel({ engagementId }) {
                         </div>
                       )}
                       <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Signal name</label>
                         <input
                           value={c.signal_name || ''}
                           onChange={e => handleCandidateChange(idx, 'signal_name', e.target.value)}
@@ -293,6 +294,7 @@ export default function SignalPanel({ engagementId }) {
                         />
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Domain</label>
                         <select
                           value={c.domain || 'Delivery Operations'}
                           onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
@@ -302,6 +304,7 @@ export default function SignalPanel({ engagementId }) {
                         </select>
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Confidence</label>
                         <select
                           value={c.signal_confidence || 'Medium'}
                           onChange={e => handleCandidateChange(idx, 'signal_confidence', e.target.value)}
@@ -311,6 +314,7 @@ export default function SignalPanel({ engagementId }) {
                         </select>
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Observed value</label>
                         <input
                           value={c.observed_value || ''}
                           onChange={e => handleCandidateChange(idx, 'observed_value', e.target.value)}
@@ -319,6 +323,7 @@ export default function SignalPanel({ engagementId }) {
                         />
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Normalized band</label>
                         <input
                           value={c.normalized_band || ''}
                           onChange={e => handleCandidateChange(idx, 'normalized_band', e.target.value)}
@@ -327,6 +332,7 @@ export default function SignalPanel({ engagementId }) {
                         />
                       </div>
                       <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Notes</label>
                         <textarea
                           value={c.notes || ''}
                           onChange={e => handleCandidateChange(idx, 'notes', e.target.value)}

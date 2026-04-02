@@ -37,12 +37,14 @@ cleanup is the active task. See BACKLOG.md for full build order.
 | Backlog | Disable agent buttons while any agent is running | ✅ |
 | Backlog | Roadmap item edit and delete | ✅ |
 | Backlog | Word report template — custom .docx, table column widths, header shading | ✅ |
+| Backlog | DELIVERY_DOCUMENT_EXTRACTION_PROMPT — risk registers, retrospectives, portfolio summaries, proposals | ✅ |
+| Backlog | Signal candidate labels — field labels added to candidate review cards | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** DELIVERY_DOCUMENT_EXTRACTION_PROMPT (first Before Checkpoint 4 item)
+**Current task:** Reprocess Button (next Before Checkpoint 4 item)
 **After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
 
 ---
