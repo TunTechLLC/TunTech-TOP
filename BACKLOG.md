@@ -3,23 +3,6 @@
 
 ---
 
-## In Progress
-
-### Word Report Template Cleanup
-The generated `.docx` uses default python-docx styles (Table Grid, Heading 1-3, List Bullet).
-Template is wired in (`assets/roadmap_template.docx`) and generates without errors.
-Formatting issues were observed but not fully catalogued.
-
-**Next session procedure:**
-1. Generate report for E002 or E003
-2. Open the Word doc and catalogue every formatting issue (list them explicitly)
-3. Fix each one — likely: table style conflicts with template, column widths,
-   heading spacing, cover page layout
-4. Test `validate_template.py` still passes after any template changes
-5. Commit when the document looks clean
-
----
-
 ## Before Checkpoint 4
 
 ### DELIVERY_DOCUMENT_EXTRACTION_PROMPT
@@ -129,6 +112,23 @@ If no items meet the criteria, omit the section entirely — do not show an empt
 No schema changes. No frontend changes. No new endpoints.
 
 **Commit message:** Quick wins section in report — high priority, low effort roadmap items
+
+---
+
+### Word Report Template — Additional Formatting Cleanup
+Initial template issues fixed (heading numbers, title block, Client Name field population).
+Additional formatting issues observed but not yet catalogued.
+
+**Next session procedure:**
+1. Generate report for E002 or E003
+2. Open the Word doc and list every remaining formatting issue explicitly
+3. Fix each one
+4. Run `validate_template.py` to confirm required styles still present
+5. Commit when the document looks clean
+
+**Files:** `api/services/report_generator.py`, `assets/roadmap_template.docx`
+
+**Commit message:** Word report template — additional formatting cleanup
 
 ---
 
@@ -352,19 +352,24 @@ and creates a risk that the deck and the Word doc drift apart if the roadmap is 
 after the presentation.
 
 **Design:** Generate a starting-point PPTX from the same data that drives the Word report.
+Use a PowerPoint template named presentation_template.pptx that resides in the assets folder,
+which is the same folder where the Word template resides.
 Victor tweaks it to presentation quality before the client meeting — same expectation as
 the Word document. The goal is to eliminate the blank-slide starting point, not the
 consultant's judgment.
 
 **Suggested slide structure:**
-1. Situation and client hypothesis vs. diagnostic reality
-2. Domain maturity scorecard
-3. Key findings by domain (one slide per domain)
-4. Economic stakes summary
-5. Transformation roadmap — Stabilize phase
-6. Transformation roadmap — Optimize phase
-7. Transformation roadmap — Scale phase
-8. Quick wins — immediate actions
+1. Title slide
+2. Agenda
+3. Transformation Process Review
+3. Situation and client hypothesis vs. diagnostic reality
+4. Domain maturity scorecard
+5. Key findings by domain (one slide per domain)
+6. Economic stakes summary
+7. Transformation roadmap — Stabilize phase
+8. Transformation roadmap — Optimize phase
+9. Transformation roadmap — Scale phase
+10. Quick wins — immediate actions
 
 **Implementation:**
 - New function `generate_pptx(engagement_id)` in `api/services/report_generator.py`

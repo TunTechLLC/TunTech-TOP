@@ -2,13 +2,12 @@ import os
 import logging
 import tempfile
 from collections import defaultdict
-from datetime import date
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.shared import Inches
+from lxml import etree
 
 from api.db.repositories.engagement import EngagementRepository
 from api.db.repositories.finding import FindingRepository
@@ -114,16 +113,10 @@ class ReportGeneratorService:
     def _build(self, doc, eng, findings, roadmap, signals, narrative: dict):
         firm_name = eng.get('firm_name') or self.engagement_id
 
-        # Cover line
-        doc.add_heading('OPD Transformation Roadmap', level=1)
-        sub = doc.add_paragraph(
-            f"{firm_name}  |  {date.today().strftime('%B %Y')}"
-        )
-        sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph()
+        self._populate_content_controls(doc, firm_name)
 
         # 1 — Executive Summary
-        doc.add_heading('1. Executive Summary', level=1)
+        doc.add_heading('Executive Summary', level=1)
         exec_summary = narrative.get('executive_summary', '')
         if exec_summary:
             self._add_narrative_paragraphs(doc, exec_summary)
@@ -135,7 +128,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 2 — Engagement Overview
-        doc.add_heading('2. Engagement Overview', level=1)
+        doc.add_heading('Engagement Overview', level=1)
         self._kv_table(doc, [
             ('Client',             firm_name),
             ('Engagement',         eng.get('engagement_name') or ''),
@@ -150,17 +143,17 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 3 — Operational Maturity Overview
-        doc.add_heading('3. Operational Maturity Overview', level=1)
+        doc.add_heading('Operational Maturity Overview', level=1)
         self._signal_table(doc, signals)
         doc.add_paragraph()
 
         # 4 — Domain Analysis
-        doc.add_heading('4. Domain Analysis', level=1)
+        doc.add_heading('Domain Analysis', level=1)
         self._findings_by_domain(doc, findings, narrative)
         doc.add_paragraph()
 
         # 5 — Root Cause Analysis
-        doc.add_heading('5. Root Cause Analysis', level=1)
+        doc.add_heading('Root Cause Analysis', level=1)
         root_cause = narrative.get('root_cause_narrative', '')
         if root_cause:
             self._add_narrative_paragraphs(doc, root_cause)
@@ -175,7 +168,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 6 — Economic Impact Analysis
-        doc.add_heading('6. Economic Impact Analysis', level=1)
+        doc.add_heading('Economic Impact Analysis', level=1)
         econ_narrative = narrative.get('economic_impact_narrative', '')
         if econ_narrative:
             self._add_narrative_paragraphs(doc, econ_narrative)
@@ -191,7 +184,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 7 — Improvement Opportunities
-        doc.add_heading('7. Improvement Opportunities', level=1)
+        doc.add_heading('Improvement Opportunities', level=1)
         if findings:
             for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
                 p = doc.add_paragraph(style='List Bullet')
@@ -203,7 +196,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 8 — Transformation Roadmap
-        doc.add_heading('8. Transformation Roadmap', level=1)
+        doc.add_heading('Transformation Roadmap', level=1)
         if roadmap:
             for phase in ['Stabilize', 'Optimize', 'Scale']:
                 items = [r for r in roadmap if r.get('phase') == phase]
@@ -217,6 +210,44 @@ class ReportGeneratorService:
                     doc.add_paragraph()
         else:
             doc.add_paragraph('No roadmap items recorded.')
+
+    # ------------------------------------------------------------------
+    # Template helpers
+    # ------------------------------------------------------------------
+
+    def _populate_content_controls(self, doc, firm_name: str):
+        """Populate named content controls in the template with engagement data.
+
+        The Company content control is data-bound to docProps/app.xml.
+        Word reads from app.xml on open, so we must update both the binding
+        source and the sdtContent (for immediate visibility in the saved file).
+        """
+        _EXT_PROPS_RT = (
+            'http://schemas.openxmlformats.org/officeDocument/2006/relationships/'
+            'extended-properties'
+        )
+        _EXT_PROPS_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties'
+
+        for rel in doc.part.package.iter_rels():
+            if rel.reltype == _EXT_PROPS_RT:
+                part = rel.target_part
+                root = etree.fromstring(part.blob)
+                company_el = root.find(f'{{{_EXT_PROPS_NS}}}Company')
+                if company_el is not None:
+                    company_el.text = firm_name
+                part._blob = etree.tostring(
+                    root, xml_declaration=True, encoding='UTF-8', standalone=True
+                )
+                break
+
+        for sdt in doc.element.body.findall('.//' + qn('w:sdt')):
+            alias = sdt.find('.//' + qn('w:alias'))
+            if alias is not None and alias.get(qn('w:val')) == 'Company':
+                content = sdt.find(qn('w:sdtContent'))
+                if content is not None:
+                    for t in content.findall('.//' + qn('w:t')):
+                        t.text = firm_name
+                break
 
     # ------------------------------------------------------------------
     # Narrative helpers

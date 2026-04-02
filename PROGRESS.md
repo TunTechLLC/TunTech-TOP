@@ -36,13 +36,13 @@ cleanup is the active task. See BACKLOG.md for full build order.
 | Backlog | Add field labels to Finding candidate review cards | ✅ |
 | Backlog | Disable agent buttons while any agent is running | ✅ |
 | Backlog | Roadmap item edit and delete | ✅ |
-| Backlog | Word report template — custom .docx, table column widths, header shading | 🔄 In progress |
+| Backlog | Word report template — custom .docx, table column widths, header shading | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Word Report Template Cleanup (see BACKLOG.md — In Progress)
+**Current task:** DELIVERY_DOCUMENT_EXTRACTION_PROMPT (first Before Checkpoint 4 item)
 **After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
 
 ---
