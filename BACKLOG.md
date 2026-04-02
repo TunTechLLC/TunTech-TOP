@@ -59,9 +59,14 @@ patterns are detected on the first run.
 call out which items the client can act on immediately. Executives leave the presentation
 wanting something concrete to do next week — the report should give them that explicitly.
 
-**Design:** Add a "Quick Wins" section in the report immediately before the phase tables
-in Section 8. Filter roadmap items where priority=High AND effort=Low. Display as a
-short highlighted table — title, domain, and one-line description. Cap at 5 items.
+**Note:** Section 8.1 (Priority Zero Actions) and Section 9 (Immediate Next Steps) now
+address the most urgent items from the Synthesizer output. Quick Wins as defined here —
+a filtered table of priority=High AND effort=Low roadmap items — is still distinct and
+worth adding, but is lower priority than before given the new sections.
+
+**Design:** Add a "Quick Wins" subsection in Section 8 between the Roadmap Overview (8.2)
+and the phase tables (8.3). Filter roadmap items where priority=High AND effort=Low.
+Display as a short highlighted table — title, domain, and one-line description. Cap at 5 items.
 
 If no items meet the criteria, omit the section entirely — do not show an empty table.
 
@@ -74,12 +79,20 @@ No schema changes. No frontend changes. No new endpoints.
 
 ### Word Report Template — Additional Formatting Cleanup
 Initial template issues fixed (heading numbers, title block, Client Name field population).
-Additional formatting issues observed but not yet catalogued.
+Report structure significantly expanded this session (now 9 sections, Section 8 has 7
+subsections). New tables and sections need formatting review.
 
 **Next session procedure:**
-1. Generate report for E002 or E003
-2. Open the Word doc and list every remaining formatting issue explicitly
-3. Fix each one
+1. Generate report for E003 (full real narrator run)
+2. Open the Word doc and catalogue every formatting issue explicitly:
+   - Column widths too narrow/wide on any of the new tables
+   - Header row shading inconsistencies
+   - Section/subsection heading levels correct
+   - Paragraph spacing between tables and narrative
+   - Future State table (Section 7) reads correctly
+   - Phase tables (8.3/8.4/8.5) — 7 columns, check readability
+   - Priority Zero and Next Steps tables — check column proportions
+3. Fix each catalogued issue
 4. Run `validate_template.py` to confirm required styles still present
 5. Commit when the document looks clean
 
@@ -110,20 +123,31 @@ Additional formatting issues observed but not yet catalogued.
 7. Run all 5 agents in sequence, review and accept each
 8. Parse Findings, assign contributing patterns, load (expect 5–8 findings)
 9. Parse Roadmap, review, load (expect 10–16 items)
-10. Generate Report — verify file saved to disk and path shown (not browser download)
-11. Open Word doc — verify all 8 sections populated with narrative prose
+10. Generate Report — verify file saved to disk and path shown in Report panel
+11. Open Word doc — verify all 9 sections populated:
+    - Section 5: prose only, no bullet list
+    - Section 6: economic summary table (4 columns) + narrative
+    - Section 7: Future State metrics table + narrative
+    - Section 8.1: Priority Zero table with Owner + What This Unblocks
+    - Section 8.2: Roadmap Overview table with key outcomes
+    - Sections 8.3/8.4/8.5: phase tables with Owner, Timeline, Success Metric, Economic Impact
+    - Section 8.6: dependency table
+    - Section 8.7: risk table (max 3 rows)
+    - Section 9: Immediate Next Steps table
+    - Roadmap items have Owner populated (set by ROADMAP_EXTRACTION_PROMPT)
 
 **Pass criteria:**
 - All 5 AgentRuns with accepted=1
 - 5–8 OPDFindings created
-- 10–16 RoadmapItems created
+- 10–16 RoadmapItems created with Owner field populated
 - Signal candidate count was in the 25–40 range
 - AI Readiness patterns detected (if signals present)
-- Word doc saves to disk, path shown in Report panel
+- Word doc saves to disk, path shown and persists in Report panel
 - Report narrative sections are mark-up quality, not placeholder text
+- New structured sections (8.1, 8.2, 8.6, 8.7, 9) populated from real Claude output
 - Zero DB Browser operations required
 - Zero Claude.ai copy-pasting
-- Total API cost under $2.00
+- Total API cost under $2.50 (narrator now uses up to 16K tokens)
 - Cross-engagement report shows new engagement alongside E001, E002, E003
 
 ---

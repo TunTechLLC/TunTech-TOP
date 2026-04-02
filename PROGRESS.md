@@ -43,13 +43,18 @@ Before Checkpoint 4 items and build order.
 | Backlog | Candidate file cleanup — archive merged and individual candidate files to processed/ after loading | ✅ |
 | Backlog | Engagement header count refresh — onRefresh callback from EngagementDetail to all panels | ✅ |
 | Backlog | Replace report download with save-and-show-path — generate endpoint, open-folder endpoint | ✅ |
+| Backlog | OPD report major restructure — Sections 5-9 rebuilt, new Sections 7 / 8.1-8.7 / 9 | ✅ Validated (E003) |
+| Backlog | Report Narrator — rewrite to JSON output, 8 new structured sections (future state, priority zero, roadmap overview, initiative details, dependencies, risks, next steps) | ✅ |
+| Backlog | ROADMAP_EXTRACTION_PROMPT — owner field with role-based derivation and "TBD — assign at kickoff" fallback | ✅ |
+| Backlog | Section 6 economic summary table — _parse_economic_figures() parses CONFIRMED/INFERRED from free text, primary figure per cell, clean totals row from Consulting Economics finding | ✅ |
+| Backlog | ReportPanel — remove stale sections list, persist last saved path via localStorage | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Improve PATTERN_DETECTION_PROMPT (next Before Checkpoint 4 item)
-**After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
+**Current task:** Word Report Template — additional formatting cleanup (generate E003, catalogue issues, fix)
+**After that:** Economic Impact Reasoning (FINDINGS_EXTRACTION_PROMPT inline calculation), Improve PATTERN_DETECTION_PROMPT, then Checkpoint 4.
 
 ---
 
