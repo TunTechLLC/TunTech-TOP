@@ -381,6 +381,18 @@ Each item must have exactly these fields:
 - effort: string — exactly "High", "Medium", or "Low" (implementation effort)
 - estimated_impact: string — one sentence on what this initiative achieves when complete (e.g. "Eliminates below-cost deals from pipeline before SOW signature")
 - rationale: string — one sentence citing the specific finding or Synthesizer evidence that drives this initiative
+- owner: string — the role responsible for driving this initiative to completion (see owner rules below)
+
+OWNER RULES — apply these strictly:
+Only assign owners from roles explicitly named in the Synthesizer output or engagement context.
+Do not invent role titles that do not appear in the diagnostic data.
+Use these heuristics to match initiative content to confirmed roles:
+  - SOW gates, delivery authority, project oversight, delivery process design → Director of Delivery
+  - Organizational structure changes, CEO behavior changes, firm-level decisions → CEO
+  - Financial controls, collections, invoicing, cost reporting → Operations Manager
+  - Client relationship management, account expansion → CEO (if no account lead role is named)
+  - Ambiguous ownership or role not confirmed in the diagnostic → "TBD — assign at kickoff"
+If fewer than three distinct roles are named in the diagnostic data, some items will share an owner — that is correct, do not fabricate additional roles to distribute ownership.
 
 PHASE ASSIGNMENT RULES — apply these strictly:
 
@@ -420,7 +432,8 @@ Return format:
     "priority": "High",
     "effort": "Low",
     "estimated_impact": "Removes organizational veto on delivery improvements and enables all subsequent delivery-dependent initiatives",
-    "rationale": "Two prior improvement initiatives were blocked by the CEO bypass dynamic; all delivery fixes depend on this structural change"
+    "rationale": "Two prior improvement initiatives were blocked by the CEO bypass dynamic; all delivery fixes depend on this structural change",
+    "owner": "CEO"
   }
 ]"""
 
