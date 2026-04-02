@@ -89,7 +89,9 @@ export const api = {
     create: (id, data) => fetch(`${BASE}/engagements/${id}/knowledge`, json(data)).then(handle),
   },
   reporting: {
-    crossEngagement: () => fetch(`${BASE}/cross-engagement`).then(handle),
-    downloadReport:  (id) => fetch(`${BASE}/${id}/report/download`).then(handleBlob),
+    crossEngagement:   () =>  fetch(`${BASE}/cross-engagement`).then(handle),
+    downloadReport:    (id) => fetch(`${BASE}/${id}/report/download`).then(handleBlob),
+    generateReport:    (id) => fetch(`${BASE}/${id}/report/generate`, { method: 'POST' }).then(handle),
+    openReportsFolder: (id) => fetch(`${BASE}/${id}/report/open-folder`, { method: 'POST' }).then(handle),
   },
 };

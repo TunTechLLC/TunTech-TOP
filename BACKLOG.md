@@ -5,39 +5,6 @@
 
 ## Before Checkpoint 4
 
-### Engagement Header Count Refresh
-Signal/pattern/finding counts in the EngagementDetail header do not refresh after
-write operations. Requires F5 page refresh to update.
-
-**Fix:** Pass an `onRefresh` callback from EngagementDetail down to each panel component.
-When a panel writes data (loads signals, loads patterns, creates finding, etc.), it calls
-`onRefresh()` which re-fetches the engagement header data. EngagementDetail already has
-a `fetchEngagement()` function — expose it as the callback.
-
-**Files:** `frontend/src/components/EngagementDetail.jsx`, all panel components
-
-**Commit message:** Engagement header count refresh after write operations
-
----
-
-### Replace Report Download with Save-and-Show-Path
-**Problem:** Download Report streams the file to the browser, which saves a redundant
-copy to the Downloads folder. For a locally hosted single-user tool, the file is already
-saved to reports_folder on disk — the browser download adds no value.
-
-**Fix:** Change the Report tab to show a confirmation message with the full file path
-after generation instead of triggering a browser download. Add an "Open folder" button
-that calls a new backend endpoint to open the reports_folder in Windows Explorer
-(via `os.startfile(reports_folder)`).
-
-**New endpoint:** `POST /{engagement_id}/report/generate` — saves file, returns
-`{"saved_to": "C:\\...\\OPD_Report_E003.docx"}`. Frontend displays the path.
-**Optional:** `POST /{engagement_id}/report/open-folder` — calls `os.startfile()`.
-
-**Commit message:** Report panel — replace browser download with save-and-show-path
-
----
-
 ### Improve PATTERN_DETECTION_PROMPT for New Domain Coverage
 **Problem:** On large signal sets, Claude anchors on numerically dominant domains
 (Sales-to-Delivery, Delivery Operations) and under-detects sparse new domains

@@ -42,12 +42,13 @@ Before Checkpoint 4 items and build order.
 | Backlog | Reprocess button — source_file column on Signals, delete+reprocess endpoint, processed files UI | ✅ |
 | Backlog | Candidate file cleanup — archive merged and individual candidate files to processed/ after loading | ✅ |
 | Backlog | Engagement header count refresh — onRefresh callback from EngagementDetail to all panels | ✅ |
+| Backlog | Replace report download with save-and-show-path — generate endpoint, open-folder endpoint | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Replace Report Download with Save-and-Show-Path (next Before Checkpoint 4 item)
+**Current task:** Improve PATTERN_DETECTION_PROMPT (next Before Checkpoint 4 item)
 **After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
 
 ---

@@ -1,7 +1,9 @@
+import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from api.db.repositories.reporting import ReportingRepository
 from api.db.repositories.pattern import PatternRepository
+from api.db.repositories.engagement import EngagementRepository
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,44 @@ async def download_report(engagement_id: str):
         media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         filename=f"OPD_Transformation_Roadmap_{engagement_id}.docx",
     )
+
+
+@router.post("/{engagement_id}/report/generate")
+async def generate_report(engagement_id: str):
+    """Generate the OPD Word report, save it to the engagement's reports_folder,
+    and return the saved file path. Does not stream the file to the browser."""
+    from api.services.report_generator import ReportGeneratorService
+
+    try:
+        file_path = await ReportGeneratorService(engagement_id).generate()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Report generation failed for {engagement_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+    return {"saved_to": file_path}
+
+
+@router.post("/{engagement_id}/report/open-folder")
+def open_reports_folder(engagement_id: str):
+    """Open the engagement's reports_folder in Windows Explorer.
+    Windows-only — uses os.startfile(). No-op on non-Windows platforms.
+    When TOP moves to cloud hosting this endpoint will not be called."""
+    eng = EngagementRepository().get_by_id(engagement_id)
+    if not eng:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    reports_folder = eng.get('reports_folder') or ''
+    if not reports_folder:
+        raise HTTPException(status_code=400, detail="Reports folder not set. Update engagement settings first.")
+    if not os.path.exists(reports_folder):
+        raise HTTPException(status_code=400, detail=f"Reports folder does not exist: {reports_folder}")
+
+    if os.name == 'nt':
+        os.startfile(reports_folder)
+
+    return {"opened": reports_folder}
 
 
 @router.get("/health")

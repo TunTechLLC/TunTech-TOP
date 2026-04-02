@@ -12,27 +12,34 @@ const SECTIONS = [
   { num: 8, title: 'Transformation Roadmap',        note: 'Auto-generated from roadmap items by phase' },
 ]
 
-export default function ReportPanel({ engagementId }) {
-  const [downloading, setDownloading]       = useState(false)
-  const [downloadError, setDownloadError]   = useState(null)
+export default function ReportPanel({ engagementId, onRefresh }) {
+  const [generating, setGenerating]   = useState(false)
+  const [generateError, setGenerateError] = useState(null)
+  const [savedTo, setSavedTo]         = useState(null)
+  const [openingFolder, setOpeningFolder] = useState(false)
 
-  const handleDownload = async () => {
-    setDownloading(true)
-    setDownloadError(null)
+  const handleGenerate = async () => {
+    setGenerating(true)
+    setGenerateError(null)
+    setSavedTo(null)
     try {
-      const blob = await api.reporting.downloadReport(engagementId)
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href     = url
-      a.download = `OPD_Transformation_Roadmap_${engagementId}.docx`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const result = await api.reporting.generateReport(engagementId)
+      setSavedTo(result.saved_to)
     } catch (err) {
-      setDownloadError(err.message)
+      setGenerateError(err.message)
     } finally {
-      setDownloading(false)
+      setGenerating(false)
+    }
+  }
+
+  const handleOpenFolder = async () => {
+    setOpeningFolder(true)
+    try {
+      await api.reporting.openReportsFolder(engagementId)
+    } catch (err) {
+      setGenerateError(err.message)
+    } finally {
+      setOpeningFolder(false)
     }
   }
 
@@ -46,17 +53,31 @@ export default function ReportPanel({ engagementId }) {
           </p>
         </div>
         <button
-          onClick={handleDownload}
-          disabled={downloading}
+          onClick={handleGenerate}
+          disabled={generating}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {downloading ? 'Generating...' : 'Download Report'}
+          {generating ? 'Generating...' : 'Generate Report'}
         </button>
       </div>
 
-      {downloadError && (
+      {generateError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-          {downloadError}
+          {generateError}
+        </div>
+      )}
+
+      {savedTo && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+          <div className="text-xs font-medium text-green-800 mb-1">Report saved</div>
+          <div className="text-xs font-mono text-green-700 break-all">{savedTo}</div>
+          <button
+            onClick={handleOpenFolder}
+            disabled={openingFolder}
+            className="mt-2 px-3 py-1 border border-green-400 text-green-700 rounded text-xs font-medium hover:bg-green-100 disabled:opacity-50 transition-colors"
+          >
+            {openingFolder ? 'Opening...' : 'Open folder'}
+          </button>
         </div>
       )}
 
