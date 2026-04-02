@@ -5,7 +5,7 @@
 
 ## Before Checkpoint 4
 
-### DELIVERY_DOCUMENT_EXTRACTION_PROMPT
+### DELIVERY_DOCUMENT_EXTRACTION_PROMPT ✅
 **Status:** File type expansion is otherwise complete — STATUS and RESOURCE prompts are
 implemented and mapped. The delivery type falls back to SIGNAL_EXTRACTION_PROMPT with a
 comment noting it is deferred.
