@@ -2,6 +2,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.signal import SignalRepository
+from api.db.repositories.processed_files import ProcessedFilesRepository
 from api.models.signal import SignalCreate, SignalResponse, DomainSummaryResponse
 
 logger = logging.getLogger(__name__)
@@ -103,8 +104,8 @@ def load_candidates(
     payload: dict,
     repo: SignalRepository = Depends(get_repo)
 ):
-    """Load approved candidates into the Signals table.
-    Expects: {candidate_file, approved_indices, candidates}"""
+    """Load approved candidates into the Signals table and archive candidate files.
+    Expects: {candidates: [...], merged_candidate_file: str (optional)}"""
     candidates = payload.get('candidates', [])
 
     if not candidates:
@@ -123,8 +124,52 @@ def load_candidates(
             'interview_id':       None,
             'economic_relevance': signal.get('economic_relevance', ''),
             'notes':              signal.get('notes', ''),
+            'source_file':        signal.get('source_file'),
         }
         repo.create(signal_payload)
         loaded += 1
 
+    # Archive candidate files — non-fatal if it fails
+    merged_file = payload.get('merged_candidate_file')
+    if merged_file:
+        from api.services.document_processor import archive_candidate_files
+        candidates_folder = os.path.dirname(merged_file)
+        archive_candidate_files(engagement_id, candidates_folder, merged_file)
+
     return {'signals_loaded': loaded}
+
+
+@router.get("/{engagement_id}/signals/processed-files")
+def list_processed_files(engagement_id: str):
+    """Return all processed files for an engagement."""
+    return ProcessedFilesRepository().get_for_engagement(engagement_id)
+
+
+@router.delete("/{engagement_id}/signals/processed-files/{file_hash}", status_code=200)
+def reprocess_file(
+    engagement_id: str,
+    file_hash: str,
+    repo: SignalRepository = Depends(get_repo),
+):
+    """Delete signals loaded from a specific file and remove its ProcessedFiles record.
+    The file will be treated as new on the next Process Files run.
+    Uses a transaction — both deletes succeed or neither does."""
+    pf_repo = ProcessedFilesRepository()
+    record = pf_repo.get_by_hash(file_hash)
+    if not record:
+        raise HTTPException(status_code=404, detail="Processed file record not found")
+    if record['engagement_id'] != engagement_id:
+        raise HTTPException(status_code=403, detail="File does not belong to this engagement")
+
+    file_name = record['file_name']
+
+    from api.db.repositories.signal import DELETE_BY_SOURCE_FILE
+    from api.db.repositories.processed_files import DELETE_BY_HASH
+
+    pf_repo._write_transaction([
+        (DELETE_BY_SOURCE_FILE, (engagement_id, file_name)),
+        (DELETE_BY_HASH,        (file_hash,)),
+    ])
+
+    logger.info(f"Reprocess: removed signals and ProcessedFiles record for {file_name}")
+    return {'file_name': file_name, 'status': 'ready_for_reprocess'}

@@ -43,8 +43,11 @@ export const api = {
     processFiles:   (id)       => fetch(`${BASE}/engagements/${id}/signals/process-files`,
                                     { method: 'POST' }).then(handle),
     readCandidates: (id, file) => fetch(`${BASE}/engagements/${id}/signals/read-candidates?file=${encodeURIComponent(file)}`).then(handle),
-    loadCandidates: (id, data) => fetch(`${BASE}/engagements/${id}/signals/load-candidates`,
-                                    json(data)).then(handle),
+    loadCandidates:      (id, data) => fetch(`${BASE}/engagements/${id}/signals/load-candidates`,
+                                       json(data)).then(handle),
+    listProcessedFiles:  (id)       => fetch(`${BASE}/engagements/${id}/signals/processed-files`).then(handle),
+    deleteProcessedFile: (id, hash) => fetch(`${BASE}/engagements/${id}/signals/processed-files/${hash}`,
+                                       { method: 'DELETE' }).then(handle),
   },
   patterns: {
     list:    (id)          => fetch(`${BASE}/engagements/${id}/patterns`).then(handle),

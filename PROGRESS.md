@@ -39,12 +39,14 @@ cleanup is the active task. See BACKLOG.md for full build order.
 | Backlog | Word report template — custom .docx, table column widths, header shading | ✅ |
 | Backlog | DELIVERY_DOCUMENT_EXTRACTION_PROMPT — risk registers, retrospectives, portfolio summaries, proposals | ✅ |
 | Backlog | Signal candidate labels — field labels added to candidate review cards | ✅ |
+| Backlog | Reprocess button — source_file column on Signals, delete+reprocess endpoint, processed files UI | ✅ |
+| Backlog | Candidate file cleanup — archive merged and individual candidate files to processed/ after loading | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Reprocess Button (next Before Checkpoint 4 item)
+**Current task:** Engagement Header Count Refresh (next Before Checkpoint 4 item)
 **After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
 
 ---

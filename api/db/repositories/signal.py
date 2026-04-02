@@ -18,6 +18,7 @@ GET_FOR_ENGAGEMENT = """
            s.economic_relevance,
            s.source,
            s.notes,
+           s.source_file,
            s.created_date
     FROM   Signals s
     WHERE  s.engagement_id = ?
@@ -39,8 +40,13 @@ INSERT_SIGNAL = """
         signal_id, engagement_id, interview_id,
         signal_name, domain, observed_value,
         normalized_band, signal_confidence,
-        economic_relevance, source, notes, created_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        economic_relevance, source, notes, created_date, source_file
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+
+DELETE_BY_SOURCE_FILE = """
+    DELETE FROM Signals
+    WHERE  engagement_id = ? AND source_file = ?
 """
 
 LOG_PREVIEW_LENGTH = 80
@@ -89,10 +95,17 @@ class SignalRepository(BaseRepository):
             data.get('economic_relevance', ''),
             data['source'],
             data.get('notes', ''),
-            today
+            today,
+            data.get('source_file'),
         ))
 
         return signal_id
+
+    def delete_by_source_file(self, engagement_id: str, source_file: str) -> int:
+        """Delete all signals for an engagement that came from a specific source file.
+        Returns the number of rows deleted."""
+        logger.info(f"Deleting signals for engagement {engagement_id} from source file: {source_file}")
+        return self._write(DELETE_BY_SOURCE_FILE, (engagement_id, source_file))
 
     def bulk_create(self, rows: list) -> int:
         """Insert multiple signals in a single batch operation.

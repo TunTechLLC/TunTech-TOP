@@ -18,6 +18,16 @@ GET_BY_HASH = """
     SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
 """
 
+GET_FULL_BY_HASH = """
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, processed_date, signal_count, status
+    FROM   ProcessedFiles WHERE file_hash = ?
+"""
+
+DELETE_BY_HASH = """
+    DELETE FROM ProcessedFiles WHERE file_hash = ?
+"""
+
 INSERT_FILE = """
     INSERT INTO ProcessedFiles (
         file_id, engagement_id, file_name, file_hash,
@@ -35,6 +45,14 @@ class ProcessedFilesRepository(BaseRepository):
     def already_processed(self, file_hash: str) -> bool:
         rows = self._query(GET_BY_HASH, (file_hash,))
         return len(rows) > 0
+
+    def get_by_hash(self, file_hash: str) -> dict | None:
+        rows = self._query(GET_FULL_BY_HASH, (file_hash,))
+        return dict(rows[0]) if rows else None
+
+    def delete_by_hash(self, file_hash: str) -> int:
+        """Delete a processed file record by hash. Returns rowcount."""
+        return self._write(DELETE_BY_HASH, (file_hash,))
 
     def mark_processed(self, engagement_id: str, file_name: str,
                        file_hash: str, file_type: str, signal_count: int) -> str:

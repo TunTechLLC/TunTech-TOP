@@ -20,7 +20,7 @@ in `api/services/document_processor.py` to use it instead of the fallback.
 
 ---
 
-### Reprocess Button
+### Reprocess Button ✅
 Currently must delete from ProcessedFiles table in DB Browser to reprocess a file.
 
 **Fix:**
@@ -32,7 +32,7 @@ Currently must delete from ProcessedFiles table in DB Browser to reprocess a fil
 
 ---
 
-### Candidate File Cleanup (Archive After Loading)
+### Candidate File Cleanup (Archive After Loading) ✅
 Candidate JSON files accumulate in the candidates folder indefinitely.
 **Decision locked in:** Archive to `processed/` subfolder after loading, not delete.
 The candidate file is a useful audit trail.

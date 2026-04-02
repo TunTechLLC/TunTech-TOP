@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import hashlib
+import shutil
 from pathlib import Path
 from datetime import date
 
@@ -353,6 +354,7 @@ async def process_file(file_info: dict, engagement_id: str,
             logger.warning(f"Invalid confidence '{item.get('signal_confidence')}' in {file_name} — defaulting to Medium")
             item['signal_confidence'] = 'Medium'
         item['interview_id'] = None
+        item['source_file'] = file_name
         cleaned.append(item)
 
     stem = Path(file_name).stem
@@ -507,3 +509,43 @@ async def process_engagement_files(engagement_id: str,
         'domain_cap_count':      domain_cap_count,
         'hypothesis_count':      hypothesis_count,
     }
+
+
+def archive_candidate_files(engagement_id: str, candidates_folder: str,
+                            merged_file: str) -> None:
+    """Move candidate JSON files to candidates_folder/processed/ after loading.
+    Archives the merged file and all individual per-file candidate JSONs for
+    this engagement. Logs and continues on any failure — signals are already
+    loaded and archival failure must not affect the caller."""
+    if not candidates_folder or not os.path.exists(candidates_folder):
+        logger.warning(f"archive_candidate_files: candidates_folder not found — {candidates_folder}")
+        return
+
+    processed_dir = os.path.join(candidates_folder, 'processed')
+    try:
+        os.makedirs(processed_dir, exist_ok=True)
+    except OSError as e:
+        logger.warning(f"archive_candidate_files: could not create processed/ dir — {e}")
+        return
+
+    files_to_archive = []
+
+    # Merged file passed explicitly from the client
+    if merged_file and os.path.exists(merged_file):
+        files_to_archive.append(merged_file)
+
+    # Individual per-file candidate JSONs for this engagement
+    for entry in os.scandir(candidates_folder):
+        if (entry.is_file()
+                and entry.name.startswith(engagement_id + '_')
+                and entry.name.endswith('_candidates.json')
+                and entry.path != merged_file):
+            files_to_archive.append(entry.path)
+
+    for file_path in files_to_archive:
+        dest = os.path.join(processed_dir, os.path.basename(file_path))
+        try:
+            shutil.move(file_path, dest)
+            logger.info(f"Archived candidate file: {os.path.basename(file_path)}")
+        except OSError as e:
+            logger.warning(f"archive_candidate_files: could not move {file_path} — {e}")
