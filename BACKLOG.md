@@ -24,7 +24,9 @@ Example of what's needed:
 - Update `FINDINGS_EXTRACTION_PROMPT` in `api/services/claude.py` to require Claude to
   show its reasoning inline in the `economic_impact` field — calculation method, inputs
   used, and source of each input (interview, document, or industry benchmark)
-- Update report sections that surface economic_impact to handle the longer format
+- ~~Update report sections that surface economic_impact to handle the longer format~~ ✅ Done —
+  Section 6 now has a 4-column parsed table; `_parse_economic_figures()` handles CONFIRMED/INFERRED
+  free-text format. Totals row sourced from Consulting Economics finding.
 - No schema changes — `economic_impact` is already free text
 
 **Note:** This interacts with "Standardize Economic Output Generation" (After Checkpoint 4).
