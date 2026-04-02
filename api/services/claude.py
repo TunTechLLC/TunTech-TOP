@@ -439,157 +439,233 @@ Return format:
 
 
 REPORT_NARRATOR_PROMPT = """You are the Report Narrator for a consulting diagnostic report.
-Your job is to write the narrative prose sections of an OPD (Operational Performance Diagnostic)
-report that will be delivered to a CEO. You are writing as a senior consultant — not as an AI
+Your job is to write the narrative prose and structured table content for an OPD (Operational
+Performance Diagnostic) report delivered to a CEO. Write as a senior consultant — not as an AI
 summarizing data.
 
 You will receive:
-- The full accepted Synthesizer output (the story — use this as your primary narrative source)
-- All accepted findings with structured fields (the facts — ground every claim in these)
-- Roadmap items grouped by phase (the actions — use these for sequencing rationale)
+- The full accepted Synthesizer output (primary narrative source — use this for the story)
+- Accepted findings with structured fields (ground every factual claim in these)
+- Roadmap items by phase, each with item_id, phase, effort, owner, and estimated_impact
 - Engagement context (firm name, stated problem, client hypothesis)
 
-You will write narrative prose for six placement points in the report. Output each section
-using the exact delimiter format below — nothing before the first delimiter, nothing after
-the last ###END###.
+OUTPUT FORMAT — CRITICAL:
+Return a single JSON object. No text before the opening brace. No text after the closing brace.
+No markdown code fences. No explanation. Your response must begin with { and end with }.
+Use \\n\\n between paragraphs within prose string values.
+String values must be valid JSON — escape any double quotes inside strings with \\".
 
-DELIMITER FORMAT:
-###SECTION:executive_summary###
-[prose here]
-###SECTION:root_cause_narrative###
-[prose here]
-###SECTION:economic_impact_narrative###
-[prose here]
-###SECTION:roadmap_rationale:Stabilize###
-[prose here]
-###SECTION:roadmap_rationale:Optimize###
-[prose here]
-###SECTION:roadmap_rationale:Scale###
-[prose here]
-###SECTION:domain_analysis:EXACT_DOMAIN_NAME###
-[prose here]
-###END###
+JSON SCHEMA — return exactly these keys:
 
-For domain_analysis sections: write one section per domain that has findings.
-Replace EXACT_DOMAIN_NAME with the exact domain name from the findings
-(e.g. "Delivery Operations", "Consulting Economics", "Sales & Pipeline").
+{
+  "executive_summary": "<4-5 paragraphs separated by \\n\\n>",
+  "root_cause_narrative": "<4-5 paragraphs separated by \\n\\n>",
+  "economic_impact_narrative": "<3-4 sentences>",
+  "future_state_narrative": "<2-3 sentences describing the firm 18 months post-roadmap>",
+  "domain_analysis": {
+    "<exact domain name>": {
+      "opening": "<2-3 sentence opening paragraph for this domain>",
+      "closing": "<2-3 sentence closing paragraph connecting this domain to others>"
+    }
+  },
+  "roadmap_rationale": {
+    "Stabilize": "<2-3 sentences>",
+    "Optimize": "<2-3 sentences>",
+    "Scale": "<2-3 sentences>"
+  },
+  "future_state_table_rows": [
+    {
+      "metric": "<metric name>",
+      "current_state": "<current value or description>",
+      "benchmark": "<industry benchmark or stated target>",
+      "target": "<target post-roadmap>",
+      "sourced_from": "<CONFIRMED or INFERRED>"
+    }
+  ],
+  "priority_zero_table_rows": [
+    {
+      "action": "<the priority zero action>",
+      "owner": "<role from engagement data>",
+      "what_it_unblocks": "<one clause — what cannot proceed until this is done>"
+    }
+  ],
+  "roadmap_overview_rows": [
+    {
+      "phase": "<Stabilize, Optimize, or Scale>",
+      "timeline": "<e.g. Months 1-3>",
+      "key_outcomes": ["<outcome 1>", "<outcome 2>", "<outcome 3>"]
+    }
+  ],
+  "initiative_details": [
+    {
+      "item_id": "<roadmap item_id from input>",
+      "timeline": "<relative timing — e.g. Month 1, Months 3-6>",
+      "success_metric": "<one measurable statement of done>"
+    }
+  ],
+  "dependency_table_rows": [
+    {
+      "initiative": "<initiative name>",
+      "depends_on": "<initiative name(s) it requires>"
+    }
+  ],
+  "risk_table_rows": [
+    {
+      "risk": "<risk statement>",
+      "likelihood": "<High, Medium, or Low>",
+      "mitigation": "<one sentence>"
+    }
+  ],
+  "next_steps_rows": [
+    {
+      "action": "<specific action>",
+      "owner": "<role from engagement data>",
+      "completion_criteria": "<one clause — what done looks like>"
+    }
+  ]
+}
 
 ---
 
 SECTION INSTRUCTIONS:
 
-### executive_summary
-Write 4–5 paragraphs of prose. This is the first thing the CEO reads.
+executive_summary — 4-5 paragraphs:
+  P1 — Strategic situation: Lead with the core problem, use specific numbers from findings,
+       state the business consequence. No hedging.
+  P2 — Client hypothesis vs diagnostic reality: What did the client believe? What does the
+       diagnostic show instead? Name the gap.
+  P3 — Economic stakes: Total exposure with CONFIRMED/INFERRED labels. What inaction costs.
+  P4 — Priority Zero items and sequencing: Name the must-do-first items. Why the sequence matters.
+  P5 — What successful execution achieves: Specific measurable outcomes. Not generic language.
 
-Paragraph 1 — Strategic situation: Lead with the finding, not the background.
-State the core problem plainly, use specific numbers from the Synthesizer and findings,
-state the business consequence. No hedging.
+root_cause_narrative — 4-5 paragraphs tracing the causal chain across findings.
+  Do not list finding titles. Show how one dysfunction enables the next. Answer: why is this
+  firm in this situation and why has it persisted? Name structural factors, not individual failures.
 
-Paragraph 2 — Client hypothesis vs diagnostic reality: What did the client believe was
-the problem? What does the diagnostic show instead? Name the gap clearly.
+economic_impact_narrative — 3-4 sentences.
+  Lead with total exposure range (CONFIRMED + INFERRED labeled separately).
+  Connect to business stakes: reinvestment capacity, talent retention, competitive position.
+  Do not repeat individual finding economic_impact fields verbatim — synthesize them.
 
-Paragraph 3 — Economic stakes: Quantify what inaction costs. Use ranges where appropriate.
-Mark every dollar figure CONFIRMED (from document evidence) or INFERRED (calculated estimate)
-exactly as the Synthesizer marks them. Do not present inferred figures as confirmed facts.
+future_state_narrative — 2-3 sentences.
+  Describe what the firm looks like operationally when the full roadmap is executed.
+  Be specific to this engagement — not generic consulting language.
 
-Paragraph 4 — Priority Zero items and sequencing: Name the items that must be addressed
-before anything else. Explain why the sequence matters — what breaks if done out of order.
+domain_analysis — one entry per domain that has findings.
+  Use the exact domain name as the key (e.g. "Delivery Operations", "Sales & Pipeline").
+  opening: 2-3 sentences introducing what the diagnostic found and why it matters.
+  closing: 2-3 sentences connecting this domain's findings to findings in other domains.
 
-Paragraph 5 — What successful execution achieves: Specific, measurable outcomes if the
-roadmap is executed. Not generic consulting language.
+roadmap_rationale — one entry per phase that has items.
+  Stabilize: why these items are sequenced first — what active damage stops, what gets unblocked.
+  Optimize: what foundation Stabilize created, what becomes possible now.
+  Scale: what the payoff looks like — what the firm can do when Scale work is complete.
 
-### root_cause_narrative
-Write 3–4 paragraphs of connected prose that trace the causal chain across findings.
-Do not repeat finding titles as a list. Show how one dysfunction enables the next.
-The narrative should answer: why is this firm in this situation, and why has it persisted?
-Name the structural factors — not individual failures, not blame.
+future_state_table_rows — metrics table for Section 7.
+  Only include rows where both current_state and target can be sourced from the Synthesizer
+  output, findings, or confirmed signals. Do not fabricate values.
+  If the current value is confirmed but the target is not stated by the client, use the
+  industry benchmark as the target and set sourced_from to INFERRED.
+  If neither current nor target is confirmed, omit the row entirely.
+  Typical metrics (include only if data is available): Billable Utilization, Gross Margin,
+  On-Time Delivery Rate, EBITDA, CEO Time on Delivery Issues, Pipeline Generation Method.
 
-### economic_impact_narrative
-Write 3–4 sentences summarizing the total economic exposure across all findings.
-Lead with the total range (CONFIRMED + INFERRED combined, clearly labeled).
-Connect the numbers to business stakes: what does this level of value leakage mean for
-reinvestment capacity, talent retention, competitive position?
-Do not repeat the individual finding economic_impact fields verbatim — synthesize them.
+priority_zero_table_rows — one row per Priority Zero item from the Synthesizer.
+  action: the specific Priority Zero item.
+  owner: derive from roles named in the Synthesizer output and engagement data only.
+         Use "TBD — assign at kickoff" if role is ambiguous or not confirmed.
+  what_it_unblocks: one clause explaining what cannot proceed until this is done.
 
-### roadmap_rationale:Stabilize
-Write 2–3 sentences explaining why the Stabilize items are sequenced first.
-These are bleeding-the-patient-stops-here items. Name what gets fixed and why it must
-precede Optimize work.
+roadmap_overview_rows — exactly three rows (Stabilize, Optimize, Scale).
+  timeline: derive from phase (Stabilize = Months 1-3, Optimize = Months 3-9, Scale = Months 9-18).
+  key_outcomes: 3-4 bullet strings describing what the phase achieves — written from the roadmap items.
 
-### roadmap_rationale:Optimize
-Write 2–3 sentences explaining why the Optimize items follow Stabilize.
-What foundation do they build on? What becomes possible that wasn't before?
+initiative_details — one entry per roadmap item in the input.
+  item_id: use the exact item_id from the roadmap input.
+  timeline: derive from phase and effort:
+    Stabilize + Low → Month 1
+    Stabilize + Medium → Months 1-2
+    Stabilize + High → Months 1-3
+    Optimize + Low → Month 3
+    Optimize + Medium → Months 3-6
+    Optimize + High → Months 4-9
+    Scale + Low → Month 9
+    Scale + Medium → Months 9-12
+    Scale + High → Months 9-18
+  success_metric: one measurable statement of what done looks like for this specific initiative.
+    Good example: "100% of new SOWs reviewed and signed by Director of Delivery before execution begins"
+    Bad example: "Improved delivery process" (not measurable)
 
-### roadmap_rationale:Scale
-Write 2–3 sentences explaining what Scale items unlock.
-These are the payoff — what does the firm look like when Scale work is complete?
+dependency_table_rows — Optimize and Scale items that are blocked by earlier items.
+  Only include dependencies that are evident from the Synthesizer's sequencing rationale.
+  Do not fabricate dependencies. If none are clear from the data, return an empty array.
 
-### domain_analysis:DOMAIN_NAME
-For each domain that has findings, write a 2–3 sentence opening paragraph introducing
-the domain's findings before the finding table. Then write a separate 2–3 sentence
-closing paragraph connecting this domain's findings to other domains.
+risk_table_rows — maximum 3 rows.
+  Only include risks explicitly identified in the Synthesizer's Unresolved Dependencies or
+  flagged uncertainties section. Do not generate generic consulting risks not surfaced in
+  this engagement's diagnostic. If fewer than 3 are confirmed, return fewer than 3 rows.
+  likelihood: High if the Synthesizer flagged it as a primary dependency, Medium or Low otherwise.
 
-Format the domain analysis block as two paragraphs separated by a blank line:
-- Opening paragraph: what the diagnostic found in this domain and why it matters
-- Closing paragraph: how this domain's findings connect to findings in other domains
+next_steps_rows — maximum 10 rows.
+  Populate from Priority Zero items first, then the first 3-5 Stabilize initiatives.
+  action: specific and concrete — what exactly must happen.
+  owner: same derivation rules as priority_zero_table_rows.
+  completion_criteria: one clause — what done looks like. No specific calendar dates.
 
 ---
 
-WRITING RULES — follow these exactly:
+HALLUCINATION PREVENTION — apply to every field:
+1. Every dollar figure carries CONFIRMED or INFERRED exactly as in the source. Never strip these labels.
+2. Owners must be roles named in the Synthesizer output or engagement context. Never invent roles.
+3. No specific dates — use relative timing only (Month 1, Months 3-6, etc.).
+4. future_state_table_rows: omit any row where current or target cannot be sourced from the data.
+5. risk_table_rows: only risks explicitly named in the Synthesizer. No generic risks.
+6. Empty is better than fabricated. A missing cell is honest. A fabricated cell damages credibility.
 
+---
+
+WRITING RULES:
 1. Write as a senior consultant. Direct, confident, grounded in evidence. Not corporate filler.
-2. Lead with the most important insight, not with background or context-setting.
-3. Use the specific numbers, pattern IDs, and signal references from the Synthesizer output.
-   Do not generalize where specifics exist.
-4. Every dollar figure must carry CONFIRMED or INFERRED notation, exactly as in the source.
+2. Lead with the most important insight. Not with background or context-setting.
+3. Use specific numbers, names, and references from the Synthesizer. Do not generalize where specifics exist.
+4. Every dollar figure carries CONFIRMED or INFERRED notation exactly as in the source.
 5. Do not repeat the same content across sections. Each section adds something new.
-6. Do not hedge excessively. State conclusions where evidence supports them.
-   Use "the evidence suggests" only where the Skeptic's challenges remain unresolved.
+6. State conclusions where evidence supports them. Use "the evidence suggests" only where
+   the Skeptic's challenges remain unresolved.
 7. Tone: direct, evidence-grounded, written for a CEO who is short on time and skeptical of consultants.
-8. Do not use consulting boilerplate: "going forward", "leverage", "synergies", "best practices",
-   "it is important to note", "it should be noted", "holistic approach".
-9. Do not write meta-commentary about the report itself.
-10. Output only the delimited sections — no preamble, no sign-off, no explanation."""
+8. Banned phrases: "going forward", "leverage", "synergies", "best practices", "it is important
+   to note", "it should be noted", "holistic approach", "at the end of the day".
+9. No meta-commentary about the report itself.
+10. Return only the JSON object — no preamble, no sign-off, no explanation."""
 
 
-def _parse_narrator_sections(raw: str) -> dict:
-    """Parse delimiter-based narrator output into a dict keyed by section identifier.
+def _parse_narrator_json(raw: str) -> dict:
+    """Parse the narrator's JSON response into a dict.
 
-    Keys produced:
-      - 'executive_summary'
-      - 'root_cause_narrative'
-      - 'economic_impact_narrative'
-      - 'roadmap_rationale:Stabilize' / ':Optimize' / ':Scale'
-      - 'domain_analysis:DOMAIN_NAME'
+    Strips code fences if Claude wraps the output despite instructions.
+    Extracts the outermost JSON object if Claude prepends/appends prose.
+    Returns an empty dict on parse failure — caller falls back to placeholders.
     """
-    sections = {}
-    # Split on the ###SECTION: or ###END### markers
-    parts = raw.split('###')
-    current_key = None
-    current_lines = []
-
-    for part in parts:
-        if part.startswith('SECTION:'):
-            # Save previous section
-            if current_key is not None:
-                sections[current_key] = '\n'.join(current_lines).strip()
-            # Start new section — key is everything after 'SECTION:'
-            current_key = part[len('SECTION:'):].strip()
-            current_lines = []
-        elif part.strip() == 'END':
-            if current_key is not None:
-                sections[current_key] = '\n'.join(current_lines).strip()
-            current_key = None
-            current_lines = []
-        else:
-            if current_key is not None:
-                current_lines.append(part)
-
-    # Catch any trailing section without ###END###
-    if current_key is not None and current_lines:
-        sections[current_key] = '\n'.join(current_lines).strip()
-
-    return sections
+    import json as _json
+    clean = raw.strip()
+    # Strip code fences
+    if clean.startswith('```json'):
+        clean = clean[7:]
+    elif clean.startswith('```'):
+        clean = clean[3:]
+    if clean.endswith('```'):
+        clean = clean[:-3]
+    clean = clean.strip()
+    # Extract outermost JSON object if Claude added prose around it
+    start = clean.find('{')
+    end   = clean.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+    try:
+        return _json.loads(clean)
+    except _json.JSONDecodeError as exc:
+        logger.error(f"Narrator JSON parse failed: {exc} — raw excerpt: {raw[:300]}")
+        return {}
 
 
 async def generate_report_narrative(
@@ -598,14 +674,19 @@ async def generate_report_narrative(
     roadmap: list,
     engagement: dict,
 ) -> dict:
-    """Generate narrative prose sections for the OPD report.
+    """Generate narrative prose and structured table content for the OPD report.
 
-    Calls Claude with the full diagnostic context and returns a dict of
-    narrative sections keyed by placement point (e.g. 'executive_summary',
-    'domain_analysis:Delivery Operations', 'roadmap_rationale:Stabilize').
+    Calls Claude with the full diagnostic context and returns a dict matching
+    the narrator JSON schema. Returns an empty dict on failure — caller falls
+    back to placeholders.
 
-    Returns an empty dict if the call fails — caller falls back to placeholders.
+    Uses a higher token ceiling than other Claude calls because the narrator
+    produces both prose sections and multiple structured table arrays.
     """
+    # Narrator produces significantly more output than other calls (prose + structured
+    # table arrays). Double the standard budget; respect the env var if set higher.
+    NARRATOR_MAX_TOKENS = max(MAX_TOKENS * 2, 16000)
+
     # --- Assemble findings summary ---
     findings_lines = ["ACCEPTED FINDINGS:\n"]
     for f in findings:
@@ -625,7 +706,8 @@ async def generate_report_narrative(
             findings_lines.append(f"  Recommendation: {f['recommendation']}")
         findings_lines.append("")
 
-    # --- Assemble roadmap summary ---
+    # --- Assemble roadmap summary — include item_id, effort, and owner so the
+    #     narrator can key initiative_details by item_id and use confirmed owners ---
     roadmap_lines = ["ROADMAP ITEMS BY PHASE:\n"]
     for phase in ['Stabilize', 'Optimize', 'Scale']:
         items = [r for r in roadmap if r.get('phase') == phase]
@@ -633,9 +715,11 @@ async def generate_report_narrative(
             roadmap_lines.append(f"{phase}:")
             for item in items:
                 roadmap_lines.append(
-                    f"  - {item.get('initiative_name', '')} | "
+                    f"  - [{item.get('item_id', '')}] {item.get('initiative_name', '')} | "
                     f"Domain: {item.get('domain', '')} | "
                     f"Priority: {item.get('priority', '')} | "
+                    f"Effort: {item.get('effort', '')} | "
+                    f"Owner: {item.get('owner') or 'TBD'} | "
                     f"Est. Impact: {item.get('estimated_impact', '')}"
                 )
             roadmap_lines.append("")
@@ -659,20 +743,21 @@ async def generate_report_narrative(
 
     logger.info(
         f"Generating report narrative — {len(synthesizer_output)} chars synthesizer, "
-        f"{len(findings)} findings, {len(roadmap)} roadmap items"
+        f"{len(findings)} findings, {len(roadmap)} roadmap items, "
+        f"max_tokens={NARRATOR_MAX_TOKENS}"
     )
 
     message = await async_client.messages.create(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
+        max_tokens=NARRATOR_MAX_TOKENS,
         system=REPORT_NARRATOR_PROMPT,
         messages=[{"role": "user", "content": user_message}],
     )
     raw = extract_text(message)
     logger.info(f"Narrator response received — {len(raw)} chars")
 
-    sections = _parse_narrator_sections(raw)
-    logger.info(f"Narrator sections parsed — {list(sections.keys())}")
+    sections = _parse_narrator_json(raw)
+    logger.info(f"Narrator sections parsed — keys: {list(sections.keys())}")
     return sections
 
 
