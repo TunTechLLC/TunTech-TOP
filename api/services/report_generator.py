@@ -44,15 +44,17 @@ def _set_col_widths(table, widths_inches: list):
 class ReportGeneratorService:
     """Generates the OPD Transformation Roadmap Word document.
 
-    Eight sections:
+    Nine sections:
     1. Executive Summary — narrator prose
     2. Engagement Overview — from engagement record
     3. Operational Maturity Overview — signal domain summary table
     4. Domain Analysis — narrator opening/closing paragraphs + finding tables
-    5. Root Cause Analysis — narrator prose + finding root_cause bullet list
-    6. Economic Impact Analysis — narrator prose + finding economic_impact bullet list
-    7. Improvement Opportunities — recommendations in priority order
-    8. Transformation Roadmap — narrator phase rationale + RoadmapItems tables
+    5. Root Cause Analysis — narrator prose only (no bullet repeat)
+    6. Economic Impact Analysis — economic summary table + narrator prose
+    7. Future State — metrics table (narrator) + narrative (narrator)
+    8. Transformation Roadmap — 8.1 Priority Zero | 8.2 Overview | 8.3-8.5 Phase Tables
+                                 | 8.6 Dependencies | 8.7 Key Risks
+    9. Immediate Next Steps — action table (narrator)
     """
 
     def __init__(self, engagement_id: str):
@@ -115,6 +117,14 @@ class ReportGeneratorService:
 
         self._populate_content_controls(doc, firm_name)
 
+        # Lookup dicts used across multiple sections
+        findings_by_id = {f['finding_id']: f for f in findings}
+        initiative_details = {
+            d['item_id']: d
+            for d in narrative.get('initiative_details', [])
+            if isinstance(d, dict) and d.get('item_id')
+        }
+
         # 1 — Executive Summary
         doc.add_heading('Executive Summary', level=1)
         exec_summary = narrative.get('executive_summary', '')
@@ -152,64 +162,99 @@ class ReportGeneratorService:
         self._findings_by_domain(doc, findings, narrative)
         doc.add_paragraph()
 
-        # 5 — Root Cause Analysis
+        # 5 — Root Cause Analysis (prose only — finding bullets removed)
         doc.add_heading('Root Cause Analysis', level=1)
         root_cause = narrative.get('root_cause_narrative', '')
         if root_cause:
             self._add_narrative_paragraphs(doc, root_cause)
-            doc.add_paragraph()
-        if findings:
-            for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-                p = doc.add_paragraph(style='List Bullet')
-                p.add_run(f"{f['finding_title']}: ").bold = True
-                p.add_run(f.get('root_cause') or '')
         else:
-            doc.add_paragraph('No findings recorded.')
+            doc.add_paragraph('No root cause narrative generated.')
         doc.add_paragraph()
 
-        # 6 — Economic Impact Analysis
+        # 6 — Economic Impact Analysis (summary table first, then prose)
         doc.add_heading('Economic Impact Analysis', level=1)
+        self._economic_summary_table(doc, findings)
+        doc.add_paragraph()
         econ_narrative = narrative.get('economic_impact_narrative', '')
         if econ_narrative:
             self._add_narrative_paragraphs(doc, econ_narrative)
-            doc.add_paragraph()
-        if findings:
-            for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-                if f.get('economic_impact'):
-                    p = doc.add_paragraph(style='List Bullet')
-                    p.add_run(f"{f['finding_title']}: ").bold = True
-                    p.add_run(f['economic_impact'])
-        else:
-            doc.add_paragraph('No findings recorded.')
         doc.add_paragraph()
 
-        # 7 — Improvement Opportunities
-        doc.add_heading('Improvement Opportunities', level=1)
-        if findings:
-            for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-                p = doc.add_paragraph(style='List Bullet')
-                p.add_run(f"[{f.get('priority', '')} / {f.get('effort', '')} effort]  ").bold = True
-                p.add_run(f"{f['finding_title']}: ").bold = True
-                p.add_run(f.get('recommendation') or '')
-        else:
-            doc.add_paragraph('No findings recorded.')
+        # 7 — Future State
+        doc.add_heading(f'Where {firm_name} Can Be in 18 Months', level=1)
+        future_rows = narrative.get('future_state_table_rows', [])
+        if future_rows and isinstance(future_rows, list):
+            self._future_state_table(doc, future_rows)
+            doc.add_paragraph()
+        future_narrative = narrative.get('future_state_narrative', '')
+        if future_narrative:
+            self._add_narrative_paragraphs(doc, future_narrative)
         doc.add_paragraph()
 
         # 8 — Transformation Roadmap
         doc.add_heading('Transformation Roadmap', level=1)
+
+        # 8.1 — Priority Zero Actions
+        doc.add_heading('8.1  Priority Zero Actions — Complete This Week', level=2)
+        pz_rows = narrative.get('priority_zero_table_rows', [])
+        if pz_rows and isinstance(pz_rows, list):
+            self._priority_zero_table(doc, pz_rows)
+        else:
+            doc.add_paragraph('No Priority Zero items identified.')
+        doc.add_paragraph()
+
+        # 8.2 — Roadmap Overview
+        doc.add_heading('8.2  Roadmap Overview', level=2)
+        overview_rows = narrative.get('roadmap_overview_rows', [])
+        if overview_rows and isinstance(overview_rows, list):
+            self._roadmap_overview_table(doc, overview_rows)
+        doc.add_paragraph()
+
+        # 8.3 / 8.4 / 8.5 — Phase Tables
+        phase_labels = {'Stabilize': '8.3', 'Optimize': '8.4', 'Scale': '8.5'}
         if roadmap:
-            for phase in ['Stabilize', 'Optimize', 'Scale']:
+            for phase, label in phase_labels.items():
                 items = [r for r in roadmap if r.get('phase') == phase]
                 if items:
-                    doc.add_heading(phase, level=2)
-                    rationale = narrative.get(f'roadmap_rationale:{phase}', '')
+                    doc.add_heading(f'{label}  {phase}', level=2)
+                    rationale = narrative.get('roadmap_rationale', {}).get(phase, '')
                     if rationale:
                         self._add_narrative_paragraphs(doc, rationale)
                         doc.add_paragraph()
-                    self._roadmap_table(doc, items)
+                    self._roadmap_phase_table(doc, items, findings_by_id, initiative_details)
                     doc.add_paragraph()
         else:
             doc.add_paragraph('No roadmap items recorded.')
+
+        # 8.6 — Initiative Dependencies
+        doc.add_heading('8.6  Initiative Dependencies', level=2)
+        dep_rows = narrative.get('dependency_table_rows', [])
+        if dep_rows and isinstance(dep_rows, list):
+            self._dependency_table(doc, dep_rows)
+        else:
+            doc.add_paragraph('No dependencies identified.')
+        doc.add_paragraph()
+
+        # 8.7 — Key Risks
+        doc.add_heading('8.7  Key Risks', level=2)
+        risk_rows = narrative.get('risk_table_rows', [])
+        if risk_rows and isinstance(risk_rows, list):
+            self._risk_table(doc, risk_rows)
+        else:
+            doc.add_paragraph('No risks identified in this engagement diagnostic.')
+        doc.add_paragraph()
+
+        # 9 — Immediate Next Steps
+        doc.add_heading('What Happens Next', level=1)
+        doc.add_paragraph(
+            'The following actions should be completed within the next two weeks '
+            'regardless of any other prioritization decisions.'
+        )
+        next_rows = narrative.get('next_steps_rows', [])
+        if next_rows and isinstance(next_rows, list):
+            self._next_steps_table(doc, next_rows)
+        else:
+            doc.add_paragraph('No next steps generated.')
 
     # ------------------------------------------------------------------
     # Template helpers
@@ -261,7 +306,7 @@ class ReportGeneratorService:
                 doc.add_paragraph(para)
 
     # ------------------------------------------------------------------
-    # Table helpers
+    # Table helpers — existing
     # ------------------------------------------------------------------
 
     def _kv_table(self, doc, pairs: list):
@@ -322,17 +367,14 @@ class ReportGeneratorService:
         for f in findings:
             by_domain[f.get('domain', 'Unknown')].append(f)
 
+        domain_analysis = narrative.get('domain_analysis', {})
+
         for domain in sorted(by_domain):
             doc.add_heading(domain, level=2)
 
-            # Narrator domain analysis — split opening and closing paragraphs
-            domain_prose = narrative.get(f'domain_analysis:{domain}', '')
-            if domain_prose:
-                paras = [p.strip() for p in domain_prose.split('\n\n') if p.strip()]
-                opening = paras[0] if paras else ''
-                closing = paras[1] if len(paras) > 1 else ''
-            else:
-                opening = closing = ''
+            domain_data = domain_analysis.get(domain, {})
+            opening = domain_data.get('opening', '') if isinstance(domain_data, dict) else ''
+            closing = domain_data.get('closing', '') if isinstance(domain_data, dict) else ''
 
             if opening:
                 doc.add_paragraph(opening)
@@ -355,22 +397,197 @@ class ReportGeneratorService:
                 doc.add_paragraph(closing)
                 doc.add_paragraph()
 
-    def _roadmap_table(self, doc, items: list):
-        """Five-column roadmap table for a single phase."""
-        table = doc.add_table(rows=1, cols=5)
+    # ------------------------------------------------------------------
+    # Table helpers — new sections
+    # ------------------------------------------------------------------
+
+    def _economic_summary_table(self, doc, findings: list):
+        """Section 6 summary table: Finding | Priority | Economic Impact.
+        Only rows with an economic_impact value are shown."""
+        rows_with_impact = [
+            f for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2))
+            if f.get('economic_impact')
+        ]
+        if not rows_with_impact:
+            doc.add_paragraph('No economic impact data recorded for this engagement.')
+            return
+
+        table = doc.add_table(rows=1, cols=3)
         table.style = 'Table Grid'
-        for i, h in enumerate(['Initiative', 'Domain', 'Priority', 'Effort', 'Estimated Impact']):
+        for i, h in enumerate(['Finding', 'Priority', 'Economic Impact']):
             cell = table.rows[0].cells[i]
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [2.5, 1.3, 0.7, 0.7, 1.3])
+        _set_col_widths(table, [2.5, 0.7, 3.3])
+
+        for f in rows_with_impact:
+            row = table.add_row()
+            row.cells[0].text = f.get('finding_title') or ''
+            row.cells[1].text = f.get('priority') or ''
+            row.cells[2].text = f.get('economic_impact') or ''
+
+    def _future_state_table(self, doc, rows: list):
+        """Section 7 future state metrics table.
+        Columns: Metric | Current State | Benchmark | Target"""
+        table = doc.add_table(rows=1, cols=4)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Metric', 'Current State', 'Benchmark', 'Target']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [1.5, 1.5, 1.5, 2.0])
+
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            metric = r.get('metric') or ''
+            sourced = r.get('sourced_from', '')
+            label = f' ({sourced})' if sourced else ''
+            row.cells[0].text = metric + label
+            row.cells[1].text = r.get('current_state') or ''
+            row.cells[2].text = r.get('benchmark') or ''
+            row.cells[3].text = r.get('target') or ''
+
+    def _priority_zero_table(self, doc, rows: list):
+        """Section 8.1 Priority Zero table.
+        Columns: Action | Owner | What This Unblocks"""
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Action', 'Owner', 'What This Unblocks']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [2.5, 1.2, 2.8])
+
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            row.cells[0].text = r.get('action') or ''
+            row.cells[1].text = r.get('owner') or ''
+            row.cells[2].text = r.get('what_it_unblocks') or ''
+
+    def _roadmap_overview_table(self, doc, rows: list):
+        """Section 8.2 Roadmap Overview table.
+        Columns: Phase | Timeline | Key Outcomes"""
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Phase', 'Timeline', 'Key Outcomes']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [1.0, 1.2, 4.3])
+
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            row.cells[0].text = r.get('phase') or ''
+            row.cells[1].text = r.get('timeline') or ''
+            outcomes = r.get('key_outcomes', [])
+            if isinstance(outcomes, list):
+                row.cells[2].text = '\n'.join(f'• {o}' for o in outcomes if o)
+            else:
+                row.cells[2].text = str(outcomes)
+
+    def _roadmap_phase_table(self, doc, items: list, findings_by_id: dict,
+                              initiative_details: dict):
+        """Sections 8.3/8.4/8.5 phase tables.
+        Columns: Initiative | Priority | Effort | Owner | Timeline | Success Metric | Economic Impact"""
+        table = doc.add_table(rows=1, cols=7)
+        table.style = 'Table Grid'
+        headers = ['Initiative', 'Priority', 'Effort', 'Owner',
+                   'Timeline', 'Success Metric', 'Economic Impact']
+        for i, h in enumerate(headers):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [1.6, 0.6, 0.6, 0.9, 0.8, 1.2, 0.8])
 
         for item in items:
+            item_id = item.get('item_id', '')
+            details = initiative_details.get(item_id, {})
+            linked_finding = findings_by_id.get(item.get('finding_id') or '', {})
+            econ_impact = linked_finding.get('economic_impact', '') or ''
+
             row = table.add_row()
             row.cells[0].text = item.get('initiative_name') or ''
-            row.cells[1].text = item.get('domain') or ''
-            row.cells[2].text = item.get('priority') or ''
-            row.cells[3].text = item.get('effort') or ''
-            row.cells[4].text = item.get('estimated_impact') or ''
+            row.cells[1].text = item.get('priority') or ''
+            row.cells[2].text = item.get('effort') or ''
+            row.cells[3].text = item.get('owner') or ''
+            row.cells[4].text = details.get('timeline', '') or ''
+            row.cells[5].text = details.get('success_metric', '') or ''
+            row.cells[6].text = econ_impact
+
+    def _dependency_table(self, doc, rows: list):
+        """Section 8.6 Initiative Dependencies table.
+        Columns: Initiative | Depends On"""
+        table = doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Initiative', 'Depends On']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [3.2, 3.3])
+
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            row.cells[0].text = r.get('initiative') or ''
+            row.cells[1].text = r.get('depends_on') or ''
+
+    def _risk_table(self, doc, rows: list):
+        """Section 8.7 Key Risks table.
+        Columns: Risk | Likelihood | Mitigation"""
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Risk', 'Likelihood', 'Mitigation']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [2.5, 0.8, 3.2])
+
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            row.cells[0].text = r.get('risk') or ''
+            row.cells[1].text = r.get('likelihood') or ''
+            row.cells[2].text = r.get('mitigation') or ''
+
+    def _next_steps_table(self, doc, rows: list):
+        """Section 9 Immediate Next Steps table.
+        Columns: Action | Owner | Completion Criteria"""
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Action', 'Owner', 'Completion Criteria']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [2.5, 1.2, 2.8])
+
+        for r in rows[:10]:  # cap at 10 rows per spec
+            if not isinstance(r, dict):
+                continue
+            row = table.add_row()
+            row.cells[0].text = r.get('action') or ''
+            row.cells[1].text = r.get('owner') or ''
+            row.cells[2].text = r.get('completion_criteria') or ''
