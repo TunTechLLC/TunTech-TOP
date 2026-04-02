@@ -195,7 +195,7 @@ class ReportGeneratorService:
         doc.add_heading('Transformation Roadmap', level=1)
 
         # 8.1 — Priority Zero Actions
-        doc.add_heading('8.1  Priority Zero Actions — Complete This Week', level=2)
+        doc.add_heading('Priority Zero Actions — Complete This Week', level=2)
         pz_rows = narrative.get('priority_zero_table_rows', [])
         if pz_rows and isinstance(pz_rows, list):
             self._priority_zero_table(doc, pz_rows)
@@ -204,19 +204,18 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 8.2 — Roadmap Overview
-        doc.add_heading('8.2  Roadmap Overview', level=2)
+        doc.add_heading('Roadmap Overview', level=2)
         overview_rows = narrative.get('roadmap_overview_rows', [])
         if overview_rows and isinstance(overview_rows, list):
             self._roadmap_overview_table(doc, overview_rows)
         doc.add_paragraph()
 
         # 8.3 / 8.4 / 8.5 — Phase Tables
-        phase_labels = {'Stabilize': '8.3', 'Optimize': '8.4', 'Scale': '8.5'}
         if roadmap:
-            for phase, label in phase_labels.items():
+            for phase in ['Stabilize', 'Optimize', 'Scale']:
                 items = [r for r in roadmap if r.get('phase') == phase]
                 if items:
-                    doc.add_heading(f'{label}  {phase}', level=2)
+                    doc.add_heading(phase, level=2)
                     rationale = narrative.get('roadmap_rationale', {}).get(phase, '')
                     if rationale:
                         self._add_narrative_paragraphs(doc, rationale)
@@ -227,7 +226,7 @@ class ReportGeneratorService:
             doc.add_paragraph('No roadmap items recorded.')
 
         # 8.6 — Initiative Dependencies
-        doc.add_heading('8.6  Initiative Dependencies', level=2)
+        doc.add_heading('Initiative Dependencies', level=2)
         dep_rows = narrative.get('dependency_table_rows', [])
         if dep_rows and isinstance(dep_rows, list):
             self._dependency_table(doc, dep_rows)
@@ -236,7 +235,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
 
         # 8.7 — Key Risks
-        doc.add_heading('8.7  Key Risks', level=2)
+        doc.add_heading('Key Risks', level=2)
         risk_rows = narrative.get('risk_table_rows', [])
         if risk_rows and isinstance(risk_rows, list):
             self._risk_table(doc, risk_rows)
