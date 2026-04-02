@@ -48,13 +48,14 @@ Before Checkpoint 4 items and build order.
 | Backlog | ROADMAP_EXTRACTION_PROMPT — owner field with role-based derivation and "TBD — assign at kickoff" fallback | ✅ |
 | Backlog | Section 6 economic summary table — _parse_economic_figures() parses CONFIRMED/INFERRED from free text, primary figure per cell, clean totals row from Consulting Economics finding | ✅ |
 | Backlog | ReportPanel — remove stale sections list, persist last saved path via localStorage | ✅ |
+| Backlog | Word report template — additional formatting cleanup (heading numbers, economic table, section structure verified on E003) | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Word Report Template — additional formatting cleanup (generate E003, catalogue issues, fix)
-**After that:** Economic Impact Reasoning (FINDINGS_EXTRACTION_PROMPT inline calculation), Improve PATTERN_DETECTION_PROMPT, then Checkpoint 4.
+**Current task:** Economic Impact Reasoning — update FINDINGS_EXTRACTION_PROMPT to show inline calculation reasoning (inputs, method, source per figure)
+**After that:** Improve PATTERN_DETECTION_PROMPT, then Checkpoint 4.
 
 ---
 

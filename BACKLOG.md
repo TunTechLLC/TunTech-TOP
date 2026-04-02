@@ -79,28 +79,9 @@ No schema changes. No frontend changes. No new endpoints.
 
 ---
 
-### Word Report Template — Additional Formatting Cleanup
-Initial template issues fixed (heading numbers, title block, Client Name field population).
-Report structure significantly expanded this session (now 9 sections, Section 8 has 7
-subsections). New tables and sections need formatting review.
-
-**Next session procedure:**
-1. Generate report for E003 (full real narrator run)
-2. Open the Word doc and catalogue every formatting issue explicitly:
-   - Column widths too narrow/wide on any of the new tables
-   - Header row shading inconsistencies
-   - Section/subsection heading levels correct
-   - Paragraph spacing between tables and narrative
-   - Future State table (Section 7) reads correctly
-   - Phase tables (8.3/8.4/8.5) — 7 columns, check readability
-   - Priority Zero and Next Steps tables — check column proportions
-3. Fix each catalogued issue
-4. Run `validate_template.py` to confirm required styles still present
-5. Commit when the document looks clean
-
-**Files:** `api/services/report_generator.py`, `assets/roadmap_template.docx`
-
-**Commit message:** Word report template — additional formatting cleanup
+### ~~Word Report Template — Additional Formatting Cleanup~~ ✅ Done
+Heading numbers, economic table, section structure verified on E003. Good enough for now —
+further refinement deferred until next real-client dry run produces better test data.
 
 ---
 
