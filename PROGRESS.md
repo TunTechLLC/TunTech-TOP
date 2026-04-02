@@ -9,8 +9,8 @@
 **Phase A (Backend):** ✅ Complete — Checkpoint 1 passed
 **Phase B (Frontend):** ✅ Complete — Checkpoint 3 passed 2026-03-30
 
-**Where we are:** Post-Checkpoint 3 backlog work in progress. Word report template
-cleanup is the active task. See BACKLOG.md for full build order.
+**Where we are:** Post-Checkpoint 3 backlog work in progress. See BACKLOG.md for remaining
+Before Checkpoint 4 items and build order.
 
 ---
 
@@ -41,12 +41,13 @@ cleanup is the active task. See BACKLOG.md for full build order.
 | Backlog | Signal candidate labels — field labels added to candidate review cards | ✅ |
 | Backlog | Reprocess button — source_file column on Signals, delete+reprocess endpoint, processed files UI | ✅ |
 | Backlog | Candidate file cleanup — archive merged and individual candidate files to processed/ after loading | ✅ |
+| Backlog | Engagement header count refresh — onRefresh callback from EngagementDetail to all panels | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Engagement Header Count Refresh (next Before Checkpoint 4 item)
+**Current task:** Replace Report Download with Save-and-Show-Path (next Before Checkpoint 4 item)
 **After that:** Work through BACKLOG.md top to bottom — Before Checkpoint 4, then Checkpoint 4.
 
 ---

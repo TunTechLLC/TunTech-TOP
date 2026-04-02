@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   status:           'Proposed',
 }
 
-export default function RoadmapPanel({ engagementId }) {
+export default function RoadmapPanel({ engagementId, onRefresh }) {
   const [items, setItems]         = useState([])
   const [findings, setFindings]   = useState([])
   const [agentRuns, setAgentRuns] = useState([])

@@ -44,20 +44,22 @@ export default function EngagementDetail() {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsError, setSettingsError]   = useState(null)
 
-  useEffect(() => {
-  api.engagements.get(id)
-    .then(eng => {
-      setEngagement(eng)
-      setSettingsForm({
-        interviews_folder: eng.interviews_folder || '',
-        documents_folder:  eng.documents_folder  || '',
-        candidates_folder: eng.candidates_folder || '',
-        reports_folder:    eng.reports_folder    || '',
+  const fetchEngagement = useCallback(() => {
+    api.engagements.get(id)
+      .then(eng => {
+        setEngagement(eng)
+        setSettingsForm({
+          interviews_folder: eng.interviews_folder || '',
+          documents_folder:  eng.documents_folder  || '',
+          candidates_folder: eng.candidates_folder || '',
+          reports_folder:    eng.reports_folder    || '',
+        })
       })
-    })
-    .catch(err => setError(err.message))
-    .finally(() => setLoading(false))
-}, [id])
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  useEffect(() => { fetchEngagement() }, [fetchEngagement])
 
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>
   if (error)   return <div className="p-8 text-red-600">Error: {error}</div>
@@ -79,13 +81,13 @@ const handleSettingsSave = async () => {
 
  const renderPanel = () => {
   switch (activeTab) {
-    case 'signals':   return <SignalPanel    engagementId={id} />
-    case 'patterns':  return <PatternPanel   engagementId={id} />
-    case 'agents':    return <AgentPanel     engagementId={id} />
-    case 'findings':  return <FindingsPanel  engagementId={id} />
-    case 'roadmap':   return <RoadmapPanel   engagementId={id} />
-    case 'knowledge': return <KnowledgePanel engagementId={id} />
-    case 'report':    return <ReportPanel    engagementId={id} />
+    case 'signals':   return <SignalPanel    engagementId={id} onRefresh={fetchEngagement} />
+    case 'patterns':  return <PatternPanel   engagementId={id} onRefresh={fetchEngagement} />
+    case 'agents':    return <AgentPanel     engagementId={id} onRefresh={fetchEngagement} />
+    case 'findings':  return <FindingsPanel  engagementId={id} onRefresh={fetchEngagement} />
+    case 'roadmap':   return <RoadmapPanel   engagementId={id} onRefresh={fetchEngagement} />
+    case 'knowledge': return <KnowledgePanel engagementId={id} onRefresh={fetchEngagement} />
+    case 'report':    return <ReportPanel    engagementId={id} onRefresh={fetchEngagement} />
     default:          return null
   }
 }

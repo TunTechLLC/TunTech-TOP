@@ -7,7 +7,7 @@ const confidenceColors = {
   Hypothesis: 'bg-gray-100 text-gray-600',
 }
 
-export default function PatternPanel({ engagementId }) {
+export default function PatternPanel({ engagementId, onRefresh }) {
   const [patterns, setPatterns]       = useState([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
@@ -68,6 +68,7 @@ export default function PatternPanel({ engagementId }) {
       setDetected(null)
       setDetectError(null)
       fetchPatterns()
+      onRefresh?.()
     } catch (err) {
       setDetectError(err.message)
     } finally {

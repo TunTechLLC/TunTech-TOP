@@ -5,46 +5,6 @@
 
 ## Before Checkpoint 4
 
-### DELIVERY_DOCUMENT_EXTRACTION_PROMPT ✅
-**Status:** File type expansion is otherwise complete — STATUS and RESOURCE prompts are
-implemented and mapped. The delivery type falls back to SIGNAL_EXTRACTION_PROMPT with a
-comment noting it is deferred.
-
-**Fix:** Write DELIVERY_DOCUMENT_EXTRACTION_PROMPT in `api/services/claude.py` targeting
-risk registers, retrospectives, portfolio summaries, and proposals. Update the PROMPT_MAP
-in `api/services/document_processor.py` to use it instead of the fallback.
-
-**Files:** `api/services/claude.py`, `api/services/document_processor.py:182`
-
-**Commit message:** Step 8 Ext 1 Cleanup — DELIVERY_DOCUMENT_EXTRACTION_PROMPT
-
----
-
-### Reprocess Button ✅
-Currently must delete from ProcessedFiles table in DB Browser to reprocess a file.
-
-**Fix:**
-- Add `DELETE /{engagement_id}/signals/processed-files/{file_hash}` endpoint in `api/routers/signals.py`
-- Add delete method to `ProcessedFilesRepository`
-- Add Reprocess button per file in SignalPanel.jsx (shows processed files list with a Reprocess button on each row)
-
-**Commit message:** Reprocess button — endpoint + frontend
-
----
-
-### Candidate File Cleanup (Archive After Loading) ✅
-Candidate JSON files accumulate in the candidates folder indefinitely.
-**Decision locked in:** Archive to `processed/` subfolder after loading, not delete.
-The candidate file is a useful audit trail.
-
-**Fix:** In the `load-candidates` endpoint in `api/routers/signals.py`, after signals
-are written, call `shutil.move(candidate_file_path, candidates_folder/processed/)`.
-Create the `processed/` subfolder if it does not exist.
-
-**Commit message:** Candidate file cleanup — archive to processed/ after loading
-
----
-
 ### Engagement Header Count Refresh
 Signal/pattern/finding counts in the EngagementDetail header do not refresh after
 write operations. Requires F5 page refresh to update.

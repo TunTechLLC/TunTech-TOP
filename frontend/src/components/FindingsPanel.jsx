@@ -28,7 +28,7 @@ const EMPTY_FORM = {
   contributing_ep_ids: [],
 }
 
-export default function FindingsPanel({ engagementId }) {
+export default function FindingsPanel({ engagementId, onRefresh }) {
   const [findings, setFindings]             = useState([])
   const [patterns, setPatterns]             = useState([])
   const [agentRuns, setAgentRuns]           = useState([])
@@ -134,6 +134,7 @@ export default function FindingsPanel({ engagementId }) {
       setSynthCandidates([])
       setSynthApproved({})
       fetchData()
+      onRefresh?.()
     } catch (err) {
       setParseError(err.message)
     } finally {
@@ -170,6 +171,7 @@ export default function FindingsPanel({ engagementId }) {
       setForm(EMPTY_FORM)
       setShowForm(false)
       fetchData()
+      onRefresh?.()
     } catch (err) {
       setSaveError(err.message)
     } finally {

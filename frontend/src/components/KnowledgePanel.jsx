@@ -24,7 +24,7 @@ const EMPTY_FORM = {
   promotion_date:  new Date().toISOString().split('T')[0],
 }
 
-export default function KnowledgePanel({ engagementId }) {
+export default function KnowledgePanel({ engagementId, onRefresh }) {
   const [promotions, setPromotions] = useState([])
   const [findings, setFindings]     = useState([])
   const [patterns, setPatterns]     = useState([])

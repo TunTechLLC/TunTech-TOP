@@ -24,7 +24,7 @@ const EMPTY_FORM = {
   notes:              '',
 }
 
-export default function SignalPanel({ engagementId }) {
+export default function SignalPanel({ engagementId, onRefresh }) {
   const [signals, setSignals]             = useState([])
   const [summary, setSummary]             = useState([])
   const [loading, setLoading]             = useState(true)
@@ -64,6 +64,7 @@ export default function SignalPanel({ engagementId }) {
     try {
       await api.signals.deleteProcessedFile(engagementId, fileHash)
       fetchData()
+      onRefresh?.()
     } catch (err) {
       setProcessError('Reprocess failed: ' + err.message)
     } finally {
@@ -94,6 +95,7 @@ export default function SignalPanel({ engagementId }) {
       setForm(EMPTY_FORM)
       setShowForm(false)
       fetchData()
+      onRefresh?.()
     } catch (err) {
       setSaveError(err.message)
     } finally {
@@ -179,6 +181,7 @@ export default function SignalPanel({ engagementId }) {
       setCullStats(null)
       setProcessResult(null)
       fetchData()
+      onRefresh?.()
     } catch (err) {
       setProcessError(err.message)
     } finally {
