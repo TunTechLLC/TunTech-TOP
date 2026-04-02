@@ -59,7 +59,7 @@ Before Checkpoint 4 items and build order.
 |-----------|------|---------|----------|--------|---------|---------|
 | E001 | Meridian Consulting Group | 33 | 32 | 5 accepted | 7 | 16 |
 | E002 | Apex Technology Solutions | 33 | 21 | 5 accepted | 7 | 16 |
-| E003 | (Fictional — Dry Run 3) | 102 | — | 5 accepted | — | — |
+| E003 | (Fictional — Dry Run 3) | 102 | — | 5 accepted | Yes | Yes |
 
 E001 and E002 are the primary reference engagements.
-E003 was used to validate Report Narrator and Synthesizer-to-Roadmap Parser.
+E003 is the primary report testing engagement — 102 signals, full agent sequence, findings and roadmap generated.
