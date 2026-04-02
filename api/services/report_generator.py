@@ -497,44 +497,40 @@ class ReportGeneratorService:
         _set_col_widths(table, [2.0, 1.4, 1.6, 1.5])
 
         recovery_map = {'High': 'High', 'Medium': 'Medium', 'Low': 'Low'}
-        all_confirmed = []
 
         for f in rows_with_impact:
             confirmed, inferred = _parse_economic_figures(f.get('economic_impact', ''))
+            # Take only the primary (first) figure per column — the first figure the
+            # economics agent states for this finding is the most relevant to that finding.
+            # Subsequent figures are often cross-references to portfolio totals.
+            primary_confirmed = confirmed.split(', ')[0] if confirmed != '—' else '—'
+            primary_inferred  = inferred.split(', ')[0]  if inferred  != '—' else '—'
             row = table.add_row()
             row.cells[0].text = f.get('finding_title') or ''
-            row.cells[1].text = confirmed
-            row.cells[2].text = inferred
+            row.cells[1].text = primary_confirmed
+            row.cells[2].text = primary_inferred
             row.cells[3].text = recovery_map.get(f.get('priority', ''), '—')
-            # Collect confirmed figures for totals row
-            if confirmed != '—':
-                for item in confirmed.split(', '):
-                    item = item.strip()
-                    if item and item not in all_confirmed:
-                        all_confirmed.append(item)
 
-        # Totals row
-        # Confirmed: all distinct confirmed figures across findings (capped at 4)
-        if all_confirmed:
-            extra = len(all_confirmed) - 4
-            total_confirmed = ', '.join(all_confirmed[:4])
-            if extra > 0:
-                total_confirmed += f' + {extra} more'
-        else:
-            total_confirmed = '—'
-
-        # Annual Drag: use the Consulting Economics finding's broadest inferred range
-        # (that agent synthesises the aggregate drag — its figure represents the total)
-        total_inferred = '—'
-        for f in findings:
-            if f.get('domain') == 'Consulting Economics' and f.get('economic_impact'):
-                _, inf = _parse_economic_figures(f['economic_impact'])
-                if inf != '—':
-                    parts = [p.strip() for p in inf.split(', ')]
-                    # Prefer a range figure (contains –) as it is the more comprehensive
-                    range_parts = [p for p in parts if '–' in p]
-                    total_inferred = range_parts[0] if range_parts else parts[0]
-                break
+        # Totals row — sourced entirely from the Consulting Economics finding which
+        # synthesises the aggregate drag. Every figure traces to that finding's text.
+        econ_finding = next(
+            (f for f in findings
+             if f.get('domain') == 'Consulting Economics' and f.get('economic_impact')),
+            None
+        )
+        total_confirmed = '—'
+        total_inferred  = '—'
+        if econ_finding:
+            _, inf_str = _parse_economic_figures(econ_finding['economic_impact'])
+            if inf_str != '—':
+                parts = [p.strip() for p in inf_str.split(', ')]
+                # Floor figure: first figure (shortfall vs benchmark — the conservative floor)
+                floor = parts[0]
+                total_confirmed = f'{floor}+ confirmed floor'
+                # Range figure: first figure with an en-dash (the total drag range)
+                range_parts = [p for p in parts if '–' in p]
+                drag_range = range_parts[0] if range_parts else (parts[1] if len(parts) > 1 else floor)
+                total_inferred = f'{drag_range} INFERRED annually'
 
         totals_row = table.add_row()
         for cell in totals_row.cells:
