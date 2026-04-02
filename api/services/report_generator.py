@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import tempfile
 from collections import defaultdict
@@ -39,6 +40,74 @@ def _set_col_widths(table, widths_inches: list):
     for col_idx, width in enumerate(widths_inches):
         for cell in table.columns[col_idx].cells:
             cell.width = Inches(width)
+
+
+# Matches dollar amounts including ranges and K/M suffixes, with optional ~ prefix.
+# Examples: $85K  ~$463K  $150K–$612K  $1,070K  $1.5M
+_DOLLAR_RE = re.compile(
+    r'~?\$[\d,\.]+[KkMmBb]?(?:[–\-]\$?[\d,\.]+[KkMmBb]?)?',
+    re.IGNORECASE
+)
+_CONFIRMED_RE = re.compile(r'\bCONFIRMED(?:-\w+)?', re.IGNORECASE)
+_INFERRED_RE  = re.compile(r'\bINFERRED(?:-\w+)?',  re.IGNORECASE)
+
+
+def _parse_economic_figures(text: str):
+    """Parse an economic_impact string into (confirmed, inferred) figure strings.
+
+    Handles label variants: CONFIRMED, CONFIRMED-QUALIFIED, INFERRED, INFERRED-UNVALIDATED.
+    Labels must appear AFTER the dollar amount (within 80 chars) to be assigned to it.
+    This prevents adjective uses like "confirmed overrun exposure: $85K" from incorrectly
+    assigning the label to dollar amounts that appear before it in a noun phrase.
+    Returns '—' for each column when no matching figures are found.
+    """
+    if not text:
+        return '—', '—'
+
+    confirmed_figures = []
+    inferred_figures  = []
+
+    # Split on sentence boundaries — use '. ' (period + space) to avoid splitting
+    # decimal numbers like $1.5M, and also split on semicolons and newlines.
+    clauses = re.split(r'\.\s+|\.\s*$|;\s*|\n', text)
+
+    for clause in clauses:
+        clause = clause.strip()
+        if not clause:
+            continue
+
+        conf_positions = [m.start() for m in _CONFIRMED_RE.finditer(clause)]
+        inf_positions  = [m.start() for m in _INFERRED_RE.finditer(clause)]
+
+        if not conf_positions and not inf_positions:
+            continue  # No labels in this clause
+
+        for m in _DOLLAR_RE.finditer(clause):
+            amt      = m.group(0)
+            amt_end  = m.end()
+
+            # Only consider labels that appear AFTER the dollar amount
+            conf_after = [p for p in conf_positions if p >= amt_end]
+            inf_after  = [p for p in inf_positions  if p >= amt_end]
+
+            d_conf = min((p - amt_end for p in conf_after), default=9999)
+            d_inf  = min((p - amt_end for p in inf_after),  default=9999)
+
+            # Require label within 80 chars to avoid false positives
+            if min(d_conf, d_inf) > 80:
+                continue
+
+            if d_conf <= d_inf:
+                if amt not in confirmed_figures:
+                    confirmed_figures.append(amt)
+            else:
+                if amt not in inferred_figures:
+                    inferred_figures.append(amt)
+
+    # Cap at 3 figures per column so cells remain readable
+    confirmed = ', '.join(confirmed_figures[:3]) if confirmed_figures else '—'
+    inferred  = ', '.join(inferred_figures[:3])  if inferred_figures  else '—'
+    return confirmed, inferred
 
 
 class ReportGeneratorService:
@@ -401,8 +470,13 @@ class ReportGeneratorService:
     # ------------------------------------------------------------------
 
     def _economic_summary_table(self, doc, findings: list):
-        """Section 6 summary table: Finding | Priority | Economic Impact.
-        Only rows with an economic_impact value are shown."""
+        """Section 6 summary table.
+        Columns: Finding | Confirmed Exposure | Annual Drag (Inferred) | Recovery Potential
+
+        Confirmed Exposure and Annual Drag are parsed from the finding's economic_impact
+        field — every value traces directly to source text. Recovery Potential derives
+        from the finding's priority field. A totals row closes the table using the
+        Consulting Economics finding as the aggregate drag source."""
         rows_with_impact = [
             f for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2))
             if f.get('economic_impact')
@@ -411,21 +485,66 @@ class ReportGeneratorService:
             doc.add_paragraph('No economic impact data recorded for this engagement.')
             return
 
-        table = doc.add_table(rows=1, cols=3)
+        table = doc.add_table(rows=1, cols=4)
         table.style = 'Table Grid'
-        for i, h in enumerate(['Finding', 'Priority', 'Economic Impact']):
+        for i, h in enumerate(['Finding', 'Confirmed Exposure',
+                                'Annual Drag (Inferred)', 'Recovery Potential']):
             cell = table.rows[0].cells[i]
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [2.5, 0.7, 3.3])
+        _set_col_widths(table, [2.0, 1.4, 1.6, 1.5])
+
+        recovery_map = {'High': 'High', 'Medium': 'Medium', 'Low': 'Low'}
+        all_confirmed = []
 
         for f in rows_with_impact:
+            confirmed, inferred = _parse_economic_figures(f.get('economic_impact', ''))
             row = table.add_row()
             row.cells[0].text = f.get('finding_title') or ''
-            row.cells[1].text = f.get('priority') or ''
-            row.cells[2].text = f.get('economic_impact') or ''
+            row.cells[1].text = confirmed
+            row.cells[2].text = inferred
+            row.cells[3].text = recovery_map.get(f.get('priority', ''), '—')
+            # Collect confirmed figures for totals row
+            if confirmed != '—':
+                for item in confirmed.split(', '):
+                    item = item.strip()
+                    if item and item not in all_confirmed:
+                        all_confirmed.append(item)
+
+        # Totals row
+        # Confirmed: all distinct confirmed figures across findings (capped at 4)
+        if all_confirmed:
+            extra = len(all_confirmed) - 4
+            total_confirmed = ', '.join(all_confirmed[:4])
+            if extra > 0:
+                total_confirmed += f' + {extra} more'
+        else:
+            total_confirmed = '—'
+
+        # Annual Drag: use the Consulting Economics finding's broadest inferred range
+        # (that agent synthesises the aggregate drag — its figure represents the total)
+        total_inferred = '—'
+        for f in findings:
+            if f.get('domain') == 'Consulting Economics' and f.get('economic_impact'):
+                _, inf = _parse_economic_figures(f['economic_impact'])
+                if inf != '—':
+                    parts = [p.strip() for p in inf.split(', ')]
+                    # Prefer a range figure (contains –) as it is the more comprehensive
+                    range_parts = [p for p in parts if '–' in p]
+                    total_inferred = range_parts[0] if range_parts else parts[0]
+                break
+
+        totals_row = table.add_row()
+        for cell in totals_row.cells:
+            _shade_cell(cell, 'F2F2F2')
+        totals_row.cells[0].text = 'Total Identified Exposure'
+        if totals_row.cells[0].paragraphs[0].runs:
+            totals_row.cells[0].paragraphs[0].runs[0].bold = True
+        totals_row.cells[1].text = total_confirmed
+        totals_row.cells[2].text = total_inferred
+        totals_row.cells[3].text = '—'
 
     def _future_state_table(self, doc, rows: list):
         """Section 7 future state metrics table.
