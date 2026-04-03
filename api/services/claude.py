@@ -165,15 +165,14 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string — what was observed (e.g. "57%", "Low", "Increasing")
 - normalized_band: string — context for the observed value (e.g. "Below 80% target", "No standard process exists")
-- signal_confidence: string — must be exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the full transcript for any other references to this same topic and list any of the following you find: [unclear] or [inaudible] markers in relevant passages; hedging language used by the interviewee ("I think", "roughly", "around", "probably", "I believe", "I'm not sure"); any statement elsewhere in the transcript that contradicts this one or gives a different figure; the interviewee expressing doubt, admitting an error, or failing to resolve an either/or question; the signal being an inference you drew rather than something the interviewee stated directly. Write "None" only if none of these exist for this topic anywhere in the transcript.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number or verifiable fact
+    - High: if evidence_quality is "None" AND a specific number or verifiable fact was stated directly with no hedging
 - source: string — always "Interview"
 - economic_relevance: string — one short phrase (e.g. "Delivery margin", "Revenue stability") or empty string
 - notes: string — include the VERBATIM quote from the transcript that supports this signal, followed by your brief interpretation. Format: "Quote: '[exact words]' — Interpretation: [your note]"
-
-Confidence rules:
-- High: Interviewee stated this explicitly with specific data or strong conviction
-- Medium: Interviewee implied this or stated it without specific data
-- Hypothesis: Single indirect reference or weak implication
 
 Only extract signals with direct transcript evidence. Do not invent signals.
 
@@ -190,6 +189,7 @@ Return format example:
     "domain": "Delivery Operations",
     "observed_value": "57%",
     "normalized_band": "Below 80% target",
+    "evidence_quality": "None",
     "signal_confidence": "High",
     "source": "Interview",
     "economic_relevance": "Delivery margin",

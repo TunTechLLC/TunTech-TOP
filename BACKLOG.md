@@ -61,6 +61,55 @@
 
 ## After Checkpoint 4
 
+### Signal Confidence — Corroboration Upgrade at Merge
+**Context:** Part 3 of the signal confidence accuracy fix (Parts 1 and 2 completed — see PROGRESS.md).
+The extraction prompts now correctly rate single-source evidence at Medium or Hypothesis.
+High is currently achievable from a single clean interview statement, but the right standard
+is that High should be *earned* through corroboration across independent sources.
+
+**Problem:** `_deduplicate_candidates()` in `document_processor.py` already detects when two
+files independently extract the same signal (same domain + signal_name key). It currently
+keeps the higher-confidence duplicate and discards the other. The corroboration signal is
+thrown away.
+
+**Design:** When deduplication finds two candidates sharing the same key, upgrade the
+surviving candidate's confidence by one level: Medium → High, Hypothesis → Medium.
+This is the only place in the architecture where cross-file corroboration can be detected,
+and it requires no Claude call — it is algorithmic.
+
+**File:** `api/services/document_processor.py` — modify `_deduplicate_candidates()`
+
+**Commit message:** Signal confidence — corroboration upgrade at merge
+
+---
+
+### Remove Phase 1 CLI Layer
+The original CLI tool (`top.py` + supporting modules) is fully superseded by the web UI
+and is dead code. None of these are imported by the FastAPI app.
+
+**Files to delete:**
+- `top.py` — CLI entry point
+- `commands/` — entire directory (8 modules: case_packet, patterns, agents, engagement, findings, roadmap, reporting, __init__)
+- `db/` — root-level CLI database layer (`db/connection.py`, `db/__init__.py`) — separate from and not used by `api/db/`
+- `utils/` — root-level utility package (`utils/__init__.py`, `utils/clipboard.py`) — separate from and not used by `api/utils/`
+
+**Ad-hoc scripts to delete** (used during development, never cleaned up):
+- `check_views.py`
+- `test_narrator.py`
+- `test_roadmap_extractor.py`
+- `validate_template.py`
+- `scripts/test_report_structure.py`
+
+**Do NOT delete:** `api/services/case_packet.py` — this is the live `CasePacketService`
+used by `api/routers/agents.py` and `api/routers/patterns.py`.
+
+**Verification before deleting:** grep for any import of `from commands`, `from db.connection`,
+`from utils.clipboard`, or `import top` in the `api/` directory to confirm no cross-references exist.
+
+**Commit message:** Remove Phase 1 CLI layer — superseded by web UI
+
+---
+
 ### Quick Wins Section in the Report
 **Problem:** The report surfaces all roadmap items in three phase tables but does not
 call out which items the client can act on immediately. Executives leave the presentation
@@ -92,7 +141,9 @@ This may be captured in interviews but could also be part of the New Engagement 
 
 ### Editable Engagement Info
 Need to be able to edit engagement information after initial entry — should not require
-DB Browser to update firm name, stated problem, hypothesis, etc.
+DB Browser to update firm name, stated problem, hypothesis, etc.  Items such as stated problem, 
+hypothesis, etc. should show on the screen after the intial save.  It can be in 
+a collapsed section like settings is so it doesn't take up a lot of the screen.
 
 ---
 

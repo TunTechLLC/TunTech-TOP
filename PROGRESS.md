@@ -51,6 +51,7 @@ Before Checkpoint 4 items and build order.
 | Backlog | Word report template — additional formatting cleanup (heading numbers, economic table, section structure verified on E003) | ✅ |
 | Backlog | Economic Impact Reasoning — FINDINGS_EXTRACTION_PROMPT updated to require inline calculation reasoning (method, inputs, source per figure) | ✅ Validated (E003) |
 | Backlog | PATTERN_DETECTION_PROMPT — send full pattern library to Claude at detection time; add domain coverage instruction. Root cause: Claude was guessing P-IDs without library context, causing new domains (AI Readiness, HR, Finance) to be missed. Validated: 40 patterns detected on E003 including P48–P53, P57, P59, P60 | ✅ |
+| Backlog | Signal confidence accuracy — replaced self-assessed confidence rules with mandatory evidence_quality field across all 7 extraction prompts (SIGNAL_EXTRACTION_PROMPT + 6 document prompts). Forces Claude to actively scan for [unclear]/[inaudible] markers, contradictions, hedging, and interviewer inferences before assigning confidence. Root cause: Claude was rating confidence on its own pre-selected best quote, not on the full evidence picture. Validated on 12-file test set: 4 Hypothesis signals produced (previously 0), correct High/Medium distribution on remainder | ✅ |
 
 ---
 

@@ -20,15 +20,19 @@ Extract signals that are directly supported by data in the document. Focus on ec
 
 Financial documents may contain tables of numbers with minimal narrative context.
 When you see numerical data, infer the signal from the numbers themselves.
-A gross margin of 31% in a row labeled 'Gross Margin' is a High confidence signal
-even without a sentence explaining it. Use the row label as the signal name.
+A gross margin percentage in a row labeled 'Gross Margin' is directly readable —
+use the row label as the signal name and apply the confidence rules below.
 
 Each item must have exactly these fields:
 - signal_name: string
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string
 - normalized_band: string
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number
+    - High: if evidence_quality is "None" AND a specific number is explicitly stated with a clear label
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document that supports this signal
@@ -59,7 +63,11 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string
 - normalized_band: string
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number
+    - High: if evidence_quality is "None" AND a specific number is explicitly stated with a clear label
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document
@@ -89,7 +97,11 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string
 - normalized_band: string
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Note any of the following: the signal is an inference from document tone rather than an explicit statement; contradictory language about the same element appears elsewhere in the document; the evidence is a single ambiguous phrase requiring interpretation. Write "None" only if the signal is unambiguously observable without interpretation.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number
+    - High: if evidence_quality is "None" AND the presence or absence of a structural element is directly and unambiguously demonstrable
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific language from the SOW that supports this signal
@@ -114,11 +126,6 @@ Focus on:
 - Action items — are they tracked with owners and due dates?
 - Overall project health indicators — RAG status, confidence levels
 
-A RAG status of Red on multiple projects is a High confidence Delivery Operations signal.
-A pattern of late milestone completion is a High confidence signal.
-Issues listed without owners or resolution dates indicate governance weakness — High confidence.
-Budget overruns with specific percentages are High confidence Consulting Economics signals.
-
 Return only signals that are clearly observable in the document. Do not infer signals
 that are not supported by specific text.
 Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
@@ -128,7 +135,11 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string — the specific value or observation (e.g., "3 of 7 projects Red")
 - normalized_band: string — context for the value (e.g., "Above acceptable threshold")
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number
+    - High: if evidence_quality is "None" AND a specific number is explicitly stated with a clear label
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct quote or specific reference from the document
@@ -151,9 +162,6 @@ Focus on:
 - Hiring activity — open positions, time-to-fill, attrition
 - Capacity vs pipeline alignment — do you have the right skills for upcoming work?
 
-Specific numbers are high-value signals. A utilization rate of 71% against a 78% target
-is a High confidence Resource Management signal. Extract it with the exact numbers as observed_value.
-
 Return only signals that are clearly observable in the document.
 Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
 
@@ -162,7 +170,11 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string — the specific value (e.g., "71% billable utilization")
 - normalized_band: string — context (e.g., "Below 78% target")
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number
+    - High: if evidence_quality is "None" AND a specific number is explicitly stated with a clear label
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference from the document
@@ -203,11 +215,6 @@ Proposals:
 - Assumptions coverage — is there an explicit assumptions section?
 - Pricing structure — fixed fee, T&M, or hybrid; any margin risk indicators in the structure
 
-Confidence rules for delivery documents:
-- High: explicitly stated with specific data (e.g., "14 of 22 risks have no assigned owner")
-- Medium: implied by pattern or stated without specific numbers
-- Hypothesis: a single indicator suggests the issue but evidence is thin
-
 Return only signals that are clearly observable in the document.
 Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
 
@@ -216,7 +223,11 @@ Each item must have exactly these fields:
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - observed_value: string — the specific observation (e.g., "14 of 22 risks unmitigated")
 - normalized_band: string — context for the value (e.g., "Above acceptable threshold")
-- signal_confidence: string — exactly "High", "Medium", or "Hypothesis"
+- evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Note any of the following: the signal is inferred from document tone or pattern rather than explicitly stated; contradictory data appears elsewhere in the document; the evidence is a single ambiguous entry requiring interpretation. Write "None" only if the signal is unambiguously stated and supportable by direct reference.
+- signal_confidence: string — derived from evidence_quality:
+    - Hypothesis: if evidence_quality contains anything other than "None"
+    - Medium: if evidence_quality is "None" AND the signal is qualitative with no specific number or count
+    - High: if evidence_quality is "None" AND a specific number or count is explicitly stated with a clear label
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference or quote from the document that supports this signal
