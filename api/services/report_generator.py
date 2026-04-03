@@ -8,13 +8,14 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches
+from docx.shared import Inches, Pt, RGBColor
 from lxml import etree
 
 from api.db.repositories.engagement import EngagementRepository
 from api.db.repositories.finding import FindingRepository
 from api.db.repositories.roadmap import RoadmapRepository
 from api.db.repositories.agent_run import AgentRunRepository
+from api.db.repositories.processed_files import ProcessedFilesRepository
 from api.db.repositories.reporting import ReportingRepository
 from api.services.claude import generate_report_narrative
 
@@ -50,6 +51,231 @@ def _left_align_table(table):
         for cell in row.cells:
             for para in cell.paragraphs:
                 para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
+# -------------------------------------------------------------------
+# Domain audience mapping — Change 5
+# -------------------------------------------------------------------
+
+_DOMAIN_AUDIENCE = {
+    'AI Readiness':                  'CEO, Director of Operations',
+    'Consulting Economics':          'CEO, Finance Lead',
+    'Customer Experience':           'CEO, Director of Delivery',
+    'Delivery Operations':           'Director of Delivery',
+    'Finance and Commercial':        'Finance Lead',
+    'Project Governance / PMO':      'Director of Delivery',
+    'Resource Management':           'Director of Delivery',
+    'Sales & Pipeline':              'VP Sales, CEO',
+    'Sales-to-Delivery Transition':  'VP Sales, Director of Delivery',
+    'Human Resources':               'Director of Operations',
+}
+
+# -------------------------------------------------------------------
+# Reader guide — Change 2
+# -------------------------------------------------------------------
+
+_ROLE_READING_GUIDE = [
+    {
+        'role':            'CEO / Founder',
+        'priority':        'Executive Summary, Section 8.1, Section 9',
+        'detail':          'Section 7 (Future State)',
+        'trigger_domains': None,   # always include
+    },
+    {
+        'role':            'Director of Delivery',
+        'priority':        'Section 4 (Delivery Operations, Project Governance, Resource Management), Section 8.3',
+        'detail':          'Sections 5, 8.4, 8.7',
+        'trigger_domains': {'Delivery Operations', 'Project Governance / PMO', 'Resource Management'},
+    },
+    {
+        'role':            'VP Sales / Business Development',
+        'priority':        'Section 4 (Sales & Pipeline, Sales-to-Delivery Transition), Section 8.3',
+        'detail':          'Section 8.6 (Dependencies)',
+        'trigger_domains': {'Sales & Pipeline', 'Sales-to-Delivery Transition'},
+    },
+    {
+        'role':            'Finance Lead',
+        'priority':        'Section 4 (Finance and Commercial, Consulting Economics), Section 6',
+        'detail':          'Sections 8.3, 8.4',
+        'trigger_domains': {'Finance and Commercial', 'Consulting Economics'},
+    },
+    {
+        'role':            'Project Manager / Senior Consultant',
+        'priority':        'Section 9 (What Happens Next), Section 8.3',
+        'detail':          'Section 8.7 (Key Risks)',
+        'trigger_domains': None,   # always include
+    },
+    {
+        'role':            'Operations / Admin',
+        'priority':        'Section 4 (AI Readiness, Human Resources), Section 8.4',
+        'detail':          'Section 9',
+        'trigger_domains': {'AI Readiness', 'Human Resources'},
+    },
+]
+
+# -------------------------------------------------------------------
+# Interview role / document type derivation
+# See CLAUDE.md — "File Naming Convention for OPD Engagements"
+# -------------------------------------------------------------------
+
+# Ordered (stem_substring, label) tuples — first match wins.
+# More specific entries precede broader ones (e.g. 'directordelivery' before 'director').
+# Matching is against the lowercased, underscore/space-stripped role stem.
+_INTERVIEW_ROLE_MAP = (
+    ('ceo',              'CEO'),
+    ('directordelivery', 'Director of Delivery'),
+    ('director',         'Director of Delivery'),
+    ('vpsales',          'VP of Sales'),
+    ('sales',            'VP of Sales'),
+    ('financelead',      'Finance Lead'),
+    ('finance',          'Finance Lead'),
+    ('seniorconsultant', 'Senior Consultant and Project Manager'),
+    ('consultant',       'Senior Consultant and Project Manager'),
+    ('pm',               'Senior Consultant and Project Manager'),
+    ('operations',       'Director of Operations'),
+    ('admin',            'Director of Operations'),
+)
+
+_DOC_TYPE_MAP = (
+    ('financial',      'financial performance documentation'),
+    ('portfolio',      'project portfolio summary'),
+    ('statusreport',   'project status report'),
+    ('status',         'project status report'),
+    ('clientfeedback', 'client satisfaction data'),
+    ('feedback',       'client satisfaction data'),
+    ('sow',            'Statement of Work'),
+    ('other',          'supporting documentation'),
+)
+
+# Last-resort fallback when filename stem yields no _DOC_TYPE_MAP match.
+# Keyed by ProcessedFiles.file_type — preserves backward compat for pre-convention files.
+_FILE_TYPE_FALLBACK = {
+    'financial': 'financial performance documentation',
+    'sow':       'Statement of Work',
+    'status':    'project status report',
+    'resource':  'resource planning documentation',
+    'delivery':  'delivery documentation',
+}
+
+
+def parse_file_role_and_type(filename: str, file_type: str) -> dict:
+    """Parse a single ProcessedFile record into a structured role or document type.
+
+    Kind detection priority:
+      1. Interview_ prefix (case-insensitive) → interview
+      2. Doc_ prefix (case-insensitive)       → document
+      3. file_type == 'interview'             → interview
+      4. anything else                        → document
+
+    For interviews: strips _Followup and _N suffixes before role matching.
+      Sets is_followup=True when _Followup suffix detected.
+    For documents: falls back to _FILE_TYPE_FALLBACK[file_type] when stem
+      yields no _DOC_TYPE_MAP match (backward compat for pre-convention files).
+    Unrecognised stems are passed through (underscores → spaces) — never 'team member'.
+
+    Returns one of:
+      {'kind': 'interview', 'role': str, 'is_followup': bool}
+      {'kind': 'document',  'document_type': str}
+    """
+    stem     = re.sub(r'\.[^.]+$', '', filename)   # strip extension
+    name_low = filename.lower()
+
+    # Determine kind and extract raw stem after prefix
+    if name_low.startswith('interview_'):
+        kind     = 'interview'
+        raw_stem = stem[10:]            # len('Interview_') == 10
+    elif name_low.startswith('doc_'):
+        kind     = 'document'
+        raw_stem = stem[4:]             # len('Doc_') == 4
+    elif file_type == 'interview':
+        kind     = 'interview'
+        raw_stem = stem
+    else:
+        kind     = 'document'
+        raw_stem = stem
+
+    if kind == 'interview':
+        is_followup = bool(re.search(r'_followup', raw_stem, re.I))
+        role_stem   = re.sub(r'_followup.*$', '', raw_stem, flags=re.I)
+        role_stem   = re.sub(r'_\d+$', '', role_stem)      # strip _2, _3, etc.
+        role_key    = role_stem.lower().replace('_', '').replace(' ', '')
+
+        for match_key, label in _INTERVIEW_ROLE_MAP:
+            if match_key in role_key:
+                return {'kind': 'interview', 'role': label, 'is_followup': is_followup}
+
+        # Fallback: pass raw stem through — never substitute a generic placeholder
+        return {'kind': 'interview', 'role': role_stem.replace('_', ' '),
+                'is_followup': is_followup}
+
+    # Document branch
+    doc_key = raw_stem.lower().replace('_', '').replace(' ', '')
+
+    for match_key, label in _DOC_TYPE_MAP:
+        if match_key in doc_key:
+            return {'kind': 'document', 'document_type': label}
+
+    # Fallback 1: file_type label (backward compat for pre-convention files)
+    if file_type in _FILE_TYPE_FALLBACK:
+        return {'kind': 'document', 'document_type': _FILE_TYPE_FALLBACK[file_type]}
+
+    # Fallback 2: pass raw stem through
+    return {'kind': 'document', 'document_type': raw_stem.replace('_', ' ')}
+
+
+def _extract_interview_roles(processed_files: list) -> list:
+    """Derive interview role list using parse_file_role_and_type().
+    Skips followup files (same role, different session). Deduplicates in encounter order."""
+    roles = []
+    for pf in processed_files:
+        result = parse_file_role_and_type(pf.get('file_name', ''), pf.get('file_type', ''))
+        if result['kind'] != 'interview':
+            continue
+        if result.get('is_followup'):
+            continue
+        role = result['role']
+        if role not in roles:
+            roles.append(role)
+    return roles
+
+
+def _extract_document_types(processed_files: list) -> list:
+    """Derive document type list using parse_file_role_and_type().
+    Deduplicates in encounter order."""
+    types = []
+    for pf in processed_files:
+        result = parse_file_role_and_type(pf.get('file_name', ''), pf.get('file_type', ''))
+        if result['kind'] != 'document':
+            continue
+        doc_type = result['document_type']
+        if doc_type not in types:
+            types.append(doc_type)
+    return types
+
+
+def _compute_confirmed_floor(findings: list) -> str | None:
+    """Sum unique confirmed figures across all findings (deduplicates same dollar amount
+    appearing in multiple findings). Returns a formatted '~$X.XM+' string or None."""
+    seen = set()
+    total_val = 0.0
+    parseable = False
+    for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
+        conf, _ = _parse_economic_figures(f.get('economic_impact', ''))
+        if conf == '—':
+            continue
+        primary = conf.split(', ')[0]
+        if primary in seen:
+            continue
+        seen.add(primary)
+        val = _dollar_to_float(primary)
+        if val is not None:
+            total_val += val
+            parseable = True
+    if not parseable:
+        return None
+    if total_val >= 1_000_000:
+        return f'~${total_val / 1_000_000:.1f}M+'
+    return f'~${int(round(total_val / 1000))}K+'
 
 
 # Matches dollar amounts including ranges and K/M suffixes, with optional ~ prefix.
@@ -151,17 +377,18 @@ def _parse_economic_figures(text: str):
 class ReportGeneratorService:
     """Generates the OPD Transformation Roadmap Word document.
 
-    Nine sections:
-    1. Executive Summary — narrator prose
-    2. Engagement Overview — from engagement record
-    3. Operational Maturity Overview — signal domain summary table
-    4. Domain Analysis — narrator opening/closing paragraphs + finding tables
-    5. Root Cause Analysis — narrator prose only (no bullet repeat)
+    Nine sections (three-layer design — CEO / Leadership / Execution):
+    1. Executive Summary — opening para + Key Findings box + 3 short paras + reference line
+    How to Read This Document — prefatory page, excluded from TOC
+    2. Engagement Overview — compact metadata + narrator paragraph
+    3. Operational Maturity Overview — intro paragraph + renamed signal table + callout
+    4. Domain Analysis — role callout + narrator opening/closing + finding tables per domain
+    5. Root Cause Analysis — narrator prose only
     6. Economic Impact Analysis — economic summary table + narrator prose
     7. Future State — metrics table (narrator) + narrative (narrator)
     8. Transformation Roadmap — 8.1 Priority Zero | 8.2 Overview | 8.3-8.5 Phase Tables
                                  | 8.6 Dependencies | 8.7 Key Risks
-    9. Immediate Next Steps — action table (narrator)
+    9. Immediate Next Steps — action table (narrator, execution-voice completion criteria)
     """
 
     def __init__(self, engagement_id: str):
@@ -181,11 +408,23 @@ class ReportGeneratorService:
                 "Complete and accept all five agents before generating the report."
             )
 
-        findings = FindingRepository().get_all(self.engagement_id)
-        roadmap  = RoadmapRepository().get_all(self.engagement_id)
-        signals  = ReportingRepository().get_engagement_signals(self.engagement_id)
+        findings        = FindingRepository().get_all(self.engagement_id)
+        roadmap         = RoadmapRepository().get_all(self.engagement_id)
+        signals         = ReportingRepository().get_engagement_signals(self.engagement_id)
+        processed_files = ProcessedFilesRepository().get_for_engagement(self.engagement_id)
 
-        narrative = await generate_report_narrative(synth_output, findings, roadmap, eng)
+        interview_roles = _extract_interview_roles(processed_files)
+        document_types  = _extract_document_types(processed_files)
+        total_signals   = len(signals)
+        domain_count    = len({s['domain'] for s in signals if s.get('domain')})
+
+        narrative = await generate_report_narrative(
+            synth_output, findings, roadmap, eng,
+            interview_roles=interview_roles,
+            document_types=document_types,
+            total_signals=total_signals,
+            domain_count=domain_count,
+        )
 
         if os.path.exists(_TEMPLATE):
             doc = Document(_TEMPLATE)
@@ -232,31 +471,81 @@ class ReportGeneratorService:
             if isinstance(d, dict) and d.get('item_id')
         }
 
-        # 1 — Executive Summary
+        # 1 — Executive Summary (four components — Change 1)
         doc.add_heading('Executive Summary', level=1)
-        exec_summary = narrative.get('executive_summary', '')
-        if exec_summary:
-            self._add_narrative_paragraphs(doc, exec_summary)
-        else:
-            doc.add_paragraph(
-                '[To be completed by consultant. '
-                'Summarize the engagement context, key findings, and recommended priorities.]'
-            ).italic = True
+
+        # Component A — 3-4 sentence opening paragraph (narrator)
+        opening = narrative.get('executive_summary_opening', '')
+        if opening:
+            self._add_narrative_paragraphs(doc, opening)
+            doc.add_paragraph()
+
+        # Component B — Key Findings at a Glance (sourced from structured data only)
+        kf_rows = []
+        margin_trend = narrative.get('margin_trend_brief', '')
+        if margin_trend:
+            kf_rows.append(('Margin Trend', margin_trend))
+        confirmed_floor = _compute_confirmed_floor(findings)
+        if confirmed_floor:
+            kf_rows.append(('Revenue at Risk', confirmed_floor))
+        high_findings   = [f for f in findings if f.get('priority') == 'High']
+        primary_finding = high_findings[0] if high_findings else (findings[0] if findings else None)
+        if primary_finding and primary_finding.get('root_cause'):
+            rc  = primary_finding['root_cause']
+            dot = rc.find('. ')
+            cause_line = (rc[:dot] if dot > 0 else rc[:120]).strip()
+            if cause_line:
+                kf_rows.append(('Primary Cause', cause_line))
+        pz_rows = narrative.get('priority_zero_table_rows', [])
+        if pz_rows and isinstance(pz_rows, list) and pz_rows[0].get('action'):
+            kf_rows.append(('Act This Week', pz_rows[0]['action']))
+        fs_rows = narrative.get('future_state_table_rows', [])
+        if fs_rows and isinstance(fs_rows, list) and fs_rows[0].get('target'):
+            kf_rows.append(('18-Month Target', fs_rows[0]['target']))
+        if kf_rows:
+            self._key_findings_box(doc, kf_rows)
+            doc.add_paragraph()
+
+        # Component C — three short narrative paragraphs (narrator, no CONFIRMED/INFERRED)
+        for key in ('executive_summary_para1', 'executive_summary_para2',
+                    'executive_summary_para3'):
+            para_text = narrative.get(key, '')
+            if para_text:
+                self._add_narrative_paragraphs(doc, para_text)
+
+        # Component D — multi-reader reference line (small muted font)
+        ref_para = doc.add_paragraph()
+        ref_run  = ref_para.add_run(
+            'This document is intended for multiple readers. '
+            'Refer to How to Read This Document (following the Engagement Overview) '
+            'for a guide to which sections are most relevant to your role.'
+        )
+        ref_run.font.size      = Pt(9)
+        ref_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+        ref_para.alignment     = WD_ALIGN_PARAGRAPH.LEFT
         doc.add_paragraph()
 
-        # 2 — Engagement Overview
+        # How to Read This Document — prefatory page, excluded from TOC (Change 2)
+        self._how_to_read_page(doc, findings, firm_name)
+        doc.add_paragraph()
+
+        # 2 — Engagement Overview (redesigned — Change 3)
         doc.add_heading('Engagement Overview', level=1)
-        self._kv_table(doc, [
-            ('Client',             firm_name),
-            ('Engagement',         eng.get('engagement_name') or ''),
-            ('Start Date',         eng.get('start_date') or ''),
-            ('Firm Size',          str(eng.get('firm_size') or '')),
-            ('Service Model',      eng.get('service_model') or ''),
-            ('Status',             eng.get('status') or ''),
-            ('Stated Problem',     eng.get('stated_problem') or ''),
-            ('Client Hypothesis',  eng.get('client_hypothesis') or ''),
-            ('Previously Tried',   eng.get('previously_tried') or ''),
-        ])
+
+        # Component A — compact 3-line metadata block
+        for line in [
+            f"Client: {firm_name}",
+            f"Engagement Date: {eng.get('start_date') or '—'}",
+            f"Reference: {self.engagement_id}",
+        ]:
+            p = doc.add_paragraph(line)
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+        # Component B — narrator engagement overview paragraph
+        overview_para = narrative.get('engagement_overview_paragraph', '')
+        if overview_para:
+            doc.add_paragraph()
+            self._add_narrative_paragraphs(doc, overview_para)
         doc.add_paragraph()
 
         # 3 — Operational Maturity Overview
@@ -432,8 +721,101 @@ class ReportGeneratorService:
         _set_col_widths(table, [1.6, 4.9])
         _left_align_table(table)
 
+    def _key_findings_box(self, doc, rows: list):
+        """Component B of Executive Summary — Key Findings at a Glance.
+        Two-column table: bold label | value. Shading #F2F2F2.
+        Outer border removed; thin inner row/column dividers retained.
+        rows: list of (label, value) tuples — rows with falsy values are omitted."""
+        visible = [(lbl, val) for lbl, val in rows if val]
+        if not visible:
+            return
+
+        table = doc.add_table(rows=len(visible), cols=2)
+        table.style = 'Table Grid'
+
+        # Remove outer table border only (top/left/bottom/right)
+        # Inner borders (insideH/insideV) are left to inherit from Table Grid style
+        tbl   = table._tbl
+        tblPr = tbl.find(qn('w:tblPr'))
+        if tblPr is None:
+            tblPr = OxmlElement('w:tblPr')
+            tbl.insert(0, tblPr)
+        tblBorders = OxmlElement('w:tblBorders')
+        for edge in ('top', 'left', 'bottom', 'right'):
+            b = OxmlElement(f'w:{edge}')
+            b.set(qn('w:val'),   'none')
+            b.set(qn('w:sz'),    '0')
+            b.set(qn('w:space'), '0')
+            b.set(qn('w:color'), 'auto')
+            tblBorders.append(b)
+        tblPr.append(tblBorders)
+
+        for i, (label, value) in enumerate(visible):
+            row = table.rows[i]
+            _shade_cell(row.cells[0], 'F2F2F2')
+            _shade_cell(row.cells[1], 'F2F2F2')
+            row.cells[0].text = label
+            if row.cells[0].paragraphs[0].runs:
+                row.cells[0].paragraphs[0].runs[0].bold = True
+            row.cells[1].text = str(value)
+
+        _set_col_widths(table, [1.6, 4.9])
+        _left_align_table(table)
+
+    def _how_to_read_page(self, doc, findings: list, firm_name: str):
+        """Prefatory 'How to Read This Document' page.
+        Title uses a bold paragraph (not a heading style) so it is excluded from
+        the Word TOC. Reader guide table rows are generated only for roles whose
+        trigger domains have findings in this engagement."""
+        # Title — bold 14pt paragraph, not a heading (keeps it off the TOC)
+        title_para = doc.add_paragraph()
+        title_run  = title_para.add_run('How to Read This Document')
+        title_run.bold       = True
+        title_run.font.size  = Pt(14)
+        title_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+        doc.add_paragraph()
+
+        # Intro paragraph
+        finding_domains = {f.get('domain', '') for f in findings if f.get('domain')}
+        domain_count    = len(finding_domains)
+        intro = doc.add_paragraph(
+            f"This diagnostic covers findings across {domain_count} operational domains "
+            f"and is intended to be used by multiple members of the {firm_name} leadership "
+            f"and delivery team. Not every reader needs to read every section. The table "
+            f"below identifies which sections are most relevant to each role."
+        )
+        intro.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        doc.add_paragraph()
+
+        # Reader guide table — 3 columns
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['If You Are', 'Priority Reading', 'For Full Detail']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [1.5, 3.0, 2.0])
+
+        for entry in _ROLE_READING_GUIDE:
+            if (entry['trigger_domains'] is None
+                    or entry['trigger_domains'] & finding_domains):
+                row = table.add_row()
+                row.cells[0].text = entry['role']
+                row.cells[1].text = entry['priority']
+                row.cells[2].text = entry['detail']
+        _left_align_table(table)
+
     def _signal_table(self, doc, signals: list):
-        """Domain summary: domain, total signals, counts by confidence."""
+        """Section 3: Operational Maturity Overview.
+
+        Component A — intro paragraph derived from signal counts.
+        Component B — domain summary table with client-readable column names.
+          High → Directly Observed | Medium → Reported | Hypothesis → Preliminary
+        Component C — evidence basis callout below the table.
+        """
         if not signals:
             doc.add_paragraph('No signals recorded.')
             return
@@ -445,15 +827,37 @@ class ReportGeneratorService:
             counts[d][c] = counts[d].get(c, 0) + 1
             counts[d]['total'] += 1
 
+        total_signals = len(signals)
+        domain_count  = len(counts)
+
+        # Component A — introduction paragraph
+        intro = (
+            f"During this engagement, {total_signals} operational signals were identified "
+            f"and reviewed across {domain_count} functional domains. "
+            "Signals are classified by the strength of supporting evidence: "
+            "Directly Observed signals are confirmed by multiple sources or documented "
+            "evidence; Reported signals come from a single source and warrant validation "
+            "before acting; Preliminary signals are inferred from indirect evidence and "
+            "require further investigation before conclusions can be drawn. "
+            "Domains with higher concentrations of Directly Observed signals have the "
+            "strongest evidentiary basis for their findings."
+        )
+        p = doc.add_paragraph(intro)
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        doc.add_paragraph()
+
+        # Component B — domain summary table (renamed columns, no Evidence Basis column —
+        # six-column version exceeds standard page margins; five-column fits at [2.0, 1.0, 1.1, 0.9, 0.9])
         table = doc.add_table(rows=1, cols=5)
         table.style = 'Table Grid'
-        for i, h in enumerate(['Domain', 'Total', 'High', 'Medium', 'Hypothesis']):
+        for i, h in enumerate(['Domain', 'Signals Reviewed', 'Directly Observed',
+                                'Reported', 'Preliminary']):
             cell = table.rows[0].cells[i]
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [2.5, 0.7, 0.7, 0.8, 0.8])
+        _set_col_widths(table, [2.0, 1.0, 1.1, 0.9, 0.9])
 
         for domain in sorted(counts):
             c = counts[domain]
@@ -464,6 +868,16 @@ class ReportGeneratorService:
             row.cells[3].text = str(c['Medium'])
             row.cells[4].text = str(c['Hypothesis'])
         _left_align_table(table)
+
+        # Component C — evidence basis callout
+        doc.add_paragraph()
+        callout = doc.add_paragraph(
+            "Domains with a high concentration of Directly Observed signals have the "
+            "strongest evidentiary basis for their findings and are ready for immediate "
+            "intervention design. Domains where Preliminary signals predominate may benefit "
+            "from additional data collection before final recommendations are finalized."
+        )
+        callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     def _findings_by_domain(self, doc, findings: list, narrative: dict):
         """Findings grouped by domain.
@@ -480,6 +894,15 @@ class ReportGeneratorService:
 
         for domain in sorted(by_domain):
             doc.add_heading(domain, level=2)
+
+            # Primary audience callout — small italic muted line before opening paragraph
+            audience = _DOMAIN_AUDIENCE.get(domain)
+            if audience:
+                callout     = doc.add_paragraph()
+                callout_run = callout.add_run(f'Primary audience: {audience}')
+                callout_run.italic          = True
+                callout_run.font.size       = Pt(9)
+                callout_run.font.color.rgb  = RGBColor(0x66, 0x66, 0x66)
 
             domain_data = domain_analysis.get(domain, {})
             opening = domain_data.get('opening', '') if isinstance(domain_data, dict) else ''
