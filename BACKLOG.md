@@ -61,6 +61,23 @@
 
 ## After Checkpoint 4
 
+### Pattern Name on Candidate Review Cards
+**Problem:** During pattern detection review (before accepting), candidates show only the
+pattern ID (e.g. "P38", "P12"). The consultant cannot tell what a pattern is without
+already knowing the library by memory. The name only becomes visible after accepting.
+
+**Design:** Show the pattern name on each candidate review card during the detect-review
+step — the same place the ID, confidence, and notes are already shown. The pattern name
+is returned by Claude in the detection response and is available in the candidate payload
+since it is looked up against the pattern library at detect time. No new endpoints or
+schema changes needed — this is a display change on the candidate cards only.
+
+**File:** `frontend/src/components/PatternPanel.jsx` — candidate review card rendering
+
+**Commit message:** Pattern detection — show pattern name on candidate review cards
+
+---
+
 ### Signal Confidence — Corroboration Upgrade at Merge
 **Context:** Part 3 of the signal confidence accuracy fix (Parts 1 and 2 completed — see PROGRESS.md).
 The extraction prompts now correctly rate single-source evidence at Medium or Hypothesis.
