@@ -185,6 +185,7 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
           priority:         item.priority,
           effort:           item.effort,
           estimated_impact: item.estimated_impact || '',
+          owner:            item.owner || '',
         })
       }
       setRoadmapCandidates([])
@@ -361,6 +362,16 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
                             <input
                               value={c.estimated_impact || ''}
                               onChange={e => handleCandidateChange(idx, 'estimated_impact', e.target.value)}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                            />
+                          </div>
+
+                          {/* Owner */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Owner</div>
+                            <input
+                              value={c.owner || ''}
+                              onChange={e => handleCandidateChange(idx, 'owner', e.target.value)}
                               className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
                             />
                           </div>

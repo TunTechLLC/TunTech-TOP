@@ -225,9 +225,17 @@ pattern. Knowledge should too. Also, existing knowledge promotions have no Edit 
 
 ---
 
-### Findings Enhancements — Pattern Enforcement, Evidence Summary, and Key Quotes
-Build all three in one session. All three modify FINDINGS_EXTRACTION_PROMPT, OPDFindings
-schema, and FindingsPanel. Separating them means touching the same files three times.
+### Findings Enhancements — Pattern Enforcement, Evidence Summary, Key Quotes, and Confidence
+Build all in one session. All modify FINDINGS_EXTRACTION_PROMPT, OPDFindings schema, and
+FindingsPanel. Separating them means touching the same files multiple times.
+
+**Note on finding confidence:** The `confidence` field on findings currently defaults to High
+for all findings — same self-assessment problem as signals. The fix belongs here rather than
+as a standalone change because confidence should be derived from supporting pattern confidence
+levels, which requires the pattern enforcement work (Part 1) to be in place first.
+Fix: include pattern confidence levels in the accepted patterns list sent to
+`extract_findings_from_synthesizer()`, then add a derivation rule — High if all supporting
+patterns are High, Medium if mixed or all Medium, Low if any supporting pattern is Hypothesis.
 
 **Part 1 — Enforce Pattern-to-Finding Mapping:**
 Every finding must reference at least one pattern (EP ID). Currently optional.
