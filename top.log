@@ -13533,3 +13533,2510 @@ Based on the synthesizer output header and accepted patterns provided, I will ex
 2026-04-01 10:49:43,264 INFO api.services.claude: Narrator response received — 25297 chars
 2026-04-01 10:49:43,265 INFO api.services.claude: Narrator sections parsed — ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'roadmap_rationale:Stabilize', 'roadmap_rationale:Optimize', 'roadmap_rationale:Scale', 'domain_analysis:Consulting Economics', 'domain_analysis:Sales-to-Delivery Transition', 'domain_analysis:Project Governance / PMO', 'domain_analysis:Delivery Operations', 'domain_analysis:Resource Management', 'domain_analysis:Sales & Pipeline', 'domain_analysis:AI Readiness', 'domain_analysis:Finance and Commercial', 'domain_analysis:Customer Experience']
 2026-04-01 10:49:43,542 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-01 12:15:07,990 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-01 12:15:13,783 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-01 12:15:13,784 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-01 12:15:14,013 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-01 12:15:14,013 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-01 12:17:31,687 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-01 12:17:31,687 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-01 12:17:31,813 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-01 12:17:31,813 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-01 12:17:31,911 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:17:31,912 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:17:31,921 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:17:31,921 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:17:31,927 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:17:31,927 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:17:31,935 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:17:31,935 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:17:58,644 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:17:58,644 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:17:58,645 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:17:58,645 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:17:58,645 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:17:58,645 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:17:58,658 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:17:58,659 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:17:58,659 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:17:58,659 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:17:58,660 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:17:58,660 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:20:39,823 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:20:39,823 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-01 12:20:39,823 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:20:39,823 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:20:39,823 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-01 12:20:39,824 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:20:39,834 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:20:39,835 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-01 12:20:39,835 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:20:39,835 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-01 12:20:39,851 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:20:39,852 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:20:44,690 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:20:44,690 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:20:44,690 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:20:44,691 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:20:44,691 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-01 12:20:44,691 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-01 12:20:44,700 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-01 12:20:44,701 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:20:44,701 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:20:44,701 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-01 12:20:44,703 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:20:44,703 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:26:26,435 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:26:26,435 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:26:26,436 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:26:26,436 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:26:26,436 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:26:26,436 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:26:26,444 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:26:26,444 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:26:26,445 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:26:26,445 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:26:26,445 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 12:26:26,446 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 12:27:06,953 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:27:06,953 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:27:06,953 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:27:06,954 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:27:06,965 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:27:06,969 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:27:06,970 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:27:06,972 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:27:33,593 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:27:33,594 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:27:33,594 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-01 12:27:33,594 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:27:33,595 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-01 12:27:33,595 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:27:33,617 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-01 12:27:33,618 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 12:27:33,617 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-01 12:27:33,619 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 12:27:33,618 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-01 12:27:33,620 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-01 12:27:35,915 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:27:35,915 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:27:35,915 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:27:35,915 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:27:35,926 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 12:27:35,927 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 12:27:35,927 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 12:27:35,928 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 12:49:02,657 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-01 12:49:02,657 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-01 12:49:02,870 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-01 12:49:02,870 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-01 13:04:44,852 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-01 13:04:44,852 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-01 13:04:44,972 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-01 13:04:44,972 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-01 13:04:45,092 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 13:04:45,092 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 13:04:45,102 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 13:04:45,103 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 13:04:45,105 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-01 13:04:45,106 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-01 13:04:45,110 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-01 13:04:45,110 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-01 13:04:46,532 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 13:04:46,533 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 13:04:46,540 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-01 13:04:46,540 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-01 13:04:47,124 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 13:04:47,124 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-01 13:04:47,131 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-01 13:04:47,132 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 09:26:02,002 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:26:10,367 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 09:26:10,367 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 09:26:10,742 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 09:26:10,742 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 09:45:34,100 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:43,489 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:46,703 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:49,750 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:52,995 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:56,683 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:45:59,282 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:46:02,400 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:46:05,642 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:46:11,645 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:47:02,968 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 09:47:02,969 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 09:47:03,152 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 09:47:03,152 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 09:47:03,203 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 09:47:03,204 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 09:47:03,214 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 09:47:03,214 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 09:47:03,231 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 09:47:03,232 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 09:47:03,239 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 09:47:03,239 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 09:47:12,718 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 09:47:12,719 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 09:47:12,980 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 09:47:12,982 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 09:47:12,983 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 09:47:12,985 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 09:47:12,985 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 09:47:12,989 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 09:47:12,989 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 09:47:12,996 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items
+2026-04-02 09:49:28,142 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 09:49:28,196 INFO api.services.claude: Narrator response received — 25722 chars
+2026-04-02 09:49:28,197 INFO api.services.claude: Narrator sections parsed — ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'roadmap_rationale:Stabilize', 'roadmap_rationale:Optimize', 'roadmap_rationale:Scale', 'domain_analysis:Consulting Economics', 'domain_analysis:Sales-to-Delivery Transition', 'domain_analysis:Project Governance / PMO', 'domain_analysis:Delivery Operations', 'domain_analysis:Resource Management', 'domain_analysis:Sales & Pipeline', 'domain_analysis:AI Readiness', 'domain_analysis:Finance and Commercial', 'domain_analysis:Customer Experience']
+2026-04-02 09:49:28,698 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 09:54:44,293 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:54:53,309 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 09:55:13,698 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 09:55:13,698 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 09:55:13,910 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 09:55:13,913 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 09:55:13,914 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 09:55:13,917 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 09:55:13,917 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 09:55:13,920 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 09:55:13,920 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 09:55:13,925 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items
+2026-04-02 09:57:48,031 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 09:57:48,084 INFO api.services.claude: Narrator response received — 28839 chars
+2026-04-02 09:57:48,085 INFO api.services.claude: Narrator sections parsed — ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'roadmap_rationale:Stabilize', 'roadmap_rationale:Optimize', 'roadmap_rationale:Scale', 'domain_analysis:Consulting Economics', 'domain_analysis:Sales-to-Delivery Transition', 'domain_analysis:Project Governance / PMO', 'domain_analysis:Delivery Operations', 'domain_analysis:Resource Management', 'domain_analysis:Sales & Pipeline', 'domain_analysis:AI Readiness', 'domain_analysis:Finance and Commercial', 'domain_analysis:Customer Experience']
+2026-04-02 09:57:48,515 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 11:46:31,187 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 11:46:38,820 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 11:46:38,821 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 11:46:39,381 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 11:46:39,382 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 11:51:45,864 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 11:55:26,870 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:55:26,871 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:55:27,101 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:55:27,102 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:55:27,145 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:55:27,146 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:55:27,160 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:55:27,161 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:55:27,173 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:55:27,174 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:55:27,194 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:55:27,195 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:55:57,584 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:55:57,584 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:55:57,712 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:55:57,726 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:55:57,741 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:55:57,746 INFO api.services.document_processor: Processing interview file: E001_interview_CEO_test_20260325.txt (1864 chars)
+2026-04-02 11:55:57,746 INFO api.services.claude: Extracting signals from transcript — 1864 chars
+2026-04-02 11:56:18,655 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 11:56:18,718 INFO api.services.claude: Signal extraction complete — 5581 chars
+2026-04-02 11:56:18,729 INFO api.services.document_processor: Wrote 9 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_interview_CEO_test_20260325_candidates.json
+2026-04-02 11:56:18,735 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 11:56:18,754 INFO api.db.repositories.processed_files: Marked file as processed: E001_interview_CEO_test_20260325.txt (9 signals)
+2026-04-02 11:56:18,755 INFO api.services.document_processor: Processing interview file: E001_interview_test1.txt (829 chars)
+2026-04-02 11:56:18,756 INFO api.services.claude: Extracting signals from transcript — 829 chars
+2026-04-02 11:56:33,282 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 11:56:33,286 INFO api.services.claude: Signal extraction complete — 3890 chars
+2026-04-02 11:56:33,295 INFO api.services.document_processor: Wrote 7 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_interview_test1_candidates.json
+2026-04-02 11:56:33,308 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 11:56:33,332 INFO api.db.repositories.processed_files: Marked file as processed: E001_interview_test1.txt (7 signals)
+2026-04-02 11:56:33,333 INFO api.services.document_processor: Processing interview file: E001_interview_test2.txt (747 chars)
+2026-04-02 11:56:33,334 INFO api.services.claude: Extracting signals from transcript — 747 chars
+2026-04-02 11:56:46,767 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 11:56:46,773 INFO api.services.claude: Signal extraction complete — 3389 chars
+2026-04-02 11:56:46,783 INFO api.services.document_processor: Wrote 6 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_interview_test2_candidates.json
+2026-04-02 11:56:46,789 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 11:56:46,818 INFO api.db.repositories.processed_files: Marked file as processed: E001_interview_test2.txt (6 signals)
+2026-04-02 11:56:46,830 INFO api.services.document_processor: Merged candidates for E001: 22 main, 0 hypothesis, 0 duplicates removed, 0 removed by domain cap
+2026-04-02 11:57:38,792 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:57:38,793 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:57:38,933 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:57:38,934 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:57:39,036 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:57:39,036 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:57:39,047 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:57:39,047 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:57:39,054 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:57:39,055 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:57:39,065 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:57:39,066 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:57:59,771 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 11:57:59,771 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 11:58:00,181 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 11:58:00,182 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 11:58:02,350 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:58:02,350 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:58:02,448 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:58:02,448 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:58:02,456 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:58:02,457 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:58:02,457 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:58:02,458 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:58:02,467 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 11:58:02,468 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 11:58:02,468 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 11:58:02,469 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 11:58:42,729 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 11:58:42,730 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 11:58:42,852 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:58:42,855 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:58:42,856 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 11:58:42,857 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:58:42,859 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 11:58:42,861 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 11:58:42,863 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 11:58:42,864 INFO api.services.document_processor: Processing delivery file: E001_delivery_riskregister.txt (604 chars)
+2026-04-02 11:59:13,456 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 11:59:13,465 INFO api.services.document_processor: Wrote 10 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_delivery_riskregister_candidates.json
+2026-04-02 11:59:13,468 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 11:59:13,486 INFO api.db.repositories.processed_files: Marked file as processed: E001_delivery_riskregister.txt (10 signals)
+2026-04-02 11:59:13,491 INFO api.services.document_processor: Merged candidates for E001: 10 main, 0 hypothesis, 0 duplicates removed, 0 removed by domain cap
+2026-04-02 12:03:12,798 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:12,799 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:12,924 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:12,924 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:13,035 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:03:13,035 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:03:13,048 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:03:13,048 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:03:13,049 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:03:13,049 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:03:13,058 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:03:13,059 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:03:39,330 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:39,330 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:39,458 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:39,459 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:39,467 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:03:39,468 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:03:39,468 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:03:39,468 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:03:39,479 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:03:39,479 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:03:39,480 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:03:39,480 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:03:41,110 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:41,110 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:41,212 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:41,215 INFO api.services.document_processor: Skipping already processed file: E001_delivery_riskregister.txt
+2026-04-02 12:03:41,215 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:41,217 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:03:41,218 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:41,220 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:03:41,221 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:41,224 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:03:45,025 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:03:45,025 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:03:45,141 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:45,144 INFO api.services.document_processor: Skipping already processed file: E001_delivery_riskregister.txt
+2026-04-02 12:03:45,145 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:45,147 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:03:45,148 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:45,151 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:03:45,152 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:03:45,154 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:05:43,378 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:05:43,378 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:05:43,487 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:05:43,488 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:05:43,621 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:05:43,621 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:05:43,632 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:05:43,632 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:05:43,632 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:05:43,633 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:05:43,642 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:05:43,642 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:05:45,917 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:05:45,918 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:05:46,044 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:05:46,046 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:05:46,048 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:05:46,049 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:05:46,051 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:05:46,052 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:05:46,054 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:05:46,055 INFO api.services.document_processor: Processing delivery file: E001_delivery_riskregister.txt (604 chars)
+2026-04-02 12:06:15,512 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 12:06:15,520 INFO api.services.document_processor: Wrote 10 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_delivery_riskregister_candidates.json
+2026-04-02 12:06:15,523 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 12:06:15,539 INFO api.db.repositories.processed_files: Marked file as processed: E001_delivery_riskregister.txt (10 signals)
+2026-04-02 12:06:15,545 INFO api.services.document_processor: Merged candidates for E001: 10 main, 0 hypothesis, 0 duplicates removed, 0 removed by domain cap
+2026-04-02 12:07:58,818 INFO api.db.repositories.signal: Creating signal: S169 for engagement: E001
+2026-04-02 12:07:58,819 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,840 INFO api.db.repositories.signal: Creating signal: S170 for engagement: E001
+2026-04-02 12:07:58,840 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,858 INFO api.db.repositories.signal: Creating signal: S171 for engagement: E001
+2026-04-02 12:07:58,859 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,878 INFO api.db.repositories.signal: Creating signal: S172 for engagement: E001
+2026-04-02 12:07:58,879 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,895 INFO api.db.repositories.signal: Creating signal: S173 for engagement: E001
+2026-04-02 12:07:58,895 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,911 INFO api.db.repositories.signal: Creating signal: S174 for engagement: E001
+2026-04-02 12:07:58,912 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,930 INFO api.db.repositories.signal: Creating signal: S175 for engagement: E001
+2026-04-02 12:07:58,930 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,946 INFO api.db.repositories.signal: Creating signal: S176 for engagement: E001
+2026-04-02 12:07:58,947 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,963 INFO api.db.repositories.signal: Creating signal: S177 for engagement: E001
+2026-04-02 12:07:58,963 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:58,980 INFO api.db.repositories.signal: Creating signal: S178 for engagement: E001
+2026-04-02 12:07:58,980 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:07:59,000 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:07:59,000 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:07:59,008 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:07:59,008 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:23:24,040 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:30,088 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:34,976 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:40,180 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:44,979 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:50,021 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:54,462 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:23:59,398 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:24:04,872 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:24:13,948 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:24:24,307 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:24:24,308 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:24:24,308 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:24:24,308 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:25:26,316 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:25:26,316 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:25:26,490 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:25:26,490 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:25:26,581 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:25:26,589 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:25:26,589 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:25:26,603 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:25:26,604 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:25:26,612 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:25:26,620 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:25:26,620 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:25:26,623 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:25:26,623 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:26:42,434 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:26:42,437 INFO api.db.repositories.base: Transaction: 2 operations
+2026-04-02 12:26:42,456 INFO api.routers.signals: Reprocess: removed signals and ProcessedFiles record for E001_delivery_riskregister.txt
+2026-04-02 12:26:42,464 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:26:42,465 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:26:42,478 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:26:42,479 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:26:42,488 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:27:01,173 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:27:01,173 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:27:01,307 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:27:01,310 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:27:01,312 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:27:01,313 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:27:01,315 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:27:01,316 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:27:01,318 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:27:01,319 INFO api.services.document_processor: Processing delivery file: E001_delivery_riskregister.txt (604 chars)
+2026-04-02 12:27:38,186 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 12:27:38,246 INFO api.services.document_processor: Wrote 10 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_delivery_riskregister_candidates.json
+2026-04-02 12:27:38,250 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 12:27:38,270 INFO api.db.repositories.processed_files: Marked file as processed: E001_delivery_riskregister.txt (10 signals)
+2026-04-02 12:27:38,278 INFO api.services.document_processor: Merged candidates for E001: 10 main, 0 hypothesis, 0 duplicates removed, 0 removed by domain cap
+2026-04-02 12:31:28,109 INFO api.db.repositories.signal: Creating signal: S179 for engagement: E001
+2026-04-02 12:31:28,110 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,134 INFO api.db.repositories.signal: Creating signal: S180 for engagement: E001
+2026-04-02 12:31:28,134 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,151 INFO api.db.repositories.signal: Creating signal: S181 for engagement: E001
+2026-04-02 12:31:28,151 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,168 INFO api.db.repositories.signal: Creating signal: S182 for engagement: E001
+2026-04-02 12:31:28,168 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,185 INFO api.db.repositories.signal: Creating signal: S183 for engagement: E001
+2026-04-02 12:31:28,186 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,201 INFO api.db.repositories.signal: Creating signal: S184 for engagement: E001
+2026-04-02 12:31:28,202 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,217 INFO api.db.repositories.signal: Creating signal: S185 for engagement: E001
+2026-04-02 12:31:28,218 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,235 INFO api.db.repositories.signal: Creating signal: S186 for engagement: E001
+2026-04-02 12:31:28,236 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,255 INFO api.db.repositories.signal: Creating signal: S187 for engagement: E001
+2026-04-02 12:31:28,255 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,277 INFO api.db.repositories.signal: Creating signal: S188 for engagement: E001
+2026-04-02 12:31:28,278 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:31:28,304 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:31:28,304 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:31:28,318 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:31:28,318 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:31:28,327 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:31:34,066 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:31:34,066 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:31:34,241 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:31:34,241 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:31:34,251 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:31:34,251 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:31:34,251 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:31:34,252 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:31:34,264 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:31:34,266 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:31:34,267 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:31:34,274 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:31:34,274 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:31:34,275 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:38:58,378 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 12:38:58,379 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 12:38:58,874 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 12:38:58,874 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 12:45:39,998 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:45:56,561 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:46:09,622 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 12:48:47,569 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-04-02 12:48:47,570 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:48:47,637 INFO api.db.repositories.engagement: Fetching engagement: E002
+2026-04-02 12:48:47,637 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:48:47,717 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:48:47,726 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-04-02 12:48:47,726 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:48:47,741 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-04-02 12:48:47,741 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:48:47,750 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:48:47,757 INFO api.db.repositories.signal: Fetching signals for engagement: E002
+2026-04-02 12:48:47,758 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:48:47,769 INFO api.db.repositories.signal: Fetching domain summary for engagement: E002
+2026-04-02 12:48:47,769 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:48:52,726 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 12:48:52,727 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 12:48:53,163 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 12:48:53,163 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 12:48:54,257 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:48:54,257 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:48:54,436 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:48:54,437 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:48:54,445 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:48:54,446 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:48:54,447 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:48:54,447 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:48:54,447 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:48:54,451 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:48:54,462 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:48:54,462 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:48:54,463 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:48:54,463 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:48:59,106 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:48:59,107 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:48:59,275 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:48:59,278 INFO api.services.document_processor: Skipping already processed file: E001_delivery_riskregister.txt
+2026-04-02 12:48:59,279 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:48:59,282 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:48:59,283 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:48:59,285 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:48:59,286 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:48:59,287 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:49:24,758 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:49:24,761 INFO api.db.repositories.base: Transaction: 2 operations
+2026-04-02 12:49:24,782 INFO api.routers.signals: Reprocess: removed signals and ProcessedFiles record for E001_interview_test1.txt
+2026-04-02 12:49:24,794 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:49:24,794 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:49:24,805 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:49:24,805 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:49:24,811 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:49:30,129 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:49:30,130 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:49:30,302 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:49:30,305 INFO api.services.document_processor: Skipping already processed file: E001_delivery_riskregister.txt
+2026-04-02 12:49:30,306 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:49:30,309 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:49:30,310 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:49:30,312 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:49:30,314 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:49:30,316 INFO api.services.document_processor: Processing interview file: E001_interview_test1.txt (829 chars)
+2026-04-02 12:49:30,316 INFO api.services.claude: Extracting signals from transcript — 829 chars
+2026-04-02 12:49:43,300 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 12:49:43,345 INFO api.services.claude: Signal extraction complete — 3433 chars
+2026-04-02 12:49:43,354 INFO api.services.document_processor: Wrote 6 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_interview_test1_candidates.json
+2026-04-02 12:49:43,357 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 12:49:43,375 INFO api.db.repositories.processed_files: Marked file as processed: E001_interview_test1.txt (6 signals)
+2026-04-02 12:49:43,386 INFO api.services.document_processor: Merged candidates for E001: 6 main, 0 hypothesis, 0 duplicates removed, 0 removed by domain cap
+2026-04-02 12:49:54,146 INFO api.db.repositories.signal: Creating signal: S189 for engagement: E001
+2026-04-02 12:49:54,146 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,166 INFO api.db.repositories.signal: Creating signal: S190 for engagement: E001
+2026-04-02 12:49:54,167 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,183 INFO api.db.repositories.signal: Creating signal: S191 for engagement: E001
+2026-04-02 12:49:54,183 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,201 INFO api.db.repositories.signal: Creating signal: S192 for engagement: E001
+2026-04-02 12:49:54,201 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,219 INFO api.db.repositories.signal: Creating signal: S193 for engagement: E001
+2026-04-02 12:49:54,220 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,238 INFO api.db.repositories.signal: Creating signal: S194 for engagement: E001
+2026-04-02 12:49:54,239 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:49:54,260 INFO api.services.document_processor: Archived candidate file: E001_merged_candidates.json
+2026-04-02 12:49:54,264 INFO api.services.document_processor: Archived candidate file: E001_delivery_riskregister_candidates.json
+2026-04-02 12:49:54,269 INFO api.services.document_processor: Archived candidate file: E001_interview_CEO_test_20260325_candidates.json
+2026-04-02 12:49:54,272 INFO api.services.document_processor: Archived candidate file: E001_interview_test1_candidates.json
+2026-04-02 12:49:54,276 INFO api.services.document_processor: Archived candidate file: E001_interview_test2_candidates.json
+2026-04-02 12:49:54,285 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:49:54,285 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:49:54,299 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:49:54,299 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:49:54,309 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:50:22,648 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:50:22,648 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:50:22,873 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:50:22,873 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:50:22,881 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:50:22,882 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:50:22,895 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:50:22,896 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:50:22,904 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:50:22,912 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:50:22,912 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:50:22,925 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:50:22,926 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:50:22,936 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:50:29,877 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:50:29,879 INFO api.db.repositories.base: Transaction: 2 operations
+2026-04-02 12:50:29,903 INFO api.routers.signals: Reprocess: removed signals and ProcessedFiles record for E001_delivery_riskregister.txt
+2026-04-02 12:50:29,923 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:50:29,924 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:50:29,924 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:50:29,924 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:50:29,924 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:50:34,726 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:50:34,726 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:50:34,894 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:50:34,897 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:50:34,900 INFO api.services.document_processor: Skipping already processed file: E001_interview_CEO_test_20260325.txt
+2026-04-02 12:50:34,901 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:50:34,902 INFO api.services.document_processor: Skipping already processed file: E001_interview_test1.txt
+2026-04-02 12:50:34,903 INFO api.db.repositories.base: Query: 
+    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+
+2026-04-02 12:50:34,905 INFO api.services.document_processor: Skipping already processed file: E001_interview_test2.txt
+2026-04-02 12:50:34,907 INFO api.services.document_processor: Processing delivery file: E001_delivery_riskregister.txt (604 chars)
+2026-04-02 12:51:04,113 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 12:51:04,128 INFO api.services.document_processor: Wrote 10 candidates to C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\001_Meridian\002_Template_Projects\00_Candidates\E001_delivery_riskregister_candidates.json
+2026-04-02 12:51:04,133 INFO api.db.repositories.base: Write: 
+    INSERT INTO ProcessedFiles (
+        file_id, engagement_id, file_name, fil
+2026-04-02 12:51:04,153 INFO api.db.repositories.processed_files: Marked file as processed: E001_delivery_riskregister.txt (10 signals)
+2026-04-02 12:51:04,163 INFO api.services.document_processor: Merged candidates for E001: 9 main, 0 hypothesis, 0 duplicates removed, 1 removed by domain cap
+2026-04-02 12:51:22,088 INFO api.db.repositories.signal: Creating signal: S195 for engagement: E001
+2026-04-02 12:51:22,089 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,109 INFO api.db.repositories.signal: Creating signal: S196 for engagement: E001
+2026-04-02 12:51:22,109 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,126 INFO api.db.repositories.signal: Creating signal: S197 for engagement: E001
+2026-04-02 12:51:22,126 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,142 INFO api.db.repositories.signal: Creating signal: S198 for engagement: E001
+2026-04-02 12:51:22,143 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,158 INFO api.db.repositories.signal: Creating signal: S199 for engagement: E001
+2026-04-02 12:51:22,159 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,175 INFO api.db.repositories.signal: Creating signal: S200 for engagement: E001
+2026-04-02 12:51:22,176 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,193 INFO api.db.repositories.signal: Creating signal: S201 for engagement: E001
+2026-04-02 12:51:22,194 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,211 INFO api.db.repositories.signal: Creating signal: S202 for engagement: E001
+2026-04-02 12:51:22,211 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,227 INFO api.db.repositories.signal: Creating signal: S203 for engagement: E001
+2026-04-02 12:51:22,227 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:51:22,251 INFO api.services.document_processor: Archived candidate file: E001_merged_candidates.json
+2026-04-02 12:51:22,256 INFO api.services.document_processor: Archived candidate file: E001_delivery_riskregister_candidates.json
+2026-04-02 12:51:22,263 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:51:22,264 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:51:22,279 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:51:22,279 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:51:22,286 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:56:14,667 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:56:14,667 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:56:14,789 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:56:14,790 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:56:14,801 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:56:14,801 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:56:14,807 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:56:14,815 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:56:14,815 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:56:14,825 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:56:14,825 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:56:14,833 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:56:20,431 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:56:20,432 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:58:19,546 INFO api.db.repositories.signal: Creating signal: S204 for engagement: E001
+2026-04-02 12:58:19,547 INFO api.db.repositories.base: Write: 
+    INSERT INTO Signals (
+        signal_id, engagement_id, interview_id,
+     
+2026-04-02 12:58:19,565 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:58:19,566 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:58:19,579 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:58:19,580 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:58:19,591 INFO api.db.repositories.signal: Fetching domain summary for engagement: E001
+2026-04-02 12:58:19,592 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 12:58:19,601 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 12:58:19,607 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:58:19,608 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:58:34,570 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 12:58:34,570 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 12:58:34,579 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 12:58:34,580 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 12:58:38,436 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:58:38,437 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:58:38,440 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 12:58:38,441 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 12:58:38,663 INFO api.db.repositories.signal: Fetching signals for engagement: E001
+2026-04-02 12:58:38,663 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 12:58:38,667 INFO api.services.claude: Calling Claude API — context length: 22027 chars
+2026-04-02 12:59:09,804 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 12:59:09,808 INFO api.services.claude: Claude API response received — 5607 chars
+2026-04-02 12:59:09,809 INFO api.db.repositories.pattern: Fetching full pattern library
+2026-04-02 12:59:09,809 INFO api.db.repositories.base: Query: 
+    SELECT pattern_id,
+           pattern_name,
+           domain,
+           t
+2026-04-02 13:00:22,204 INFO api.db.repositories.base: Write: 
+    INSERT INTO EngagementPatterns (
+        ep_id, engagement_id, pattern_id,
+
+2026-04-02 13:00:22,221 INFO api.db.repositories.pattern: Bulk created 1 engagement patterns
+2026-04-02 13:00:22,228 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 13:00:22,228 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 13:00:22,239 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 13:00:22,241 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:00:30,381 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-04-02 13:00:30,381 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 13:00:30,382 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 13:00:30,382 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 13:00:30,392 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-04-02 13:00:30,393 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-04-02 13:00:30,393 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 13:00:30,393 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 13:00:30,404 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-04-02 13:00:30,404 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 13:00:30,405 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 13:00:30,405 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 13:01:07,424 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 13:01:07,428 INFO api.db.repositories.finding: Creating finding: F034 for engagement: E001 accepting 1 patterns
+2026-04-02 13:01:07,428 INFO api.db.repositories.base: Transaction: 2 operations
+2026-04-02 13:01:07,448 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-04-02 13:01:07,450 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 13:01:07,464 INFO api.db.repositories.finding: Fetching findings for engagement: E001
+2026-04-02 13:01:07,464 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 13:01:07,465 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 13:01:07,464 INFO api.db.repositories.pattern: Fetching patterns for engagement: E001
+2026-04-02 13:01:07,465 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E001
+2026-04-02 13:01:07,465 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:01:07,466 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 13:01:07,466 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 13:08:15,638 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 13:08:24,438 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 13:08:30,027 INFO api.db.repositories.engagement: Fetching engagement: E001
+2026-04-02 13:08:30,027 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:09:11,609 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 13:09:11,610 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 13:09:12,135 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 13:09:12,135 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 13:09:13,246 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:09:13,246 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:09:13,487 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:09:13,488 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:09:13,498 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:09:13,500 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:09:13,501 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 13:09:13,513 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:09:13,514 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:09:13,515 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:09:13,522 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:09:13,522 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 13:09:13,523 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:09:13,523 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:09:25,268 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:09:25,268 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:09:25,468 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 13:09:25,472 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 13:09:25,472 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 13:09:25,476 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 13:09:25,476 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 13:09:25,479 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 13:09:25,479 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 13:09:25,486 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items
+2026-04-02 13:12:13,234 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 13:12:13,294 INFO api.services.claude: Narrator response received — 30195 chars
+2026-04-02 13:12:13,298 INFO api.services.claude: Narrator sections parsed — ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'roadmap_rationale:Stabilize', 'roadmap_rationale:Optimize', 'roadmap_rationale:Scale', 'domain_analysis:Consulting Economics', 'domain_analysis:Sales-to-Delivery Transition', 'domain_analysis:Project Governance / PMO', 'domain_analysis:Delivery Operations', 'domain_analysis:Resource Management', 'domain_analysis:Sales & Pipeline', 'domain_analysis:AI Readiness', 'domain_analysis:Finance and Commercial', 'domain_analysis:Customer Experience']
+2026-04-02 13:12:13,821 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 13:12:20,624 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:12:20,624 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:12:47,993 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:12:47,994 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:12:48,210 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:12:48,211 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:12:48,446 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:12:48,447 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 13:12:48,464 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:12:48,464 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:12:48,471 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:12:48,478 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:12:48,479 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 13:12:48,493 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:12:48,494 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:12:48,507 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:56:34,227 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 13:57:43,900 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 13:57:43,901 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 13:57:44,608 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-02 13:57:44,609 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-02 13:57:46,428 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:57:46,429 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:57:46,679 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 13:57:46,679 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 13:57:46,695 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:57:46,697 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:57:46,697 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:57:46,697 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 13:57:46,698 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:57:46,719 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 13:57:46,721 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 13:57:46,721 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 13:57:46,722 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 13:57:46,722 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:07:41,730 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:07:41,732 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:07:41,732 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:07:41,732 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:07:41,733 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:07:41,751 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:07:41,752 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:07:41,753 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:07:41,753 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:07:41,754 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:07:43,168 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:43,168 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:43,177 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:43,177 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:43,807 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:43,807 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:43,820 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:43,821 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:44,526 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:44,526 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:44,526 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:44,526 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:44,527 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:07:44,527 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:44,544 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:44,545 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:44,545 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:44,545 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:07:44,546 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:44,546 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:45,227 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:45,227 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:07:45,227 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:45,227 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:07:45,228 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:07:45,228 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:45,246 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:45,247 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:07:45,247 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:07:45,248 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:07:45,247 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:07:45,248 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:07:47,196 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:47,196 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-02 14:07:47,196 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:07:47,196 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-02 14:07:47,196 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:47,197 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:47,211 INFO api.db.repositories.knowledge: Fetching knowledge promotions for engagement: E003
+2026-04-02 14:07:47,211 INFO api.db.repositories.pattern: Fetching patterns for engagement: E003
+2026-04-02 14:07:47,211 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:07:47,211 INFO api.db.repositories.base: Query: 
+    SELECT k.promotion_id,
+           k.engagement_id,
+           k.finding_id,
+2026-04-02 14:07:47,211 INFO api.db.repositories.base: Query: 
+    SELECT ep.ep_id,
+           ep.engagement_id,
+           ep.pattern_id,
+   
+2026-04-02 14:07:47,212 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:14:12,074 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:14:17,208 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:19:51,279 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:20:05,234 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:20:30,806 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:25:19,304 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:32:42,990 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:32:42,991 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:32:42,991 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:32:42,992 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:32:42,992 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:32:42,993 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:32:43,008 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:32:43,008 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:32:43,009 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:32:43,009 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:32:43,020 INFO api.db.repositories.agent_run: Fetching agent runs for engagement: E003
+2026-04-02 14:32:43,021 INFO api.db.repositories.base: Query: 
+    SELECT run_id,
+           engagement_id,
+           agent_name,
+           
+2026-04-02 14:42:05,348 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:42:50,853 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:42:50,853 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:42:51,097 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:42:51,098 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:42:51,125 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:42:51,126 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:42:51,149 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:42:51,150 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:42:51,156 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:42:51,163 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:42:51,164 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:42:51,183 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:42:51,183 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:42:51,193 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:43:01,727 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:43:01,727 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:43:01,920 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 14:43:01,923 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:43:01,923 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:43:01,926 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:43:01,927 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:43:01,929 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 14:43:01,929 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 14:43:01,933 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items, max_tokens=16000
+2026-04-02 14:46:37,846 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 14:46:37,934 INFO api.services.claude: Narrator response received — 41787 chars
+2026-04-02 14:46:37,935 INFO api.services.claude: Narrator sections parsed — keys: ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-02 14:46:38,466 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 14:51:03,428 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:56:11,505 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:56:11,506 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:56:11,694 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:56:11,695 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:56:11,763 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:56:11,764 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:56:11,783 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:56:11,783 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:56:11,792 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:56:11,801 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:56:11,801 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:56:11,816 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:56:11,817 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:56:11,829 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:57:50,207 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 14:57:51,733 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:57:51,733 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:57:51,821 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:57:51,821 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:57:51,906 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:57:51,907 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:57:51,918 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:57:51,918 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:57:51,924 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:57:51,930 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:57:51,931 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:57:51,941 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:57:51,941 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:57:51,954 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:57:55,897 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:57:55,897 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:57:56,104 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:57:56,105 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:57:56,115 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:57:56,116 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:57:56,116 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:57:56,117 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:57:56,117 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:57:56,122 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 14:57:56,139 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 14:57:56,140 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 14:57:56,140 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 14:57:56,140 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 14:58:05,353 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 14:58:05,353 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 14:58:05,545 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 14:58:05,548 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 14:58:05,548 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 14:58:05,551 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 14:58:05,551 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 14:58:05,555 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 14:58:05,555 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 14:58:05,560 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items, max_tokens=16000
+2026-04-02 15:01:17,582 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 15:01:17,716 INFO api.services.claude: Narrator response received — 38642 chars
+2026-04-02 15:01:17,717 INFO api.services.claude: Narrator sections parsed — keys: ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-02 15:01:18,199 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 15:13:02,130 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 15:13:15,594 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 15:13:36,822 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 15:14:57,006 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 15:20:09,392 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:20:09,393 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:20:09,631 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:20:09,631 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:20:09,643 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:20:09,644 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:20:09,668 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:20:09,669 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:20:09,680 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 15:20:09,688 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:20:09,688 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:20:09,720 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:20:09,720 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:20:09,731 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 15:20:18,680 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:20:18,681 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:20:18,909 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 15:20:18,912 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 15:20:18,912 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 15:20:18,914 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 15:20:18,915 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 15:20:18,917 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 15:20:18,917 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 15:20:18,921 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items, max_tokens=16000
+2026-04-02 15:23:51,577 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 15:23:51,693 INFO api.services.claude: Narrator response received — 41279 chars
+2026-04-02 15:23:51,694 INFO api.services.claude: Narrator sections parsed — keys: ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-02 15:23:52,239 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 15:29:17,353 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-02 15:30:58,250 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:30:58,250 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:30:58,564 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:30:58,565 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:30:58,586 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:30:58,586 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:30:58,625 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:30:58,626 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:30:58,635 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 15:30:58,646 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:30:58,647 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:30:58,670 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:30:58,671 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:30:58,686 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 15:31:05,195 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:31:05,195 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:31:05,467 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-02 15:31:05,470 INFO api.db.repositories.finding: Fetching findings for engagement: E003
+2026-04-02 15:31:05,471 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-02 15:31:05,474 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E003
+2026-04-02 15:31:05,475 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-02 15:31:05,478 INFO api.db.repositories.reporting: Fetching engagement signals for: E003
+2026-04-02 15:31:05,479 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-02 15:31:05,485 INFO api.services.claude: Generating report narrative — 35424 chars synthesizer, 10 findings, 12 roadmap items, max_tokens=16000
+2026-04-02 15:34:15,736 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-02 15:34:15,808 INFO api.services.claude: Narrator response received — 38442 chars
+2026-04-02 15:34:15,809 INFO api.services.claude: Narrator sections parsed — keys: ['executive_summary', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-02 15:34:16,427 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\003_VantagePoint\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E003.docx
+2026-04-02 15:41:18,499 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:41:18,500 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:41:18,816 INFO api.db.repositories.engagement: Fetching engagement: E003
+2026-04-02 15:41:18,817 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-02 15:41:18,837 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:41:18,837 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:41:18,859 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:41:18,860 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:41:18,875 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-02 15:41:18,884 INFO api.db.repositories.signal: Fetching signals for engagement: E003
+2026-04-02 15:41:18,885 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-02 15:41:18,919 INFO api.db.repositories.signal: Fetching domain summary for engagement: E003
+2026-04-02 15:41:18,920 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-02 15:41:18,937 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 

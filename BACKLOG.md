@@ -79,6 +79,18 @@ No schema changes. No frontend changes. No new endpoints.
 
 ---
 
+### Billable versus non billable employees
+Need to be able to capture billable employees and non billable employees for total number of 
+employees.  This might be captured in interviews, but it could easily be part of the new
+engagement.
+
+---
+### Editable New engagement Info
+Need to be able to edit the engagement information after it has been entered in.  Should
+not have to go to the database to update it.
+
+---
+
 ### ~~Word Report Template — Additional Formatting Cleanup~~ ✅ Done
 Heading numbers, economic table, section structure verified on E003. Good enough for now —
 further refinement deferred until next real-client dry run produces better test data.
