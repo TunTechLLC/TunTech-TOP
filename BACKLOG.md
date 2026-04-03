@@ -5,46 +5,7 @@
 
 ## Before Checkpoint 4
 
-
-
-### Quick Wins Section in the Report
-**Problem:** The report surfaces all roadmap items in three phase tables but does not
-call out which items the client can act on immediately. Executives leave the presentation
-wanting something concrete to do next week — the report should give them that explicitly.
-
-**Note:** Section 8.1 (Priority Zero Actions) and Section 9 (Immediate Next Steps) now
-address the most urgent items from the Synthesizer output. Quick Wins as defined here —
-a filtered table of priority=High AND effort=Low roadmap items — is still distinct and
-worth adding, but is lower priority than before given the new sections.
-
-**Design:** Add a "Quick Wins" subsection in Section 8 between the Roadmap Overview (8.2)
-and the phase tables (8.3). Filter roadmap items where priority=High AND effort=Low.
-Display as a short highlighted table — title, domain, and one-line description. Cap at 5 items.
-
-If no items meet the criteria, omit the section entirely — do not show an empty table.
-
-**Implementation:** Pure report generation logic in `api/services/report_generator.py`.
-No schema changes. No frontend changes. No new endpoints.
-
-**Commit message:** Quick wins section in report — high priority, low effort roadmap items
-
----
-
-### Billable versus non billable employees
-Need to be able to capture billable employees and non billable employees for total number of 
-employees.  This might be captured in interviews, but it could easily be part of the new
-engagement.
-
----
-### Editable New engagement Info
-Need to be able to edit the engagement information after it has been entered in.  Should
-not have to go to the database to update it.
-
----
-
-### ~~Word Report Template — Additional Formatting Cleanup~~ ✅ Done
-Heading numbers, economic table, section structure verified on E003. Good enough for now —
-further refinement deferred until next real-client dry run produces better test data.
+*All items complete. Ready for Checkpoint 4.*
 
 ---
 
@@ -99,6 +60,41 @@ further refinement deferred until next real-client dry run produces better test 
 ---
 
 ## After Checkpoint 4
+
+### Quick Wins Section in the Report
+**Problem:** The report surfaces all roadmap items in three phase tables but does not
+call out which items the client can act on immediately. Executives leave the presentation
+wanting something concrete to do next week — the report should give them that explicitly.
+
+**Note:** Section 8.1 (Priority Zero Actions) and Section 9 (Immediate Next Steps) now
+address the most urgent items from the Synthesizer output. Quick Wins as defined here —
+a filtered table of priority=High AND effort=Low roadmap items — is still distinct and
+worth adding, but is lower priority than before given the new sections.
+
+**Design:** Add a "Quick Wins" subsection in Section 8 between the Roadmap Overview (8.2)
+and the phase tables (8.3). Filter roadmap items where priority=High AND effort=Low.
+Display as a short highlighted table — title, domain, and one-line description. Cap at 5 items.
+
+If no items meet the criteria, omit the section entirely — do not show an empty table.
+
+**Implementation:** Pure report generation logic in `api/services/report_generator.py`.
+No schema changes. No frontend changes. No new endpoints.
+
+**Commit message:** Quick wins section in report — high priority, low effort roadmap items
+
+---
+
+### Billable vs Non-Billable Employees
+Need to be able to capture billable and non-billable employee counts separately.
+This may be captured in interviews but could also be part of the New Engagement form.
+
+---
+
+### Editable Engagement Info
+Need to be able to edit engagement information after initial entry — should not require
+DB Browser to update firm name, stated problem, hypothesis, etc.
+
+---
 
 ### Auto-Suggest Knowledge Promotions
 **Problem:** Knowledge promotions are the only panel that remains fully manual.
