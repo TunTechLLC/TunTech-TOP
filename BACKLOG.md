@@ -5,7 +5,7 @@
 
 ## Before Checkpoint 4
 
-### Economic Impact Reasoning — Make Figures CFO-Defensible
+### ~~Economic Impact Reasoning — Make Figures CFO-Defensible~~ ✅ Done
 **Problem:** Economic impact figures currently show a conclusion and a label (CONFIRMED or
 INFERRED) but not the reasoning. A CFO can challenge any number that isn't self-explanatory.
 The goal is that the figure carries enough context that the CFO can follow the logic and

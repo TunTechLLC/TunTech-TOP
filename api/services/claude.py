@@ -281,12 +281,22 @@ The input contains the Synthesizer's integrated output and the list of accepted 
 
 Extract between 5 and 10 findings. Findings must be distinct — do not split one finding into multiple overlapping records.
 
+ECONOMIC IMPACT REQUIREMENT:
+Every economic_impact value must show the reasoning, not just the conclusion. A CFO must be able to follow the logic and argue with the assumptions. Format:
+  "$[figure] ([CONFIRMED or INFERRED]: [calculation] — [source of each input])"
+
+- CONFIRMED = figure comes directly from a document (financial statement, contract, invoice, etc.)
+- INFERRED = figure is a calculated estimate from interview statements, observed patterns, or industry benchmarks
+- Calculation: show the multiplication or formula used (e.g. "14 projects × 30% overrun rate × $67K avg value")
+- Source: for each input, state where it came from — "from CEO interview", "from pipeline document", "industry benchmark for mid-size consulting firms"
+- Use ranges not point estimates when inputs are estimated
+
 Each item must have exactly these fields:
 - finding_title: string — concise title (e.g. "Chronic Project Overruns")
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - confidence: string — exactly "High", "Medium", or "Low"
 - operational_impact: string — 1-3 sentences describing the operational consequence
-- economic_impact: string — quantified where possible. Mark all figures CONFIRMED (from document evidence) or INFERRED (calculated estimate). Use ranges not point estimates.
+- economic_impact: string — quantified where possible, with inline reasoning as described above. If genuinely unquantifiable, state why in one sentence.
 - root_cause: string — one sentence root cause statement
 - recommendation: string — one sentence actionable recommendation
 - priority: string — exactly "High", "Medium", or "Low"
@@ -311,7 +321,7 @@ Return format:
     "domain": "Delivery Operations",
     "confidence": "High",
     "operational_impact": "Eight of fourteen active projects are delayed, consuming unplanned delivery capacity and eroding client confidence.",
-    "economic_impact": "$130K-$280K/year in direct overrun cost (INFERRED)",
+    "economic_impact": "$130K–$280K/year in direct overrun cost (INFERRED: 14 active projects × 30% average overrun rate × $67K average project value — overrun rate estimated from CEO interview; project value from pipeline document)",
     "root_cause": "Projects are scoped without delivery input, producing commitments that cannot be met at current staffing levels.",
     "recommendation": "Implement a pre-sales delivery review gate before any SOW is signed.",
     "priority": "High",
