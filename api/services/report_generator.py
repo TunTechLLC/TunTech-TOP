@@ -465,6 +465,10 @@ class ReportGeneratorService:
 
         # Lookup dicts used across multiple sections
         findings_by_id = {f['finding_id']: f for f in findings}
+        roadmap_by_id  = {
+            item['item_id']: item.get('initiative_name', '')
+            for item in roadmap if item.get('item_id')
+        }
         initiative_details = {
             d['item_id']: d
             for d in narrative.get('initiative_details', [])
@@ -485,23 +489,49 @@ class ReportGeneratorService:
         margin_trend = narrative.get('margin_trend_brief', '')
         if margin_trend:
             kf_rows.append(('Margin Trend', margin_trend))
-        confirmed_floor = _compute_confirmed_floor(findings)
-        if confirmed_floor:
-            kf_rows.append(('Revenue at Risk', confirmed_floor))
+        # Revenue at Risk — sourced from Sales-to-Delivery Transition or Sales & Pipeline
+        # confirmed figure; avoids summing across domains (which produces an unverifiable total).
+        revenue_at_risk = None
+        for _domain in ('Sales-to-Delivery Transition', 'Sales & Pipeline'):
+            _rev_f = next(
+                (f for f in findings
+                 if f.get('domain') == _domain and f.get('economic_impact')),
+                None
+            )
+            if _rev_f:
+                _conf, _ = _parse_economic_figures(_rev_f.get('economic_impact', ''))
+                if _conf != '—':
+                    revenue_at_risk = _conf.split(', ')[0]
+                    break
+        if revenue_at_risk:
+            kf_rows.append(('Revenue at Risk', revenue_at_risk))
         high_findings   = [f for f in findings if f.get('priority') == 'High']
         primary_finding = high_findings[0] if high_findings else (findings[0] if findings else None)
         if primary_finding and primary_finding.get('root_cause'):
             rc  = primary_finding['root_cause']
             dot = rc.find('. ')
-            cause_line = (rc[:dot] if dot > 0 else rc[:120]).strip()
+            cause_line = (rc[:dot] if dot > 0 else rc).strip()
             if cause_line:
                 kf_rows.append(('Primary Cause', cause_line))
         pz_rows = narrative.get('priority_zero_table_rows', [])
         if pz_rows and isinstance(pz_rows, list) and pz_rows[0].get('action'):
             kf_rows.append(('Act This Week', pz_rows[0]['action']))
         fs_rows = narrative.get('future_state_table_rows', [])
-        if fs_rows and isinstance(fs_rows, list) and fs_rows[0].get('target'):
-            kf_rows.append(('18-Month Target', fs_rows[0]['target']))
+        if fs_rows and isinstance(fs_rows, list):
+            # Prefer gross margin row — named metric with current baseline makes the
+            # target concrete. Fall back to first row if no gross margin row exists.
+            _gm_row = next(
+                (r for r in fs_rows
+                 if isinstance(r, dict) and 'gross margin' in (r.get('metric') or '').lower()),
+                None
+            )
+            _target_row = _gm_row or (fs_rows[0] if isinstance(fs_rows[0], dict) else None)
+            if _target_row and _target_row.get('target'):
+                _label = '18-Month Gross Margin Target' if _gm_row else '18-Month Target'
+                _current = _target_row.get('current_state', '')
+                _val = (_target_row['target'] + f' (currently {_current})'
+                        if _current else _target_row['target'])
+                kf_rows.append((_label, _val))
         if kf_rows:
             self._key_findings_box(doc, kf_rows)
             doc.add_paragraph()
@@ -513,19 +543,11 @@ class ReportGeneratorService:
             if para_text:
                 self._add_narrative_paragraphs(doc, para_text)
 
-        # Component D — multi-reader reference line (small muted font)
-        ref_para = doc.add_paragraph()
-        ref_run  = ref_para.add_run(
-            'This document is intended for multiple readers. '
-            'Refer to How to Read This Document (following the Engagement Overview) '
-            'for a guide to which sections are most relevant to your role.'
-        )
-        ref_run.font.size      = Pt(9)
-        ref_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-        ref_para.alignment     = WD_ALIGN_PARAGRAPH.LEFT
         doc.add_paragraph()
 
-        # How to Read This Document — prefatory page, excluded from TOC (Change 2)
+        # How to Read This Document — standalone page between Exec Summary and Engagement Overview.
+        # Appears in TOC (heading style) but without a section number (w:numPr stripped).
+        # Page break before it ensures it starts on its own page.
         self._how_to_read_page(doc, findings, firm_name)
         doc.add_paragraph()
 
@@ -625,7 +647,7 @@ class ReportGeneratorService:
         doc.add_heading('Initiative Dependencies', level=2)
         dep_rows = narrative.get('dependency_table_rows', [])
         if dep_rows and isinstance(dep_rows, list):
-            self._dependency_table(doc, dep_rows)
+            self._dependency_table(doc, dep_rows, roadmap_by_id)
         else:
             doc.add_paragraph('No dependencies identified.')
         doc.add_paragraph()
@@ -764,15 +786,20 @@ class ReportGeneratorService:
 
     def _how_to_read_page(self, doc, findings: list, firm_name: str):
         """Prefatory 'How to Read This Document' page.
-        Title uses a bold paragraph (not a heading style) so it is excluded from
-        the Word TOC. Reader guide table rows are generated only for roles whose
-        trigger domains have findings in this engagement."""
-        # Title — bold 14pt paragraph, not a heading (keeps it off the TOC)
-        title_para = doc.add_paragraph()
-        title_run  = title_para.add_run('How to Read This Document')
-        title_run.bold       = True
-        title_run.font.size  = Pt(14)
-        title_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        Title uses Heading 1 style (appears in Word TOC) with section number
+        suppressed via w:numPr removal and a page break forced before it.
+        Reader guide table rows are generated only for roles whose trigger
+        domains have findings in this engagement."""
+        # Title — Heading 1 so it appears in TOC; numPr stripped to suppress
+        # section number; pageBreakBefore forces it onto its own page.
+        heading_para = doc.add_heading('How to Read This Document', level=1)
+        pPr = heading_para._p.get_or_add_pPr()
+        numPr = pPr.find(qn('w:numPr'))
+        if numPr is not None:
+            pPr.remove(numPr)
+        pbBefore = OxmlElement('w:pageBreakBefore')
+        pbBefore.set(qn('w:val'), 'true')
+        pPr.append(pbBefore)
 
         doc.add_paragraph()
 
@@ -1002,7 +1029,14 @@ class ReportGeneratorService:
         if seen_confirmed:
             total_val  = 0.0
             parseable  = False
-            for fig in seen_confirmed:
+            for fig, fig_title in seen_confirmed.items():
+                # Exclude concentration and relationship-risk findings — these represent
+                # structural exposure (e.g. revenue concentration), not a directly
+                # recoverable cost. Including them inflates the total vs. what intervention
+                # can realistically address.
+                _title_low = (fig_title or '').lower()
+                if 'concentration' in _title_low or 'relationship risk' in _title_low:
+                    continue
                 val = _dollar_to_float(fig)
                 if val is not None:
                     total_val += val
@@ -1012,7 +1046,7 @@ class ReportGeneratorService:
                     formatted = f'~${total_val / 1_000_000:.1f}M'
                 else:
                     formatted = f'~${int(round(total_val / 1000))}K'
-                total_confirmed = f'{formatted}+ confirmed floor'
+                total_confirmed = f'{formatted}+ (non-overlapping direct exposures)'
 
         # Annual Drag: use aggregate inferred range from Consulting Economics finding if present.
         # If none exists, leave as '—' — do not fabricate an aggregate.
@@ -1153,9 +1187,11 @@ class ReportGeneratorService:
             row.cells[5].text = details.get('success_metric', '') or ''
         _left_align_table(table)
 
-    def _dependency_table(self, doc, rows: list):
+    def _dependency_table(self, doc, rows: list, roadmap_by_id: dict | None = None):
         """Section 8.6 Initiative Dependencies table.
-        Columns: Initiative | Depends On"""
+        Columns: Initiative | Depends On
+        roadmap_by_id: item_id → initiative_name mapping used to resolve R-code
+        references the narrator emits (e.g. 'R066') into human-readable names."""
         table = doc.add_table(rows=1, cols=2)
         table.style = 'Table Grid'
         for i, h in enumerate(['Initiative', 'Depends On']):
@@ -1166,12 +1202,19 @@ class ReportGeneratorService:
             _shade_cell(cell, 'D9D9D9')
         _set_col_widths(table, [3.2, 3.3])
 
+        def _resolve_rcodes(text: str) -> str:
+            if not roadmap_by_id or not text:
+                return text
+            def _sub(m):
+                return roadmap_by_id.get(m.group(0), m.group(0))
+            return re.sub(r'\bR\d+\b', _sub, text)
+
         for r in rows:
             if not isinstance(r, dict):
                 continue
             row = table.add_row()
-            row.cells[0].text = r.get('initiative') or ''
-            row.cells[1].text = r.get('depends_on') or ''
+            row.cells[0].text = _resolve_rcodes(r.get('initiative') or '')
+            row.cells[1].text = _resolve_rcodes(r.get('depends_on') or '')
         _left_align_table(table)
 
     def _risk_table(self, doc, rows: list):
