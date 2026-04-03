@@ -7,6 +7,7 @@ from collections import defaultdict
 from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches
 from lxml import etree
 
@@ -42,6 +43,15 @@ def _set_col_widths(table, widths_inches: list):
             cell.width = Inches(width)
 
 
+def _left_align_table(table):
+    """Force left alignment on every paragraph in every cell of a table.
+    Overrides any justified alignment inherited from the document template."""
+    for row in table.rows:
+        for cell in row.cells:
+            for para in cell.paragraphs:
+                para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
 # Matches dollar amounts including ranges and K/M suffixes, with optional ~ prefix.
 # Examples: $85K  ~$463K  $150K–$612K  $1,070K  $1.5M
 _DOLLAR_RE = re.compile(
@@ -50,6 +60,25 @@ _DOLLAR_RE = re.compile(
 )
 _CONFIRMED_RE = re.compile(r'\bCONFIRMED(?:-\w+)?', re.IGNORECASE)
 _INFERRED_RE  = re.compile(r'\bINFERRED(?:-\w+)?',  re.IGNORECASE)
+
+
+def _dollar_to_float(s: str) -> float | None:
+    """Convert a dollar string to a float for summation in the totals row.
+    Handles K/M suffixes, ~ prefix, commas, and ranges (takes lower bound).
+    Returns None if parsing fails."""
+    s = re.sub(r'[~$,\s]', '', s.strip())
+    s = re.split(r'[–\-]', s)[0]   # lower bound of range
+    multiplier = 1
+    if s and s[-1].upper() == 'K':
+        multiplier = 1_000;      s = s[:-1]
+    elif s and s[-1].upper() == 'M':
+        multiplier = 1_000_000;  s = s[:-1]
+    elif s and s[-1].upper() == 'B':
+        multiplier = 1_000_000_000; s = s[:-1]
+    try:
+        return float(s) * multiplier
+    except (ValueError, AttributeError):
+        return None
 
 
 def _parse_economic_figures(text: str):
@@ -83,8 +112,17 @@ def _parse_economic_figures(text: str):
             continue  # No labels in this clause
 
         for m in _DOLLAR_RE.finditer(clause):
-            amt      = m.group(0)
-            amt_end  = m.end()
+            amt       = m.group(0)
+            amt_end   = m.end()
+            amt_start = m.start()
+
+            # Skip dollar amounts inside parentheses — these are reference figures
+            # cited as context from other findings, not direct exposure claims for
+            # this finding. E.g. "($4,094,000 in top-3 client revenue, CONFIRMED)"
+            # is a parenthetical qualifier, not the subject of the clause.
+            pre_text = clause[:amt_start]
+            if pre_text.count('(') > pre_text.count(')'):
+                continue
 
             # Only consider labels that appear AFTER the dollar amount
             conf_after = [p for p in conf_positions if p >= amt_end]
@@ -367,11 +405,12 @@ class ReportGeneratorService:
     # ------------------------------------------------------------------
 
     def _add_narrative_paragraphs(self, doc, text: str):
-        """Add each double-newline-separated paragraph as a Word paragraph."""
+        """Add each double-newline-separated paragraph as a Word paragraph, left-aligned."""
         for para in text.split('\n\n'):
             para = para.strip()
             if para:
-                doc.add_paragraph(para)
+                p = doc.add_paragraph(para)
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     # ------------------------------------------------------------------
     # Table helpers — existing
@@ -391,6 +430,7 @@ class ReportGeneratorService:
             _shade_cell(row.cells[0], 'F2F2F2')
             row.cells[1].text = value
         _set_col_widths(table, [1.6, 4.9])
+        _left_align_table(table)
 
     def _signal_table(self, doc, signals: list):
         """Domain summary: domain, total signals, counts by confidence."""
@@ -423,6 +463,7 @@ class ReportGeneratorService:
             row.cells[2].text = str(c['High'])
             row.cells[3].text = str(c['Medium'])
             row.cells[4].text = str(c['Hypothesis'])
+        _left_align_table(table)
 
     def _findings_by_domain(self, doc, findings: list, narrative: dict):
         """Findings grouped by domain.
@@ -498,38 +539,71 @@ class ReportGeneratorService:
 
         recovery_map = {'High': 'High', 'Medium': 'Medium', 'Low': 'Low'}
 
+        seen_confirmed   = {}   # figure string → first finding_title that used it
+        footnote_markers = {}   # figure string → marker symbol
+        footnotes        = []   # list of (marker, figure, first_title)
+        _markers         = ['*', '**', '†']
+
         for f in rows_with_impact:
             confirmed, inferred = _parse_economic_figures(f.get('economic_impact', ''))
-            # Take only the primary (first) figure per column — the first figure the
-            # economics agent states for this finding is the most relevant to that finding.
-            # Subsequent figures are often cross-references to portfolio totals.
             primary_confirmed = confirmed.split(', ')[0] if confirmed != '—' else '—'
             primary_inferred  = inferred.split(', ')[0]  if inferred  != '—' else '—'
+
+            # Detect duplicate confirmed figures — same dollar amount in two rows means
+            # the same underlying cost is being cited twice, not two separate exposures.
+            # Mark the second occurrence; add a footnote below the table.
+            display_confirmed = primary_confirmed
+            if primary_confirmed != '—':
+                if primary_confirmed in seen_confirmed:
+                    if primary_confirmed not in footnote_markers:
+                        marker = _markers[len(footnote_markers)] if len(footnote_markers) < len(_markers) else '*'
+                        footnote_markers[primary_confirmed] = marker
+                        footnotes.append((marker, primary_confirmed, seen_confirmed[primary_confirmed]))
+                    display_confirmed = f"{primary_confirmed}{footnote_markers[primary_confirmed]}"
+                else:
+                    seen_confirmed[primary_confirmed] = f.get('finding_title', '')
+
             row = table.add_row()
             row.cells[0].text = f.get('finding_title') or ''
-            row.cells[1].text = primary_confirmed
+            row.cells[1].text = display_confirmed
             row.cells[2].text = primary_inferred
             row.cells[3].text = recovery_map.get(f.get('priority', ''), '—')
 
-        # Totals row — sourced entirely from the Consulting Economics finding which
-        # synthesises the aggregate drag. Every figure traces to that finding's text.
+        # Totals row
+        # Confirmed floor: sum unique confirmed figures from seen_confirmed.
+        # seen_confirmed holds only first occurrences — duplicates were footnoted above,
+        # so this sum does not double-count any underlying cost.
+        total_confirmed = '—'
+        total_inferred  = '—'
+
+        if seen_confirmed:
+            total_val  = 0.0
+            parseable  = False
+            for fig in seen_confirmed:
+                val = _dollar_to_float(fig)
+                if val is not None:
+                    total_val += val
+                    parseable  = True
+            if parseable:
+                if total_val >= 1_000_000:
+                    formatted = f'~${total_val / 1_000_000:.1f}M'
+                else:
+                    formatted = f'~${int(round(total_val / 1000))}K'
+                total_confirmed = f'{formatted}+ confirmed floor'
+
+        # Annual Drag: use aggregate inferred range from Consulting Economics finding if present.
+        # If none exists, leave as '—' — do not fabricate an aggregate.
         econ_finding = next(
             (f for f in findings
              if f.get('domain') == 'Consulting Economics' and f.get('economic_impact')),
             None
         )
-        total_confirmed = '—'
-        total_inferred  = '—'
         if econ_finding:
             _, inf_str = _parse_economic_figures(econ_finding['economic_impact'])
             if inf_str != '—':
-                parts = [p.strip() for p in inf_str.split(', ')]
-                # Floor figure: first figure (shortfall vs benchmark — the conservative floor)
-                floor = parts[0]
-                total_confirmed = f'{floor}+ confirmed floor'
-                # Range figure: first figure with an en-dash (the total drag range)
+                parts      = [p.strip() for p in inf_str.split(', ')]
                 range_parts = [p for p in parts if '–' in p]
-                drag_range = range_parts[0] if range_parts else (parts[1] if len(parts) > 1 else floor)
+                drag_range  = range_parts[0] if range_parts else parts[0]
                 total_inferred = f'{drag_range} INFERRED annually'
 
         totals_row = table.add_row()
@@ -541,6 +615,16 @@ class ReportGeneratorService:
         totals_row.cells[1].text = total_confirmed
         totals_row.cells[2].text = total_inferred
         totals_row.cells[3].text = '—'
+
+        _left_align_table(table)
+
+        # Footnotes for duplicate confirmed figures — rendered as italic text below the table
+        for marker, figure, first_title in footnotes:
+            fn = doc.add_paragraph(
+                f'{marker} {figure} also appears in "{first_title}" — '
+                f'these represent the same underlying cost, not separate exposures. Do not sum.'
+            )
+            fn.runs[0].italic = True
 
     def _future_state_table(self, doc, rows: list):
         """Section 7 future state metrics table.
@@ -566,6 +650,7 @@ class ReportGeneratorService:
             row.cells[1].text = r.get('current_state') or ''
             row.cells[2].text = r.get('benchmark') or ''
             row.cells[3].text = r.get('target') or ''
+        _left_align_table(table)
 
     def _priority_zero_table(self, doc, rows: list):
         """Section 8.1 Priority Zero table.
@@ -587,6 +672,7 @@ class ReportGeneratorService:
             row.cells[0].text = r.get('action') or ''
             row.cells[1].text = r.get('owner') or ''
             row.cells[2].text = r.get('what_it_unblocks') or ''
+        _left_align_table(table)
 
     def _roadmap_overview_table(self, doc, rows: list):
         """Section 8.2 Roadmap Overview table.
@@ -612,6 +698,7 @@ class ReportGeneratorService:
                 row.cells[2].text = '\n'.join(f'• {o}' for o in outcomes if o)
             else:
                 row.cells[2].text = str(outcomes)
+        _left_align_table(table)
 
     def _roadmap_phase_table(self, doc, items: list, findings_by_id: dict,
                               initiative_details: dict):
@@ -641,6 +728,7 @@ class ReportGeneratorService:
             row.cells[3].text = item.get('owner') or ''
             row.cells[4].text = details.get('timeline', '') or ''
             row.cells[5].text = details.get('success_metric', '') or ''
+        _left_align_table(table)
 
     def _dependency_table(self, doc, rows: list):
         """Section 8.6 Initiative Dependencies table.
@@ -661,6 +749,7 @@ class ReportGeneratorService:
             row = table.add_row()
             row.cells[0].text = r.get('initiative') or ''
             row.cells[1].text = r.get('depends_on') or ''
+        _left_align_table(table)
 
     def _risk_table(self, doc, rows: list):
         """Section 8.7 Key Risks table.
@@ -682,6 +771,7 @@ class ReportGeneratorService:
             row.cells[0].text = r.get('risk') or ''
             row.cells[1].text = r.get('likelihood') or ''
             row.cells[2].text = r.get('mitigation') or ''
+        _left_align_table(table)
 
     def _next_steps_table(self, doc, rows: list):
         """Section 9 Immediate Next Steps table.
@@ -703,3 +793,4 @@ class ReportGeneratorService:
             row.cells[0].text = r.get('action') or ''
             row.cells[1].text = r.get('owner') or ''
             row.cells[2].text = r.get('completion_criteria') or ''
+        _left_align_table(table)
