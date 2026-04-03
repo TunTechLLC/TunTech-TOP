@@ -5,37 +5,6 @@
 
 ## Before Checkpoint 4
 
-### ~~Economic Impact Reasoning — Make Figures CFO-Defensible~~ ✅ Done
-**Problem:** Economic impact figures currently show a conclusion and a label (CONFIRMED or
-INFERRED) but not the reasoning. A CFO can challenge any number that isn't self-explanatory.
-The goal is that the figure carries enough context that the CFO can follow the logic and
-argue with the assumptions — not just reject the conclusion.
-
-**Design:** The reasoning belongs on the finding, not the roadmap. The finding's
-`economic_impact` field should carry the calculation, not just the result.
-
-Example of what's needed:
-- Current: "$280K/year overrun cost (INFERRED)"
-- Target: "$280K/year overrun cost (INFERRED: 14 active projects × 30% average overrun
-  rate × $67K average project value — overrun rate estimated from CEO interview; project
-  value from pipeline document)"
-
-**Changes needed:**
-- Update `FINDINGS_EXTRACTION_PROMPT` in `api/services/claude.py` to require Claude to
-  show its reasoning inline in the `economic_impact` field — calculation method, inputs
-  used, and source of each input (interview, document, or industry benchmark)
-- ~~Update report sections that surface economic_impact to handle the longer format~~ ✅ Done —
-  Section 6 now has a 4-column parsed table; `_parse_economic_figures()` handles CONFIRMED/INFERRED
-  free-text format. Totals row sourced from Consulting Economics finding.
-- No schema changes — `economic_impact` is already free text
-
-**Note:** This interacts with "Standardize Economic Output Generation" (After Checkpoint 4).
-That item defines the formulas. This item ensures the reasoning is visible in the output.
-Both are needed — this one first since it improves what we already generate.
-
-**Commit message:** Economic impact reasoning — show calculation inline in findings
-
----
 
 ### Improve PATTERN_DETECTION_PROMPT for New Domain Coverage
 **Problem:** On large signal sets, Claude anchors on numerically dominant domains
