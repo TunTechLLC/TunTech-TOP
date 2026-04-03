@@ -9,56 +9,6 @@
 
 ---
 
-## Checkpoint 4 — Dry Run 4 (New Client End-to-End) ✅ Passed 2026-04-03
-
-**Goal:** Complete end-to-end run through browser with a brand new fictional client
-(Dry Run 4). Validates all Checkpoint 4 improvements under realistic conditions.
-
-**Pre-run setup:**
-- Create a new fictional client folder structure on OneDrive
-- Write 3–4 fictional interview transcripts (CEO, Director of Delivery, VP Sales minimum)
-- Include 1–2 fictional documents (financial summary + at least one delivery document type)
-- Include at least one AI Readiness signal to validate new domain coverage
-
-**The run (entirely through browser):**
-1. Create engagement via New Engagement form
-2. Set folder paths via Edit Settings
-3. Process Files — verify candidate count is in the 25–40 range (auto-cull working)
-4. Review candidates, load signals
-5. Detect Patterns — verify AI Readiness patterns are detected if signals are present
-6. Review patterns, load
-7. Run all 5 agents in sequence, review and accept each
-8. Parse Findings, assign contributing patterns, load (expect 5–8 findings)
-9. Parse Roadmap, review, load (expect 10–16 items)
-10. Generate Report — verify file saved to disk and path shown in Report panel
-11. Open Word doc — verify all 9 sections populated:
-    - Section 5: prose only, no bullet list
-    - Section 6: economic summary table (4 columns) + narrative
-    - Section 7: Future State metrics table + narrative
-    - Section 8.1: Priority Zero table with Owner + What This Unblocks
-    - Section 8.2: Roadmap Overview table with key outcomes
-    - Sections 8.3/8.4/8.5: phase tables with Owner, Timeline, Success Metric (no Economic Impact column — deferred to Roadmap Enhancements)
-    - Section 8.6: dependency table
-    - Section 8.7: risk table (max 3 rows)
-    - Section 9: Immediate Next Steps table
-    - Roadmap items have Owner populated (set by ROADMAP_EXTRACTION_PROMPT)
-
-**Pass criteria:**
-- All 5 AgentRuns with accepted=1
-- 5–8 OPDFindings created
-- 10–16 RoadmapItems created with Owner field populated
-- Signal candidate count was in the 25–40 range
-- AI Readiness patterns detected (if signals present)
-- Word doc saves to disk, path shown and persists in Report panel
-- Report narrative sections are mark-up quality, not placeholder text
-- New structured sections (8.1, 8.2, 8.6, 8.7, 9) populated from real Claude output
-- Zero DB Browser operations required
-- Zero Claude.ai copy-pasting
-- Total API cost under $2.50 (narrator now uses up to 16K tokens)
-- Cross-engagement report shows new engagement alongside E001, E002, E003
-
----
-
 ## After Checkpoint 4
 
 ### Updates to Report output
