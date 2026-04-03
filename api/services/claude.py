@@ -303,7 +303,10 @@ Each item must have exactly these fields:
 - economic_impact: string — quantified where possible, with inline reasoning as described above. If genuinely unquantifiable, state why in one sentence.
 - root_cause: string — one sentence root cause statement
 - recommendation: string — one sentence actionable recommendation
-- priority: string — exactly "High", "Medium", or "Low"
+- priority: string — derived from these criteria, apply in order, first match wins:
+    - High: finding addresses active margin bleed or financial loss occurring now, OR is a structural blocker that prevents other improvements from working, OR has CONFIRMED economic impact from a document source
+    - Medium: finding improves operational performance but does not stop active damage, OR has INFERRED economic impact based on estimates or benchmarks, OR is supported primarily by qualitative evidence without a specific dollar figure
+    - Low: finding improves quality, capability, or process maturity with no direct economic impact, or is a longer-horizon improvement that requires Stabilize and Optimize work to be complete first
 - effort: string — exactly "High", "Medium", or "Low" (implementation effort to address this finding)
 - opd_section: integer — OPD report section this finding is most relevant to (1-8):
   1 = Executive Summary, 2 = Engagement Overview, 3 = Operational Maturity Overview,
@@ -328,7 +331,7 @@ Return format:
     "economic_impact": "$130K–$280K/year in direct overrun cost (INFERRED: 14 active projects × 30% average overrun rate × $67K average project value — overrun rate estimated from CEO interview; project value from pipeline document)",
     "root_cause": "Projects are scoped without delivery input, producing commitments that cannot be met at current staffing levels.",
     "recommendation": "Implement a pre-sales delivery review gate before any SOW is signed.",
-    "priority": "High",
+    "priority": "Medium",
     "effort": "Medium",
     "opd_section": 4,
     "suggested_pattern_ids": ["P12", "P15"]
