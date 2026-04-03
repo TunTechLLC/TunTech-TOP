@@ -445,6 +445,65 @@ Range Logic: Low = 10% scenario, High = 25% scenario
 
 ---
 
+### Structured File Metadata Capture at Processing Time
+
+**Problem:** The Engagement Overview section of the OPD report derives interview roles and
+document types by parsing filenames using a naming convention. This is fragile — it depends
+on the consultant following the convention precisely, fails silently when files are named
+differently, and produces generic fallback labels when parsing fails. The short-term
+workaround is a documented filename convention (see CLAUDE.md). The correct solution is
+capturing role and document subtype as structured fields at the moment a file is processed.
+
+**Design:**
+When a consultant processes a file in the Signal Panel, add two optional fields to the
+processing UI:
+
+For interview files:
+- "Interviewee Role" — free text or dropdown
+  Examples: CEO, Director of Delivery, VP Sales, Finance Lead, Senior Consultant,
+  Operations Lead
+  Stored as: `interview_role TEXT` in ProcessedFiles
+
+For document files:
+- "Document Type" — dropdown
+  Options: Financial Summary, Portfolio Report, SOW, Project Status Report,
+  Client Feedback, Other (free text)
+  Stored as: `document_subtype TEXT` in ProcessedFiles
+
+**Database change:**
+```sql
+ALTER TABLE ProcessedFiles ADD COLUMN interview_role TEXT;
+ALTER TABLE ProcessedFiles ADD COLUMN document_subtype TEXT;
+```
+Both columns are nullable — existing records are unaffected. The filename convention
+parsing remains as a fallback when these fields are null.
+
+**Frontend change:**
+In `SignalPanel.jsx`, add the appropriate field to the file processing form based on
+the selected `file_type`:
+- If `file_type` is `"interview"`: show "Interviewee Role" text input (optional,
+  placeholder: e.g. "CEO")
+- If `file_type` is one of `financial`/`sow`/`status`/`document`: show "Document Type"
+  dropdown (optional)
+
+**Backend change:**
+In `signals.py` router, accept `interview_role` and `document_subtype` as optional fields
+in the process-files request and store them in ProcessedFiles.
+
+**Narrator input change:**
+In `generate_report_narrative()`, prefer the structured `interview_role` and
+`document_subtype` fields from ProcessedFiles over the filename convention parsing
+when they are populated. Fall back to filename parsing when they are null.
+
+**Priority:** Medium — the filename convention is a working workaround. Build this after
+the Report Narrator is fully validated and before the first paid client engagement.
+
+**Commit scope:**
+ProcessedFiles migration, `signals.py` router update, `SignalPanel.jsx` form addition,
+`generate_report_narrative()` input assembly update
+
+---
+
 ## Checkpoint 5 — Dry Run 5 (Full Feature Validation)
 
 **Goal:** End-to-end run with a new fictional client validating all post-Checkpoint 4

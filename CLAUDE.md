@@ -108,6 +108,65 @@ ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH 
 
 ---
 
+## File Naming Convention for OPD Engagements
+
+Files dropped into an engagement folder must follow this convention for the Engagement
+Overview paragraph to correctly identify who was interviewed and what was reviewed.
+
+**Interview files — prefix: `Interview_`**
+```
+Interview_CEO.txt
+Interview_DirectorDelivery.txt
+Interview_VPSales.txt
+Interview_FinanceLead.txt
+Interview_SeniorConsultant.txt
+Interview_Operations.txt
+Interview_CEO_Followup.txt      ← same role, not duplicated in report
+Interview_CEO_2.txt             ← second session, same role, deduped by system
+```
+
+**Document files — prefix: `Doc_`**
+```
+Doc_Financial.txt
+Doc_Portfolio.txt
+Doc_SOW.txt
+Doc_StatusReport.txt
+Doc_ClientFeedback.txt
+Doc_Other.txt
+```
+
+**Parsing rules (implemented in `parse_file_role_and_type()` in `report_generator.py`):**
+- `Interview_` prefix → interview; role derived from stem after prefix
+- `Doc_` prefix → document; type derived from stem after prefix
+- No convention prefix → falls back to `file_type` field from ProcessedFiles,
+  then tries stem matching. Preserves backward compat for E001/E002/E003.
+- `_Followup` suffix → role is recognised but omitted from the Narrator's role list
+- `_2` suffix → stripped before matching; deduplication handles repeated sessions
+- Unrecognised stem → raw stem passed through (underscores → spaces). Never uses
+  "team member" or any other generic placeholder.
+
+**Role mapping (stem substring → plain English):**
+- `CEO` / `chief exec` → CEO
+- `DirectorDelivery` / `Director` → Director of Delivery *(Director alone maps to Delivery)*
+- `VPSales` / `Sales` → VP of Sales
+- `FinanceLead` / `Finance` → Finance Lead
+- `SeniorConsultant` / `Consultant` / `PM` → Senior Consultant and Project Manager
+- `Operations` / `Admin` → Director of Operations
+
+**Document type mapping (stem substring → plain English):**
+- `Financial` → financial performance documentation
+- `Portfolio` → project portfolio summary
+- `SOW` → Statement of Work
+- `StatusReport` / `Status` → project status report
+- `ClientFeedback` / `Feedback` → client satisfaction data
+- `Other` → supporting documentation
+
+**Long-term fix:** See BACKLOG.md — "Structured File Metadata Capture at Processing Time"
+for the architectural solution that replaces filename parsing with structured fields
+captured at file processing time.
+
+---
+
 ## Agent Sequence (enforced by prerequisite validation)
 
 1. Diagnostician — no prerequisites
