@@ -475,7 +475,12 @@ String values must be valid JSON — escape any double quotes inside strings wit
 JSON SCHEMA — return exactly these keys:
 
 {
-  "executive_summary": "<4-5 paragraphs separated by \\n\\n>",
+  "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/INFERRED labels.>",
+  "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/INFERRED labels. End with exactly: (see Section 4 — Domain Analysis for full findings)>",
+  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/INFERRED labels. End with exactly: (see Section 6 — Economic Impact Analysis)>",
+  "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly: (see Section 8.1 — Priority Zero Actions)>",
+  "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
+  "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
   "root_cause_narrative": "<4-5 paragraphs separated by \\n\\n>",
   "economic_impact_narrative": "<3-4 sentences>",
   "future_state_narrative": "<2-3 sentences describing the firm 18 months post-roadmap>",
@@ -546,14 +551,43 @@ JSON SCHEMA — return exactly these keys:
 
 SECTION INSTRUCTIONS:
 
-executive_summary — 4-5 paragraphs:
-  P1 — Strategic situation: Lead with the core problem, use specific numbers from findings,
-       state the business consequence. No hedging.
-  P2 — Client hypothesis vs diagnostic reality: What did the client believe? What does the
-       diagnostic show instead? Name the gap.
-  P3 — Economic stakes: Total exposure with CONFIRMED/INFERRED labels. What inaction costs.
-  P4 — Priority Zero items and sequencing: Name the must-do-first items. Why the sequence matters.
-  P5 — What successful execution achieves: Specific measurable outcomes. Not generic language.
+executive_summary_opening — 3-4 sentences:
+  The single most important finding this engagement produced. Written for a CEO who reads
+  nothing else. Lead with the headline — not background, not context-setting.
+  If the finding has a dollar figure, use it. Do not label it CONFIRMED or INFERRED here —
+  those labels belong in Sections 4, 6, and all tables, not in Executive Summary prose.
+
+executive_summary_para1 — 2-3 sentences:
+  Client hypothesis vs diagnostic reality. What did the client believe was causing the
+  problem? What does the diagnostic show instead? Name the gap directly. No labels.
+  Close the paragraph with exactly this text: (see Section 4 — Domain Analysis for full findings)
+
+executive_summary_para2 — 2-3 sentences:
+  Economic stakes in plain language. Include 2-3 key figures maximum. Do not use
+  CONFIRMED/INFERRED labels here — those appear in Section 6. State what is at stake
+  and what inaction costs.
+  Close the paragraph with exactly this text: (see Section 6 — Economic Impact Analysis)
+
+executive_summary_para3 — 2-3 sentences:
+  Why sequencing matters. What must happen first and why the order is not optional.
+  Focus on the Priority Zero items — not a summary of the full roadmap.
+  Close the paragraph with exactly this text: (see Section 8.1 — Priority Zero Actions)
+
+margin_trend_brief — one line or null:
+  Derive from the Consulting Economics finding's economic_impact field or from the
+  Synthesizer output's Economic Summary section. Format as: "42% → 35% over 3 years
+  (declining)" or "flat at ~38% for 2 years". Return null if no margin trend data is
+  present in the Synthesizer output or findings.
+
+engagement_overview_paragraph — 4-6 sentences:
+  Sentence 1: Who was interviewed — roles only, not names. Derive exclusively from the
+    PROCESSED FILES list provided in the input — do not include any role not present.
+  Sentences 2-3: What documents were reviewed — types only, not filenames. Derive
+    exclusively from the PROCESSED FILES list.
+  Sentence 4: Engagement objective using the stated problem from engagement context.
+  Sentence 5: Total signal count across all domains — use the exact count from context.
+  CRITICAL: Do not invent sources, roles, or document types absent from the file list.
+  A missing sentence is better than a fabricated one.
 
 root_cause_narrative — 4-5 paragraphs tracing the causal chain across findings.
   Do not list finding titles. Show how one dysfunction enables the next. Answer: why is this
@@ -627,7 +661,15 @@ next_steps_rows — maximum 10 rows.
   Populate from Priority Zero items first, then the first 3-5 Stabilize initiatives.
   action: specific and concrete — what exactly must happen.
   owner: same derivation rules as priority_zero_table_rows.
-  completion_criteria: one clause — what done looks like. No specific calendar dates.
+  completion_criteria: Write as if handing a work order to the person who owns it. They
+    should be able to read their row and know exactly what done looks like without asking
+    anyone. Use active voice. Name the owner as the subject of the sentence. Be specific
+    about the deliverable — not the strategic outcome.
+    WRONG: "A PM coverage plan is approved and a handoff document is completed"
+    RIGHT: "Rachel has returned to full-time portfolio oversight. A named PM or senior
+    consultant is covering Summit Capital with a written handoff plan signed by both parties."
+    Remove all strategic framing: no "positions the firm to", no "enables future" language.
+    Just what done looks like. No specific calendar dates.
 
 ---
 
@@ -690,6 +732,10 @@ async def generate_report_narrative(
     findings: list,
     roadmap: list,
     engagement: dict,
+    interview_roles: list = None,
+    document_types: list = None,
+    total_signals: int = 0,
+    domain_count: int = 0,
 ) -> dict:
     """Generate narrative prose and structured table content for the OPD report.
 
@@ -749,11 +795,29 @@ async def generate_report_narrative(
         f"Service Model: {engagement.get('service_model', '')}",
         f"Stated Problem: {engagement.get('stated_problem', '')}",
         f"Client Hypothesis: {engagement.get('client_hypothesis', '')}",
+        f"Total signals identified: {total_signals} across {domain_count} domains",
     ]
+
+    # --- Assemble processed file context (for engagement_overview_paragraph) ---
+    file_lines = [
+        "PROCESSED FILES (use only this list to derive interview roles and document "
+        "types for engagement_overview_paragraph — do not invent sources not listed):\n"
+    ]
+    roles = interview_roles or []
+    docs  = document_types  or []
+    file_lines.append(
+        f"Interviews conducted with: {', '.join(roles)}" if roles
+        else "Interviews conducted: not available"
+    )
+    file_lines.append(
+        f"Documents reviewed: {', '.join(docs)}" if docs
+        else "Documents reviewed: not available"
+    )
 
     user_message = "\n\n".join([
         "SYNTHESIZER OUTPUT:\n\n" + synthesizer_output,
         "\n".join(context_lines),
+        "\n".join(file_lines),
         "\n".join(findings_lines),
         "\n".join(roadmap_lines),
     ])
