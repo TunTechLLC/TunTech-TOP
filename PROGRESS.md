@@ -50,13 +50,14 @@ Before Checkpoint 4 items and build order.
 | Backlog | ReportPanel — remove stale sections list, persist last saved path via localStorage | ✅ |
 | Backlog | Word report template — additional formatting cleanup (heading numbers, economic table, section structure verified on E003) | ✅ |
 | Backlog | Economic Impact Reasoning — FINDINGS_EXTRACTION_PROMPT updated to require inline calculation reasoning (method, inputs, source per figure) | ✅ Validated (E003) |
+| Backlog | PATTERN_DETECTION_PROMPT — send full pattern library to Claude at detection time; add domain coverage instruction. Root cause: Claude was guessing P-IDs without library context, causing new domains (AI Readiness, HR, Finance) to be missed. Validated: 40 patterns detected on E003 including P48–P53, P57, P59, P60 | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task:** Improve PATTERN_DETECTION_PROMPT — few-shot examples and domain coverage instruction
-**After that:** Checkpoint 4.
+**Current task:** Checkpoint 4 — Dry Run 4 (New Client End-to-End)
+**After that:** Post-Checkpoint 4 backlog items.
 
 ---
 

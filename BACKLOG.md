@@ -6,24 +6,6 @@
 ## Before Checkpoint 4
 
 
-### Improve PATTERN_DETECTION_PROMPT for New Domain Coverage
-**Problem:** On large signal sets, Claude anchors on numerically dominant domains
-(Sales-to-Delivery, Delivery Operations) and under-detects sparse new domains
-(AI Readiness, Human Resources, Finance and Commercial).
-
-**Fix:** Add few-shot examples to PATTERN_DETECTION_PROMPT showing correct detection of
-AI Readiness, Human Resources, and Finance and Commercial patterns. Add an explicit
-instruction: "Ensure coverage across all domains represented in the signals — do not
-omit a domain simply because it has fewer signals than others."
-
-**File:** `api/services/claude.py` — PATTERN_DETECTION_PROMPT
-
-**Test:** Run on E003 (102 signals including AI Readiness signals). Verify AI Readiness
-patterns are detected on the first run.
-
-**Commit message:** Improve PATTERN_DETECTION_PROMPT — few-shot examples and domain coverage
-
----
 
 ### Quick Wins Section in the Report
 **Problem:** The report surfaces all roadmap items in three phase tables but does not

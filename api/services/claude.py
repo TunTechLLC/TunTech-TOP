@@ -124,10 +124,14 @@ clean professional prose with section headers only."""
 
 PATTERN_DETECTION_PROMPT = """You are analyzing signals from a consulting firm engagement to detect operational patterns.
 
-Review the signals provided and identify which patterns from the TOP pattern library are triggered.
+The case packet contains two sections: SIGNALS (what was observed) and PATTERN LIBRARY (the complete list of patterns you may detect, with trigger signals for each).
+
+Review the signals and identify which patterns from the PATTERN LIBRARY are triggered. Use ONLY pattern_ids that appear in the PATTERN LIBRARY — do not invent IDs.
+
+Before finalizing your response, check every domain in the PATTERN LIBRARY. Do not omit a domain simply because it has fewer signals than others. A single strong signal is enough to return a Hypothesis-confidence pattern.
 
 Each item must have exactly these fields:
-- pattern_id: string (e.g. "P12")
+- pattern_id: string — must be an ID from the PATTERN LIBRARY (e.g. "P12")
 - confidence: string — exactly "High", "Medium", or "Hypothesis"
 - notes: string — 1-2 sentences explaining which signals triggered this pattern
 
