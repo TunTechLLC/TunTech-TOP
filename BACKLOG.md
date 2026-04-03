@@ -61,6 +61,35 @@
 
 ## After Checkpoint 4
 
+### Consultant Correction on Agent Outputs
+**Problem:** There is no way to correct a specific claim in an agent's output before it
+gets passed to subsequent agents. The only options are rerun (may not improve the specific
+issue) or accept a flawed output and rely on the Skeptic to catch it. Neither is reliable
+when one section of an otherwise good output is wrong.
+
+**Design:** Add a `consultant_correction TEXT` field to AgentRuns. Surfaced in AgentPanel
+as a collapsible text area on each accepted agent run — labeled clearly as "Consultant
+Correction." When present, it is appended to that agent's output when assembled as a prior
+agent input in `call_claude()`, formatted as:
+
+```
+CONSULTANT CORRECTION (added after review):
+[correction text]
+```
+
+This keeps the original Claude output intact and visible, adds the correction clearly
+labeled, and ensures downstream agents see both. The consultant only fills this in when
+needed — it is optional and hidden by default.
+
+**Schema change:** Add `consultant_correction TEXT` to AgentRuns.
+**Backend:** `call_claude()` in `api/services/claude.py` — append correction to prior
+output if present. `AgentRunRepository` — update GET and PATCH to include the field.
+**Frontend:** `AgentPanel.jsx` — collapsible correction field on accepted run cards.
+
+**Commit message:** Agent output correction — optional consultant correction field per agent run
+
+---
+
 ### Pattern Name on Candidate Review Cards
 **Problem:** During pattern detection review (before accepting), candidates show only the
 pattern ID (e.g. "P38", "P12"). The consultant cannot tell what a pattern is without
