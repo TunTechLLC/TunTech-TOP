@@ -9,7 +9,7 @@
 
 ---
 
-## Checkpoint 4 — Dry Run 4 (New Client End-to-End)
+## Checkpoint 4 — Dry Run 4 (New Client End-to-End) ✅ Passed 2026-04-03
 
 **Goal:** Complete end-to-end run through browser with a brand new fictional client
 (Dry Run 4). Validates all Checkpoint 4 improvements under realistic conditions.
@@ -60,6 +60,54 @@
 ---
 
 ## After Checkpoint 4
+
+### Updates to Report output
+Executive Briefing — One-Page CEO Section (Section 1 of Report)
+Problem: The Executive Summary is 4-5 paragraphs of dense prose. CEOs need a faster entry point — one page with the critical findings, numbers, and actions before the full narrative begins.
+Design: A new Section 1 inserted before the current Executive Summary. One page maximum. Part of the existing report generation flow — no separate document, no new button, no new endpoint. All current sections shift down by one.
+Structure:
+
+One sentence: the single most important finding
+Three Key Problems: finding title + one impact sentence each
+Three Key Numbers: confirmed figures only, with plain-language labels
+Three Actions: top three Priority Zero items as direct imperatives
+
+Implementation:
+
+New executive_briefing JSON field in the Narrator response with sub-fields for the one-sentence finding, problems array, numbers array, and actions array
+New Section 1 assembled by report_generator.py before the Executive Summary
+Page break after Section 1 so it always occupies its own page
+Three Key Numbers must be CONFIRMED figures only — no INFERRED
+Three Actions must come directly from Priority Zero items in the Synthesizer output
+Three Key Problems must map to actual finding titles — not paraphrased
+
+Build after: Report Narrator is fully validated and main report structure is stable.
+
+Consultant Voice Compression — Brevity Post-Processing
+Problem: Narrator prose is thorough but some sections are longer than necessary. Executive Summary and Section 9 benefit from shorter sentences and more direct language.
+Design: A post-processing Claude call after the Narrator generates prose but before report_generator.py assembles the document. Apply to Executive Summary and Section 9 only initially.
+Compression rules: Shorten sentences, remove repetition, target 25-30% word count reduction. Do not change any figures, names, CONFIRMED/INFERRED labels, or factual claims. If compression call fails, fall back to uncompressed narrator output.
+Implementation:
+
+New async function in claude.py: compress_narrative(text, section_name)
+Called in generate_report_narrative() after narrator sections are generated
+Applied per section independently
+
+Build after: Executive Briefing section is validated.
+
+Visual Generator Layer — Embedded Diagnostic Visuals
+Problem: The report is entirely text and tables. Three specific visuals would significantly increase perceived value and make the diagnostic feel like a system rather than a document.
+Three visuals (build in this order):
+
+Economic Breakdown Chart — horizontal bar chart of confirmed exposure by finding. Embedded in Section 6. Generated with matplotlib.
+Roadmap Timeline — Gantt-style timeline showing Stabilize/Optimize/Scale phases with initiative names. Embedded at start of Section 8. Generated with matplotlib.
+Causal Chain Diagram — left-to-right flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. Generated as SVG.
+
+Implementation: Each visual generated as a temporary PNG/SVG, embedded via python-docx add_picture(), then deleted. If generation fails, report generates without the visual and logs a warning.
+Narrator addition required for Visual 3: New causal_chain JSON field listing finding-to-finding relationships for diagram node construction.
+Build after: Consultant Voice Compression is validated.
+
+---
 
 ### Consultant Correction on Agent Outputs
 **Problem:** There is no way to correct a specific claim in an agent's output before it
