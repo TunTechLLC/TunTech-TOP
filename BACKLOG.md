@@ -37,7 +37,7 @@
     - Section 7: Future State metrics table + narrative
     - Section 8.1: Priority Zero table with Owner + What This Unblocks
     - Section 8.2: Roadmap Overview table with key outcomes
-    - Sections 8.3/8.4/8.5: phase tables with Owner, Timeline, Success Metric, Economic Impact
+    - Sections 8.3/8.4/8.5: phase tables with Owner, Timeline, Success Metric (no Economic Impact column — deferred to Roadmap Enhancements)
     - Section 8.6: dependency table
     - Section 8.7: risk table (max 3 rows)
     - Section 9: Immediate Next Steps table
@@ -168,6 +168,21 @@ us what's wrong."
 - Add `key_quotes TEXT` to OPDFindings
 
 **Commit message:** Findings enhancements — pattern enforcement, evidence summary, key quotes
+
+---
+
+### Economic Impact Column in Phase Tables
+**Context:** The phase tables (Sections 8.3/8.4/8.5) were designed with an Economic Impact
+column, but it was removed before Checkpoint 4 because the roadmap-to-finding linkage
+(`addressing_finding_ids`) is not yet built. The column currently doesn't exist in the report.
+
+**Decision point after Checkpoint 4:** If the absence of economic impact in the phase tables
+is noticed or missed during the dry run or client review, add it back as part of Roadmap
+Enhancements (Part 2 — Economic Linkage). If nobody misses it, it may not be worth building.
+
+**If adding back:** The `addressing_finding_ids` field in Roadmap Enhancements (below) is the
+correct mechanism. When that feature is built, restore the Economic Impact column in
+`_roadmap_phase_table` and populate it from the linked findings.
 
 ---
 

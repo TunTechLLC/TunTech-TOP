@@ -616,24 +616,23 @@ class ReportGeneratorService:
     def _roadmap_phase_table(self, doc, items: list, findings_by_id: dict,
                               initiative_details: dict):
         """Sections 8.3/8.4/8.5 phase tables.
-        Columns: Initiative | Priority | Effort | Owner | Timeline | Success Metric | Economic Impact"""
-        table = doc.add_table(rows=1, cols=7)
+        Columns: Initiative | Priority | Effort | Owner | Timeline | Success Metric
+        Economic Impact column omitted — roadmap-to-finding linkage not yet built.
+        Add back when addressing_finding_ids is implemented in Roadmap Enhancements."""
+        table = doc.add_table(rows=1, cols=6)
         table.style = 'Table Grid'
-        headers = ['Initiative', 'Priority', 'Effort', 'Owner',
-                   'Timeline', 'Success Metric', 'Economic Impact']
+        headers = ['Initiative', 'Priority', 'Effort', 'Owner', 'Timeline', 'Success Metric']
         for i, h in enumerate(headers):
             cell = table.rows[0].cells[i]
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [1.6, 0.6, 0.6, 0.9, 0.8, 1.2, 0.8])
+        _set_col_widths(table, [1.8, 0.6, 0.6, 0.9, 0.9, 1.7])
 
         for item in items:
             item_id = item.get('item_id', '')
             details = initiative_details.get(item_id, {})
-            linked_finding = findings_by_id.get(item.get('finding_id') or '', {})
-            econ_impact = linked_finding.get('economic_impact', '') or ''
 
             row = table.add_row()
             row.cells[0].text = item.get('initiative_name') or ''
@@ -642,7 +641,6 @@ class ReportGeneratorService:
             row.cells[3].text = item.get('owner') or ''
             row.cells[4].text = details.get('timeline', '') or ''
             row.cells[5].text = details.get('success_metric', '') or ''
-            row.cells[6].text = econ_impact
 
     def _dependency_table(self, doc, rows: list):
         """Section 8.6 Initiative Dependencies table.
