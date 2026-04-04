@@ -19606,3 +19606,399 @@ Based on the synthesizer output header and accepted patterns provided, I will ex
 2026-04-03 16:35:14,124 INFO api.services.claude: Narrator response received — 44788 chars
 2026-04-03 16:35:14,125 INFO api.services.claude: Narrator sections parsed — keys: ['executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
 2026-04-03 16:35:14,660 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 16:16:59,412 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:18:19,338 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:18:19,339 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:18:19,764 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:18:19,764 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:18:21,556 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:18:21,557 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:18:21,670 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:18:21,670 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:18:21,688 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:18:21,688 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 16:18:21,688 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 16:18:21,689 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 16:18:21,689 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 16:18:21,698 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:18:21,698 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 16:18:21,699 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 16:18:21,700 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 16:18:21,700 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 16:30:50,422 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:30:56,157 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:31:01,438 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:31:46,279 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:32:09,718 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:33:22,572 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:33:22,573 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:33:22,904 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:33:22,905 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:35:18,767 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:35:20,341 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:35:20,342 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:35:20,612 INFO api.db.repositories.engagement: Fetching all engagements
+2026-04-04 16:35:20,612 INFO api.db.repositories.base: Query: 
+    SELECT e.engagement_id,
+           e.engagement_name,
+           e.status,
+
+2026-04-04 16:35:23,261 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:35:23,261 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:35:23,350 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:35:23,351 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:35:23,362 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:35:23,362 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 16:35:23,363 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 16:35:23,363 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 16:35:23,363 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 16:35:23,372 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:35:23,374 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 16:35:23,375 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 16:35:23,375 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 16:35:23,375 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 16:35:35,575 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:35:35,576 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:35:35,657 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-04 16:35:35,661 INFO api.db.repositories.finding: Fetching findings for engagement: E004
+2026-04-04 16:35:35,662 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-04 16:35:35,664 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E004
+2026-04-04 16:35:35,664 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-04 16:35:35,665 INFO api.db.repositories.reporting: Fetching engagement signals for: E004
+2026-04-04 16:35:35,665 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-04 16:35:35,667 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:35:35,669 INFO api.services.claude: Generating report narrative — 36343 chars synthesizer, 10 findings, 16 roadmap items, max_tokens=16000
+2026-04-04 16:39:02,775 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 16:39:02,816 INFO api.services.claude: Narrator response received — 44166 chars
+2026-04-04 16:39:02,817 INFO api.services.claude: Narrator sections parsed — keys: ['executive_briefing_headline', 'executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-04 16:39:03,151 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 16:52:49,502 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:53:01,438 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:53:07,991 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:53:50,387 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 16:54:46,858 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 16:54:46,858 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 16:54:46,936 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-04 16:54:46,937 INFO api.db.repositories.finding: Fetching findings for engagement: E004
+2026-04-04 16:54:46,937 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-04 16:54:46,939 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E004
+2026-04-04 16:54:46,939 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-04 16:54:46,940 INFO api.db.repositories.reporting: Fetching engagement signals for: E004
+2026-04-04 16:54:46,940 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-04 16:54:46,942 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 16:54:46,944 INFO api.services.claude: Generating report narrative — 36343 chars synthesizer, 10 findings, 16 roadmap items, max_tokens=16000
+2026-04-04 16:58:22,832 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 16:58:22,908 INFO api.services.claude: Narrator response received — 46586 chars
+2026-04-04 16:58:22,919 INFO api.services.claude: Narrator sections parsed — keys: ['executive_briefing', 'executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-04 16:58:23,228 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 17:02:49,585 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:02:54,209 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:03:32,341 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:03:38,864 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:04:08,769 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 17:04:08,770 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 17:04:08,871 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-04 17:04:08,873 INFO api.db.repositories.finding: Fetching findings for engagement: E004
+2026-04-04 17:04:08,873 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-04 17:04:08,874 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E004
+2026-04-04 17:04:08,875 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-04 17:04:08,876 INFO api.db.repositories.reporting: Fetching engagement signals for: E004
+2026-04-04 17:04:08,876 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-04 17:04:08,877 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 17:04:08,879 INFO api.services.claude: Generating report narrative — 36343 chars synthesizer, 10 findings, 16 roadmap items, max_tokens=16000
+2026-04-04 17:07:44,990 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:07:45,026 INFO api.services.claude: Narrator response received — 46350 chars
+2026-04-04 17:07:45,027 INFO api.services.claude: Narrator sections parsed — keys: ['executive_briefing', 'executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-04 17:07:45,353 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 17:12:46,071 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:16:35,148 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:16:55,514 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:17:08,084 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:17:24,431 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:20:36,540 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 17:20:36,540 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 17:20:36,676 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-04 17:20:36,678 INFO api.db.repositories.finding: Fetching findings for engagement: E004
+2026-04-04 17:20:36,678 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-04 17:20:36,681 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E004
+2026-04-04 17:20:36,681 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-04 17:20:36,683 INFO api.db.repositories.reporting: Fetching engagement signals for: E004
+2026-04-04 17:20:36,683 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-04 17:20:36,685 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 17:20:36,688 INFO api.services.claude: Generating report narrative — 36343 chars synthesizer, 10 findings, 16 roadmap items, max_tokens=16000
+2026-04-04 17:24:16,344 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:16,393 INFO api.services.claude: Narrator response received — 46504 chars
+2026-04-04 17:24:16,394 INFO api.services.claude: Narrator sections parsed — keys: ['executive_briefing', 'executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-04 17:24:18,454 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:18,523 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:18,634 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:18,900 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:19,996 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,014 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,053 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,101 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,162 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,176 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,231 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,315 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,529 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,714 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:24:20,982 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 17:32:17,970 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:32:23,627 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:32:30,879 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:32:38,841 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:46:49,787 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:46:56,743 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
+2026-04-04 17:47:54,753 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 17:47:54,753 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 17:47:54,859 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 17:47:54,859 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 17:47:54,945 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 17:47:54,945 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 17:47:54,952 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 17:47:54,953 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 17:47:54,957 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 17:47:54,962 INFO api.db.repositories.signal: Fetching signals for engagement: E004
+2026-04-04 17:47:54,963 INFO api.db.repositories.base: Query: 
+    SELECT s.signal_id,
+           s.engagement_id,
+           s.interview_id,
+
+2026-04-04 17:47:54,971 INFO api.db.repositories.signal: Fetching domain summary for engagement: E004
+2026-04-04 17:47:54,971 INFO api.db.repositories.base: Query: 
+    SELECT domain,
+           signal_confidence,
+           COUNT(*) AS signal_
+2026-04-04 17:47:54,980 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 17:47:59,286 INFO api.db.repositories.engagement: Fetching engagement: E004
+2026-04-04 17:47:59,286 INFO api.db.repositories.base: Query: 
+    SELECT e.*,
+           c.firm_name,
+           c.firm_size,
+           c.se
+2026-04-04 17:47:59,364 INFO api.db.repositories.base: Query: 
+    SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AN
+2026-04-04 17:47:59,366 INFO api.db.repositories.finding: Fetching findings for engagement: E004
+2026-04-04 17:47:59,366 INFO api.db.repositories.base: Query: 
+    SELECT f.finding_id,
+           f.engagement_id,
+           f.pattern_id,
+ 
+2026-04-04 17:47:59,367 INFO api.db.repositories.roadmap: Fetching roadmap items for engagement: E004
+2026-04-04 17:47:59,368 INFO api.db.repositories.base: Query: 
+    SELECT r.item_id,
+           r.engagement_id,
+           r.finding_id,
+    
+2026-04-04 17:47:59,369 INFO api.db.repositories.reporting: Fetching engagement signals for: E004
+2026-04-04 17:47:59,369 INFO api.db.repositories.base: Query: 
+    SELECT *
+    FROM   vw_EngagementSignals
+    WHERE  engagement_id = ?
+    O
+2026-04-04 17:47:59,371 INFO api.db.repositories.base: Query: 
+    SELECT file_id, engagement_id, file_name, file_hash,
+           file_type, 
+2026-04-04 17:47:59,372 INFO api.services.claude: Generating report narrative — 36343 chars synthesizer, 10 findings, 16 roadmap items, max_tokens=16000
+2026-04-04 17:51:32,072 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:32,118 INFO api.services.claude: Narrator response received — 45906 chars
+2026-04-04 17:51:32,118 INFO api.services.claude: Narrator sections parsed — keys: ['executive_briefing', 'executive_summary_opening', 'executive_summary_para1', 'executive_summary_para2', 'executive_summary_para3', 'margin_trend_brief', 'engagement_overview_paragraph', 'root_cause_narrative', 'economic_impact_narrative', 'future_state_narrative', 'domain_analysis', 'roadmap_rationale', 'future_state_table_rows', 'priority_zero_table_rows', 'roadmap_overview_rows', 'initiative_details', 'dependency_table_rows', 'risk_table_rows', 'next_steps_rows']
+2026-04-04 17:51:34,340 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:34,351 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:34,754 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:36,479 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,418 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,609 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,716 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,737 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,773 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,824 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,923 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:37,996 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:38,002 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:38,145 INFO httpx: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-04 17:51:39,007 INFO api.services.report_generator: Report saved: C:\Users\varic\OneDrive\002_Work\001_Companies\011_TunTechLLC\002_Clients\004_Northstar\06_Transformation_Roadmap\OPD_Transformation_Roadmap_E004.docx
+2026-04-04 18:12:22,575 INFO api.main: TOP backend starting up — log file initialized at C:\Dev\TunTech\TOP\top.log
