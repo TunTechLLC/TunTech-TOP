@@ -475,6 +475,9 @@ class ReportGeneratorService:
             if isinstance(d, dict) and d.get('item_id')
         }
 
+        # Executive Briefing — unnumbered standalone page, before all numbered sections
+        self._build_executive_briefing(doc, findings, narrative)
+
         # 1 — Executive Summary (four components — Change 1)
         doc.add_heading('Executive Summary', level=1)
 
@@ -712,8 +715,178 @@ class ReportGeneratorService:
                 break
 
     # ------------------------------------------------------------------
+    # Executive Briefing — standalone CEO teaser page
+    # ------------------------------------------------------------------
+
+    def _build_executive_briefing(self, doc, findings: list, narrative: dict):
+        """One-page standalone briefing shown to the CEO before the full report.
+
+        Content sourcing:
+          Headline    — executive_briefing.headline from Narrator; falls back to first
+                        sentence of executive_summary_opening.
+          Problems    — executive_briefing.problems from Narrator: plain_title (5 words)
+                        and impact_brief (20 words). finding_id validated against DB.
+          Numbers     — executive_briefing.numbers from Narrator: label (4 words) and
+                        finding_id. Dollar figure sourced from DB via _parse_economic_figures()
+                        — CONFIRMED only. finding_id validated against DB.
+          Actions     — priority_zero_table_rows[0:3] from existing Narrator output.
+
+        Visual: bold paragraph header anchors each block; spacer paragraphs between blocks.
+        Page break after ensures the briefing always occupies its own page.
+        """
+        findings_by_id = {f['finding_id']: f for f in findings if f.get('finding_id')}
+        eb = narrative.get('executive_briefing') or {}
+
+        # Heading — Heading 1 so it appears in TOC; section number suppressed
+        heading_para = doc.add_heading('Executive Briefing', level=1)
+        pPr = heading_para._p.get_or_add_pPr()
+        numPr = pPr.find(qn('w:numPr'))
+        if numPr is not None:
+            pPr.remove(numPr)
+
+        doc.add_paragraph()
+
+        # Component A — Headline
+        headline = eb.get('headline', '').strip()
+        if not headline:
+            opening = narrative.get('executive_summary_opening', '')
+            dot = opening.find('. ')
+            headline = (opening[:dot + 1] if dot > 0 else opening).strip()
+        if headline:
+            p = doc.add_paragraph()
+            run = p.add_run(headline)
+            run.bold = True
+            run.font.size = Pt(13)
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+            # Thin horizontal rule separates the opening statement from the three blocks
+            rule = doc.add_paragraph()
+            pPr = rule._p.get_or_add_pPr()
+            pBdr = OxmlElement('w:pBdr')
+            bottom = OxmlElement('w:bottom')
+            bottom.set(qn('w:val'), 'single')
+            bottom.set(qn('w:sz'), '6')      # 0.75pt line
+            bottom.set(qn('w:space'), '1')
+            bottom.set(qn('w:color'), 'auto')
+            pBdr.append(bottom)
+            pPr.append(pBdr)
+
+        # Component B — Three Critical Problems
+        # Narrator supplies plain_title + impact_brief per finding_id.
+        # finding_id validated against DB — invalid IDs are skipped silently.
+        raw_problems = eb.get('problems', [])
+        problem_rows = []
+        for item in (raw_problems[:3] if isinstance(raw_problems, list) else []):
+            if not isinstance(item, dict):
+                continue
+            fid          = item.get('finding_id', '')
+            plain_title  = item.get('plain_title', '').strip()
+            impact_brief = item.get('impact_brief', '').strip()
+            if not plain_title or not impact_brief:
+                continue
+            if fid not in findings_by_id:
+                logger.warning(
+                    f"Executive briefing: problem finding_id {fid!r} not in findings — skipping"
+                )
+                continue
+            problem_rows.append((plain_title, impact_brief))
+
+        if problem_rows:
+            self._briefing_block_header(doc, 'Three Critical Problems')
+            tbl = doc.add_table(rows=0, cols=1)
+            tbl.style = 'Table Grid'
+            for plain_title, impact_brief in problem_rows:
+                row = tbl.add_row()
+                cell = row.cells[0]
+                # First paragraph — bold title
+                title_para = cell.paragraphs[0]
+                title_para.clear()
+                title_run = title_para.add_run(plain_title)
+                title_run.bold = True
+                title_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                # Second paragraph — normal-weight impact sentence
+                impact_para = cell.add_paragraph()
+                impact_para.add_run(impact_brief)
+                impact_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            _set_col_widths(tbl, [6.5])
+            _left_align_table(tbl)
+
+        # Component C — Three Numbers That Matter
+        # Narrator supplies label + finding_id (ordered by urgency: immediate → structural → existential).
+        # Dollar figure sourced from DB — CONFIRMED only. Invalid or INFERRED entries are skipped.
+        raw_numbers = eb.get('numbers', [])
+        number_rows = []
+        for item in (raw_numbers[:3] if isinstance(raw_numbers, list) else []):
+            if not isinstance(item, dict):
+                continue
+            fid   = item.get('finding_id', '')
+            label = item.get('label', '').strip()
+            if not label:
+                continue
+            if fid not in findings_by_id:
+                logger.warning(
+                    f"Executive briefing: number finding_id {fid!r} not in findings — skipping"
+                )
+                continue
+            conf_str, _ = _parse_economic_figures(
+                findings_by_id[fid].get('economic_impact', '')
+            )
+            if conf_str == '—':
+                logger.warning(
+                    f"Executive briefing: finding {fid} has no CONFIRMED figure — skipping number row"
+                )
+                continue
+            primary = conf_str.split(', ')[0]
+            number_rows.append((label, primary))
+
+        if number_rows:
+            self._briefing_block_header(doc, 'Three Numbers That Matter')
+            tbl = doc.add_table(rows=0, cols=2)
+            tbl.style = 'Table Grid'
+            for label, amount in number_rows:
+                row = tbl.add_row()
+                row.cells[0].text = label
+                row.cells[1].text = amount
+                if row.cells[1].paragraphs[0].runs:
+                    row.cells[1].paragraphs[0].runs[0].bold = True
+            _set_col_widths(tbl, [4.5, 2.0])
+            _left_align_table(tbl)
+
+        # Component D — What Must Happen This Week
+        pz_source = narrative.get('priority_zero_table_rows', [])
+        action_rows = [
+            r for r in (pz_source[:3] if isinstance(pz_source, list) else [])
+            if isinstance(r, dict) and r.get('action')
+        ]
+
+        if action_rows:
+            self._briefing_block_header(doc, 'What Must Happen This Week')
+            tbl = doc.add_table(rows=0, cols=1)
+            tbl.style = 'Table Grid'
+            for r in action_rows:
+                row = tbl.add_row()
+                row.cells[0].text = r['action']
+            _set_col_widths(tbl, [6.5])
+            _left_align_table(tbl)
+
+        # Page break after — briefing always occupies its own page
+        doc.add_page_break()
+
+    # ------------------------------------------------------------------
     # Narrative helpers
     # ------------------------------------------------------------------
+
+    def _briefing_block_header(self, doc, text: str):
+        """Styled section anchor for Executive Briefing blocks.
+        Bold, 11pt, all caps, 14pt space before, 4pt space after."""
+        p = doc.add_paragraph()
+        run = p.add_run(text)
+        run.bold           = True
+        run.font.size      = Pt(11)
+        run.font.all_caps  = True
+        p.paragraph_format.space_before = Pt(14)
+        p.paragraph_format.space_after  = Pt(4)
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     def _add_narrative_paragraphs(self, doc, text: str):
         """Add each double-newline-separated paragraph as a Word paragraph, left-aligned."""

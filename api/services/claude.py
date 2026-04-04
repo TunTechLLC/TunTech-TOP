@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 import anthropic
 
@@ -475,6 +476,22 @@ String values must be valid JSON — escape any double quotes inside strings wit
 JSON SCHEMA — return exactly these keys:
 
 {
+  "executive_briefing": {
+    "headline": "<EXACTLY TWO SENTENCES. Sentence 1: structural multi-year trend with key metrics — do not start with a financial metric. Sentence 2: most urgent active risk happening right now. Do not combine into one sentence. Do not use CONFIRMED/INFERRED labels.>",
+    "problems": [
+      {
+        "finding_id": "<exact finding_id from ACCEPTED FINDINGS — e.g. F001>",
+        "plain_title": "<5 words maximum — the business problem in plain English a CEO would recognize. NOT a diagnostic label. Bad: 'Delivery Margin Compression Pattern'. Good: 'Projects consistently run over budget'.>",
+        "impact_brief": "<20 words maximum, single sentence — what this is costing the firm right now. Be specific: name a figure, a percentage, or a named consequence.>"
+      }
+    ],
+    "numbers": [
+      {
+        "finding_id": "<exact finding_id the CONFIRMED figure comes from — the figure will be sourced from that finding's economic_impact field, not from this object>",
+        "label": "<4 words maximum — plain English label for this number. Bad: 'Economic Impact from F003'. Good: 'Annual delivery overrun cost'.>"
+      }
+    ]
+  },
   "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/INFERRED labels.>",
   "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/INFERRED labels. End with exactly: (see Section 4 — Domain Analysis for full findings)>",
   "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/INFERRED labels. End with exactly: (see Section 6 — Economic Impact Analysis)>",
@@ -550,6 +567,58 @@ JSON SCHEMA — return exactly these keys:
 ---
 
 SECTION INSTRUCTIONS:
+
+executive_briefing — structured object for the one-page CEO teaser:
+  This page is shown to a CEO before they decide whether to pay for the full report.
+  Every field must be specific to this engagement. Generic language is a failure here.
+
+  headline: EXACTLY TWO SENTENCES. Do not combine them into one sentence with "while",
+    "and", or any other conjunction. Do not write three sentences. Exactly two.
+    Sentence 1: the structural multi-year trend — what has been happening to the firm
+      over time. Include the key metrics that prove it (e.g. headcount growth vs revenue
+      growth, margin decline over years). Do NOT start with a financial metric — start
+      with the business condition the metrics describe.
+    Sentence 2: the most urgent active risk right now — something that is happening
+      today, not a trend. If a Priority Zero item exists, use it. Make it specific.
+    Do not use CONFIRMED/INFERRED labels. Do not begin either sentence with "The
+    diagnostic found" or "Our analysis shows."
+
+  problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
+    finding_id: must be an ID that appears in the ACCEPTED FINDINGS list — e.g. F001.
+      Do not invent finding IDs.
+    plain_title: 5 words maximum. Must follow ACTIVE VOICE — a subject doing something
+      to the business. The subject must be identifiable. The verb must be active.
+      Wrong (no subject, passive): "Bill rates eroding every year"
+      Wrong (diagnostic label): "Delivery Margin Compression Pattern"
+      Right: "Discounting is bleeding margin annually" (subject + active verb + consequence)
+      Right: "Growth is destroying profitability" (subject + active verb + consequence)
+      All three plain_title values must follow this active-voice pattern consistently.
+      ACCURACY RULE: Plain titles must be accurate to the finding even when compressed.
+      Do not use words that introduce meanings not present in the source finding. Brevity
+      is secondary to accuracy — a slightly longer title that is correct is preferable to
+      a punchy title that misrepresents the finding. Specific example of what to avoid:
+      do not use the word "unsigned" to describe a SOW that was executed without delivery
+      review — these are different conditions. The SOW was signed; the problem is that
+      delivery did not review it before signature. Match the compression to the actual
+      condition, not the most dramatic interpretation of it.
+      NON-ACCUSATORY RULE: Plain titles must describe structural conditions, not personal
+      failures. Do not use emotionally charged words (killing, destroying, sabotaging,
+      undermining) when describing leadership behavior. Do not name the CEO or any
+      individual in a problem title — describe the process or structural condition instead.
+      Wrong: "CEO overrides are killing change orders"
+      Right: "Change control is bypassed at the leadership level"
+    impact_brief: 20 words maximum, single sentence. What is this costing the firm today?
+      Name a figure, percentage, or specific named consequence. Do not generalize.
+    Select the 3 most important findings — High priority first.
+
+  numbers: exactly 3 entries (or fewer if fewer than 3 confirmed figures exist).
+    Only CONFIRMED figures may appear here — never INFERRED.
+    Order by urgency: (1) most immediate at-risk figure, (2) most structural annual drag,
+    (3) most existential risk. The ordering conveys the story — immediate → chronic → fatal.
+    finding_id: the finding the confirmed figure comes from. Must be a real finding ID.
+    label: 4 words maximum. Plain English — what does this number represent?
+      Bad: "Economic Impact from F003"
+      Good: "Annual delivery overrun cost"
 
 executive_summary_opening — 3-4 sentences:
   The single most important finding this engagement produced. Written for a CEO who reads
@@ -680,6 +749,13 @@ HALLUCINATION PREVENTION — apply to every field:
 4. future_state_table_rows: omit any row where current or target cannot be sourced from the data.
 5. risk_table_rows: only risks explicitly named in the Synthesizer. No generic risks.
 6. Empty is better than fabricated. A missing cell is honest. A fabricated cell damages credibility.
+7. executive_briefing.problems: every finding_id must match an ID in ACCEPTED FINDINGS exactly.
+   Do not invent finding IDs. plain_title must describe the actual finding, not a generic
+   business problem. impact_brief must be grounded in the finding's evidence.
+8. executive_briefing.numbers: every finding_id must match an ID in ACCEPTED FINDINGS exactly.
+   Only CONFIRMED figures — never INFERRED. Do not invent figures; the actual dollar amount
+   will be sourced from the finding's economic_impact field at render time — your finding_id
+   is the link, not the figure itself.
 
 ---
 
@@ -696,6 +772,66 @@ WRITING RULES:
    to note", "it should be noted", "holistic approach", "at the end of the day".
 9. No meta-commentary about the report itself.
 10. Return only the JSON object — no preamble, no sign-off, no explanation."""
+
+
+COMPRESSION_PROMPT = """You are a copy editor for a senior consulting report.
+Compress the text for brevity. Target 25-30% shorter.
+
+PRESERVE EXACTLY — do not alter or remove:
+- All dollar figures, percentages, and numeric values
+- All names (firm names, role names, person names)
+- All CONFIRMED and INFERRED labels
+- Any text in parentheses beginning with "(see Section"
+- All factual claims — only change how they are expressed, not what they say
+- All specific completion criteria details — do not generalize what done looks like
+
+COMPRESS BY:
+- Removing redundant phrases and filler words
+- Shortening multi-clause sentences to direct statements
+- Eliminating throat-clearing openers ("It should be noted that...", "It is worth mentioning...")
+- Merging short sequential sentences that repeat the same point
+
+If you cannot compress without losing meaning or specifics, return the original text unchanged.
+Return only the compressed text. No explanation. No markup. No commentary."""
+
+
+async def compress_narrative(text: str, section_name: str) -> str:
+    """Compress a narrator prose string for brevity (target 25-30% reduction).
+
+    Preserves all figures, names, CONFIRMED/INFERRED labels, and factual claims.
+    Falls back to the original text if the call fails, returns empty output, or
+    produces output longer than the input.
+    section_name is used for logging only.
+    """
+    if not text or not text.strip():
+        return text
+    try:
+        message = await async_client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=COMPRESSION_PROMPT,
+            messages=[{"role": "user", "content": text}],
+        )
+        compressed = extract_text(message).strip()
+        if not compressed:
+            logger.warning(f"Compression empty for {section_name} — using original")
+            return text
+        orig_words = len(text.split())
+        comp_words = len(compressed.split())
+        if comp_words >= orig_words:
+            logger.warning(
+                f"Compression produced no reduction for {section_name} "
+                f"({orig_words} → {comp_words} words) — using original"
+            )
+            return text
+        logger.info(
+            f"Compression {section_name}: {orig_words} → {comp_words} words "
+            f"({round((1 - comp_words / orig_words) * 100)}% reduction)"
+        )
+        return compressed
+    except Exception as exc:
+        logger.warning(f"Compression failed for {section_name}: {exc} — using original")
+        return text
 
 
 def _parse_narrator_json(raw: str) -> dict:
@@ -839,6 +975,38 @@ async def generate_report_narrative(
 
     sections = _parse_narrator_json(raw)
     logger.info(f"Narrator sections parsed — keys: {list(sections.keys())}")
+
+    # --- Post-process prose for brevity (Executive Summary + Section 9) ---
+    # Compress each prose string in parallel — failures fall back to originals.
+
+    exec_keys = [
+        k for k in ('executive_summary_opening', 'executive_summary_para1',
+                    'executive_summary_para2', 'executive_summary_para3')
+        if sections.get(k)
+    ]
+    if exec_keys:
+        compressed = await asyncio.gather(
+            *[compress_narrative(sections[k], k) for k in exec_keys]
+        )
+        for k, v in zip(exec_keys, compressed):
+            sections[k] = v
+
+    next_steps = sections.get('next_steps_rows', [])
+    if isinstance(next_steps, list):
+        indices = [
+            i for i, row in enumerate(next_steps)
+            if isinstance(row, dict) and row.get('completion_criteria')
+        ]
+        if indices:
+            compressed_criteria = await asyncio.gather(
+                *[compress_narrative(
+                    next_steps[i]['completion_criteria'],
+                    f'next_steps_row_{i}'
+                ) for i in indices]
+            )
+            for idx, val in zip(indices, compressed_criteria):
+                next_steps[idx]['completion_criteria'] = val
+
     return sections
 
 

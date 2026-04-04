@@ -59,6 +59,9 @@ Checkpoint 4 items.
 | Backlog | File naming convention — parse_file_role_and_type() replacing fragile regex role extraction; Interview_/Doc_ prefix convention; ordered role/doc-type maps; _Followup and _N suffix stripping; no "team member" fallback; documented in CLAUDE.md | ✅ |
 | Backlog | Report fixes — How to Read heading style (TOC-visible, section number suppressed, page break before); Primary Cause full first sentence (no 120-char hard cap); Revenue at Risk sourced from Sales domain confirmed figure; 18-Month Gross Margin Target row with current baseline; totals row excludes concentration/relationship-risk findings; R-code resolution in dependency table | ✅ |
 | **Checkpoint 4** | Dry Run 4 — new fictional client end-to-end. All 5 agents, Parse Findings, Parse Roadmap, Generate Report. Zero DB Browser operations. | ✅ Passed 2026-04-03 (E004) |
+| Backlog | Executive Briefing — one-page CEO teaser before Executive Summary. Narrator generates executive_briefing JSON object (headline, problems[], numbers[]). report_generator.py assembles page with hallucination-proof validation: finding_ids checked against DB, figures sourced from DB via _parse_economic_figures(). Styled block headers (all caps, 11pt, spaced), horizontal rule after headline, page break after page. | ✅ |
+| Backlog | Consultant Voice Compression — compress_narrative() in claude.py post-processes Executive Summary (4 prose strings) and Section 9 completion_criteria after Narrator call. Parallel asyncio.gather; falls back to original on any failure. Target 25-30% reduction. | ✅ |
+| Backlog | Pattern Name on Candidate Review Cards — detect endpoint enriches response with pattern_name (consolidated duplicate get_library() call). PatternPanel.jsx shows name between ID and confidence badge on candidate cards. | ✅ |
 
 ---
 

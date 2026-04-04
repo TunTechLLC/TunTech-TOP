@@ -33,17 +33,9 @@ Three Key Problems must map to actual finding titles — not paraphrased
 
 Build after: Report Narrator is fully validated and main report structure is stable.
 
-Consultant Voice Compression — Brevity Post-Processing
-Problem: Narrator prose is thorough but some sections are longer than necessary. Executive Summary and Section 9 benefit from shorter sentences and more direct language.
-Design: A post-processing Claude call after the Narrator generates prose but before report_generator.py assembles the document. Apply to Executive Summary and Section 9 only initially.
-Compression rules: Shorten sentences, remove repetition, target 25-30% word count reduction. Do not change any figures, names, CONFIRMED/INFERRED labels, or factual claims. If compression call fails, fall back to uncompressed narrator output.
-Implementation:
-
-New async function in claude.py: compress_narrative(text, section_name)
-Called in generate_report_narrative() after narrator sections are generated
-Applied per section independently
-
-Build after: Executive Briefing section is validated.
+Consultant Voice Compression — ✅ Complete
+Applied to Executive Summary (4 prose strings) and Section 9 completion_criteria.
+Parallel asyncio.gather calls; falls back to original on any failure.
 
 Visual Generator Layer — Embedded Diagnostic Visuals
 Problem: The report is entirely text and tables. Three specific visuals would significantly increase perceived value and make the diagnostic feel like a system rather than a document.
@@ -88,20 +80,9 @@ output if present. `AgentRunRepository` — update GET and PATCH to include the 
 
 ---
 
-### Pattern Name on Candidate Review Cards
-**Problem:** During pattern detection review (before accepting), candidates show only the
-pattern ID (e.g. "P38", "P12"). The consultant cannot tell what a pattern is without
-already knowing the library by memory. The name only becomes visible after accepting.
-
-**Design:** Show the pattern name on each candidate review card during the detect-review
-step — the same place the ID, confidence, and notes are already shown. The pattern name
-is returned by Claude in the detection response and is available in the candidate payload
-since it is looked up against the pattern library at detect time. No new endpoints or
-schema changes needed — this is a display change on the candidate cards only.
-
-**File:** `frontend/src/components/PatternPanel.jsx` — candidate review card rendering
-
-**Commit message:** Pattern detection — show pattern name on candidate review cards
+### Pattern Name on Candidate Review Cards — ✅ Complete
+Backend enriches detect response with pattern_name (consolidated duplicate get_library() call).
+Frontend displays name on candidate card between ID and confidence badge.
 
 ---
 
