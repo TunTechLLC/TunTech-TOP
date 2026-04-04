@@ -12,7 +12,7 @@
 ## After Checkpoint 4
 
 ### Updates to Report output
-Executive Briefing — One-Page CEO Section (Section 1 of Report)
+Executive Briefing — One-Page CEO Section (Section 1 of Report) — ✅ Complete
 Problem: The Executive Summary is 4-5 paragraphs of dense prose. CEOs need a faster entry point — one page with the critical findings, numbers, and actions before the full narrative begins.
 Design: A new Section 1 inserted before the current Executive Summary. One page maximum. Part of the existing report generation flow — no separate document, no new button, no new endpoint. All current sections shift down by one.
 Structure:
@@ -41,13 +41,16 @@ Visual Generator Layer — Embedded Diagnostic Visuals
 Problem: The report is entirely text and tables. Three specific visuals would significantly increase perceived value and make the diagnostic feel like a system rather than a document.
 Three visuals (build in this order):
 
-Economic Breakdown Chart — horizontal bar chart of confirmed exposure by finding. Embedded in Section 6. Generated with matplotlib.
+Economic Breakdown Chart — horizontal bar chart of confirmed exposure by finding. Embedded in Section 6. Generated with matplotlib. ✅ Complete
 Roadmap Timeline — Gantt-style timeline showing Stabilize/Optimize/Scale phases with initiative names. Embedded at start of Section 8. Generated with matplotlib.
 Causal Chain Diagram — left-to-right flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. Generated as SVG.
 
 Implementation: Each visual generated as a temporary PNG/SVG, embedded via python-docx add_picture(), then deleted. If generation fails, report generates without the visual and logs a warning.
 Narrator addition required for Visual 3: New causal_chain JSON field listing finding-to-finding relationships for diagram node construction.
 Build after: Consultant Voice Compression is validated.
+
+Reader Guide Dynamic Section Numbers — ✅ Complete
+_SECTION_MAP dict in report_generator.py; _ROLE_READING_GUIDE uses format placeholders resolved at render time. One place to update when section numbering shifts.
 
 ---
 

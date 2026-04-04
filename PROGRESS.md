@@ -62,6 +62,8 @@ Checkpoint 4 items.
 | Backlog | Executive Briefing — one-page CEO teaser before Executive Summary. Narrator generates executive_briefing JSON object (headline, problems[], numbers[]). report_generator.py assembles page with hallucination-proof validation: finding_ids checked against DB, figures sourced from DB via _parse_economic_figures(). Styled block headers (all caps, 11pt, spaced), horizontal rule after headline, page break after page. | ✅ |
 | Backlog | Consultant Voice Compression — compress_narrative() in claude.py post-processes Executive Summary (4 prose strings) and Section 9 completion_criteria after Narrator call. Parallel asyncio.gather; falls back to original on any failure. Target 25-30% reduction. | ✅ |
 | Backlog | Pattern Name on Candidate Review Cards — detect endpoint enriches response with pattern_name (consolidated duplicate get_library() call). PatternPanel.jsx shows name between ID and confidence badge on candidate cards. | ✅ |
+| Backlog | Visual 1 — Economic Breakdown Chart — horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before the economic summary table. Generated with matplotlib (Agg backend), temp PNG deleted after embedding. Same seen_confirmed dedup logic as the economic table. | ✅ |
+| Backlog | Reader guide dynamic section numbers — _SECTION_MAP dict in report_generator.py replaces hardcoded section numbers in _ROLE_READING_GUIDE. All priority/detail strings use format placeholders resolved at render time via .format(s=_SECTION_MAP). One place to update when numbering shifts. | ✅ |
 
 ---
 
