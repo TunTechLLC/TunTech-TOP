@@ -175,11 +175,6 @@ No schema changes. No frontend changes. No new endpoints.
 
 **Commit message:** Quick wins section in report — high priority, low effort roadmap items
 
----
-
-### Billable vs Non-Billable Employees
-Need to be able to capture billable and non-billable employee counts separately.
-This may be captured in interviews but could also be part of the New Engagement form.
 
 ---
 
