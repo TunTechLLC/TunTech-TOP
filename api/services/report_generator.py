@@ -71,44 +71,68 @@ _DOMAIN_AUDIENCE = {
 }
 
 # -------------------------------------------------------------------
-# Reader guide — Change 2
+# Section map — single source of truth for section numbers.
+# Update only here when sections are added, removed, or reordered.
+# Only sections referenced by number in the reader guide need entries.
+# -------------------------------------------------------------------
+
+_SECTION_MAP = {
+    'domain_analysis':   6,
+    'root_cause':        7,
+    'economic_impact':   8,
+    'future_state':      9,
+    'roadmap':           10,
+    'priority_zero':     '10.1',
+    'roadmap_overview':  '10.2',
+    'stabilize':         '10.3',
+    'optimize':          '10.4',
+    'scale':             '10.5',
+    'dependencies':      '10.6',
+    'risks':             '10.7',
+    'what_happens_next': 11,
+}
+
+# -------------------------------------------------------------------
+# Reader guide — priority/detail are format strings resolved against
+# _SECTION_MAP at render time. Change section numbers in _SECTION_MAP
+# only — the guide strings update automatically.
 # -------------------------------------------------------------------
 
 _ROLE_READING_GUIDE = [
     {
         'role':            'CEO / Founder',
-        'priority':        'Executive Summary, Section 8.1, Section 9',
-        'detail':          'Section 7 (Future State)',
-        'trigger_domains': None,   # always include
+        'priority':        'Executive Summary, Section {s[priority_zero]}, Section {s[what_happens_next]}',
+        'detail':          'Section {s[future_state]} (Future State)',
+        'trigger_domains': None,
     },
     {
         'role':            'Director of Delivery',
-        'priority':        'Section 4 (Delivery Operations, Project Governance, Resource Management), Section 8.3',
-        'detail':          'Sections 5, 8.4, 8.7',
+        'priority':        'Section {s[domain_analysis]} (Delivery Operations, Project Governance, Resource Management), Section {s[stabilize]}',
+        'detail':          'Sections {s[root_cause]}, {s[optimize]}, {s[risks]}',
         'trigger_domains': {'Delivery Operations', 'Project Governance / PMO', 'Resource Management'},
     },
     {
         'role':            'VP Sales / Business Development',
-        'priority':        'Section 4 (Sales & Pipeline, Sales-to-Delivery Transition), Section 8.3',
-        'detail':          'Section 8.6 (Dependencies)',
+        'priority':        'Section {s[domain_analysis]} (Sales & Pipeline, Sales-to-Delivery Transition), Section {s[stabilize]}',
+        'detail':          'Section {s[dependencies]} (Dependencies)',
         'trigger_domains': {'Sales & Pipeline', 'Sales-to-Delivery Transition'},
     },
     {
         'role':            'Finance Lead',
-        'priority':        'Section 4 (Finance and Commercial, Consulting Economics), Section 6',
-        'detail':          'Sections 8.3, 8.4',
+        'priority':        'Section {s[domain_analysis]} (Finance and Commercial, Consulting Economics), Section {s[economic_impact]}',
+        'detail':          'Sections {s[stabilize]}, {s[optimize]}',
         'trigger_domains': {'Finance and Commercial', 'Consulting Economics'},
     },
     {
         'role':            'Project Manager / Senior Consultant',
-        'priority':        'Section 9 (What Happens Next), Section 8.3',
-        'detail':          'Section 8.7 (Key Risks)',
-        'trigger_domains': None,   # always include
+        'priority':        'Section {s[what_happens_next]} (What Happens Next), Section {s[stabilize]}',
+        'detail':          'Section {s[risks]} (Key Risks)',
+        'trigger_domains': None,
     },
     {
         'role':            'Operations / Admin',
-        'priority':        'Section 4 (AI Readiness, Human Resources), Section 8.4',
-        'detail':          'Section 9',
+        'priority':        'Section {s[domain_analysis]} (AI Readiness, Human Resources), Section {s[optimize]}',
+        'detail':          'Section {s[what_happens_next]}',
         'trigger_domains': {'AI Readiness', 'Human Resources'},
     },
 ]
@@ -592,8 +616,29 @@ class ReportGeneratorService:
             doc.add_paragraph('No root cause narrative generated.')
         doc.add_paragraph()
 
-        # 6 — Economic Impact Analysis (summary table first, then prose)
+        # 6 — Economic Impact Analysis (chart + summary table + prose)
         doc.add_heading('Economic Impact Analysis', level=1)
+
+        chart_path = self._generate_economic_chart(findings)
+        if chart_path:
+            try:
+                doc.add_picture(chart_path, width=Inches(6))
+                caption = doc.add_paragraph(
+                    'Confirmed exposures only. See table below for full economic '
+                    'impact including inferred figures.'
+                )
+                caption.runs[0].italic = True
+                caption.runs[0].font.size = Pt(9)
+                caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                doc.add_paragraph()
+            except Exception as e:
+                logger.warning(f'Failed to embed economic chart: {e}')
+            finally:
+                try:
+                    os.remove(chart_path)
+                except OSError:
+                    pass
+
         self._economic_summary_table(doc, findings)
         doc.add_paragraph()
         econ_narrative = narrative.get('economic_impact_narrative', '')
@@ -1004,8 +1049,8 @@ class ReportGeneratorService:
                     or entry['trigger_domains'] & finding_domains):
                 row = table.add_row()
                 row.cells[0].text = entry['role']
-                row.cells[1].text = entry['priority']
-                row.cells[2].text = entry['detail']
+                row.cells[1].text = entry['priority'].format(s=_SECTION_MAP)
+                row.cells[2].text = entry['detail'].format(s=_SECTION_MAP)
         _left_align_table(table)
 
     def _signal_table(self, doc, signals: list):
@@ -1132,6 +1177,97 @@ class ReportGeneratorService:
     # ------------------------------------------------------------------
     # Table helpers — new sections
     # ------------------------------------------------------------------
+
+    def _generate_economic_chart(self, findings: list):
+        """Generate a horizontal bar chart of confirmed economic exposure by finding.
+
+        Uses the same deduplication logic as _economic_summary_table — seen_confirmed
+        ensures duplicated figures produce only one bar (primary occurrence wins).
+        Only findings with a parseable confirmed figure receive a bar.
+
+        Returns the path to a temporary PNG file, or None if generation fails or
+        there is no chart-worthy data. Caller must delete the file after embedding.
+        """
+        try:
+            import matplotlib
+            matplotlib.use('Agg')   # non-interactive backend — no display required
+            import matplotlib.pyplot as plt
+        except ImportError:
+            logger.warning('matplotlib not installed — skipping economic chart')
+            return None
+
+        try:
+            # Build chart data — same priority sort and dedup as _economic_summary_table
+            seen_confirmed: dict = {}
+            chart_data: list = []
+            for f in sorted(findings,
+                            key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
+                conf_str, _ = _parse_economic_figures(f.get('economic_impact', ''))
+                if conf_str == '—':
+                    continue
+                primary = conf_str.split(', ')[0]
+                if primary in seen_confirmed:
+                    continue                     # duplicate figure — skip
+                seen_confirmed[primary] = True
+                val = _dollar_to_float(primary)
+                if val is None:
+                    continue
+                raw_title = f.get('finding_title') or ''
+                label = raw_title[:40] + ('...' if len(raw_title) > 40 else '')
+                chart_data.append((label, val))
+
+            if not chart_data:
+                return None
+
+            def _fmt(v: float) -> str:
+                if v >= 1_000_000:
+                    return f'${v / 1_000_000:.1f}M'
+                return f'${int(round(v / 1000))}K'
+
+            # Sort ascending — barh draws bottom-to-top, so largest ends up at top
+            chart_data.sort(key=lambda x: x[1])
+            labels = [d[0] for d in chart_data]
+            values = [d[1] for d in chart_data]
+            max_val = max(values)
+
+            n = len(chart_data)
+            fig, ax = plt.subplots(figsize=(8, max(3.0, n * 0.6)))
+
+            bars = ax.barh(labels, values, color='#1F3864', height=0.5)
+
+            # Value label at the end of each bar
+            for bar, val in zip(bars, values):
+                ax.text(
+                    bar.get_width() + max_val * 0.01,
+                    bar.get_y() + bar.get_height() / 2,
+                    _fmt(val),
+                    va='center', ha='left', fontsize=9,
+                )
+
+            ax.set_xlabel('Confirmed Exposure')
+            ax.set_xlim(0, max_val * 1.20)      # headroom for value labels
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            ax.yaxis.grid(False)
+            ax.xaxis.grid(False)
+            ax.tick_params(left=False)
+            ax.xaxis.set_major_formatter(
+                plt.FuncFormatter(lambda v, _: _fmt(v))
+            )
+
+            plt.tight_layout()
+
+            tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+            tmp_path = tmp.name
+            tmp.close()
+            fig.savefig(tmp_path, dpi=150, bbox_inches='tight')
+            plt.close(fig)
+            return tmp_path
+
+        except Exception as exc:
+            logger.warning(f'Economic chart generation failed: {exc} — skipping chart')
+            return None
 
     def _economic_summary_table(self, doc, findings: list):
         """Section 6 summary table.
