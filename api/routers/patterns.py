@@ -93,12 +93,15 @@ async def detect_patterns(
         if len(r.pattern_id) == 2 and r.pattern_id[0] == 'P' and r.pattern_id[1].isdigit():
             r.pattern_id = 'P0' + r.pattern_id[1]
 
-    library_ids = {p['pattern_id'] for p in pattern_repo.get_library()}
-    invalid = [r.pattern_id for r in results if r.pattern_id not in library_ids]
+    # library already fetched above — build lookup instead of calling get_library() again
+    library_lookup = {p['pattern_id']: p['pattern_name'] for p in library}
+    invalid = [r.pattern_id for r in results if r.pattern_id not in library_lookup]
     if invalid:
         raise HTTPException(status_code=422, detail=f"Unknown pattern_ids: {invalid}")
 
-    return [r.model_dump() for r in results]
+    # Enrich each candidate with pattern_name so the frontend can display it on review cards
+    return [{**r.model_dump(), 'pattern_name': library_lookup.get(r.pattern_id, '')}
+            for r in results]
 
 
 @router.post("/{engagement_id}/patterns/load", status_code=201)

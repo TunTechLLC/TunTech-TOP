@@ -153,6 +153,9 @@ export default function PatternPanel({ engagementId, onRefresh }) {
                 <span className="text-xs font-mono text-gray-400 w-10 shrink-0 pt-0.5">{p.pattern_id}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
+                    {p.pattern_name && (
+                      <span className="font-medium text-gray-900 text-sm">{p.pattern_name}</span>
+                    )}
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${confidenceColors[p.confidence] || 'bg-gray-100'}`}>
                       {p.confidence}
                     </span>
