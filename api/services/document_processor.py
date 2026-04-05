@@ -416,10 +416,14 @@ def _apply_domain_cap(candidates: list[dict], cap: int = 5) -> tuple[list[dict],
 def _deduplicate_candidates(candidates: list[dict]) -> tuple[list[dict], int]:
     """Deduplicate candidates by (domain, normalized signal_name).
     When two candidates share the same domain and signal name (case-insensitive,
-    stripped), keep the higher-confidence one (High > Medium > Hypothesis).
+    stripped), keep the higher-confidence one and upgrade its confidence by one
+    level — corroboration from a second independent file is evidence of higher
+    confidence: Medium→High, Hypothesis→Medium. High stays High.
     Returns (deduped_list, count_removed)."""
     CONFIDENCE_RANK = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+    CONFIDENCE_UPGRADE = {'Medium': 'High', 'Hypothesis': 'Medium', 'High': 'High'}
     seen: dict[tuple, dict] = {}
+    corroborated: set[tuple] = set()
     for candidate in candidates:
         key = (
             candidate.get('domain', ''),
@@ -432,6 +436,18 @@ def _deduplicate_candidates(candidates: list[dict]) -> tuple[list[dict], int]:
             incoming_rank = CONFIDENCE_RANK.get(candidate.get('signal_confidence', ''), 0)
             if incoming_rank > existing_rank:
                 seen[key] = candidate
+            corroborated.add(key)
+    # Upgrade confidence for candidates confirmed by multiple files
+    for key in corroborated:
+        c = seen[key]
+        old_conf = c.get('signal_confidence', 'Medium')
+        new_conf = CONFIDENCE_UPGRADE.get(old_conf, old_conf)
+        if new_conf != old_conf:
+            logger.debug(
+                f"Corroboration upgrade: {c.get('signal_name')} "
+                f"({c.get('domain')}) {old_conf} → {new_conf}"
+            )
+            seen[key] = {**c, 'signal_confidence': new_conf}
     deduped = list(seen.values())
     return deduped, len(candidates) - len(deduped)
 

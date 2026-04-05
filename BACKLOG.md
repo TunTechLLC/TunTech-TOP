@@ -100,26 +100,6 @@ Frontend displays name on candidate card between ID and confidence badge.
 
 ---
 
-### Signal Confidence — Corroboration Upgrade at Merge
-**Context:** Part 3 of the signal confidence accuracy fix (Parts 1 and 2 completed — see PROGRESS.md).
-The extraction prompts now correctly rate single-source evidence at Medium or Hypothesis.
-High is currently achievable from a single clean interview statement, but the right standard
-is that High should be *earned* through corroboration across independent sources.
-
-**Problem:** `_deduplicate_candidates()` in `document_processor.py` already detects when two
-files independently extract the same signal (same domain + signal_name key). It currently
-keeps the higher-confidence duplicate and discards the other. The corroboration signal is
-thrown away.
-
-**Design:** When deduplication finds two candidates sharing the same key, upgrade the
-surviving candidate's confidence by one level: Medium → High, Hypothesis → Medium.
-This is the only place in the architecture where cross-file corroboration can be detected,
-and it requires no Claude call — it is algorithmic.
-
-**File:** `api/services/document_processor.py` — modify `_deduplicate_candidates()`
-
-**Commit message:** Signal confidence — corroboration upgrade at merge
-
 ---
 
 ### Remove Phase 1 CLI Layer
