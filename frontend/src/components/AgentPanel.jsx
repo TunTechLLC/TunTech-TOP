@@ -196,8 +196,8 @@ export default function AgentPanel({ engagementId }) {
                     </button>
                   )}
 
-                  {/* Run button — when no pending run and prereqs met */}
-                  {(!run || run.accepted === 1) && prereqsMet && !isRunning && (
+                  {/* Run button — whenever prerequisites are met */}
+                  {prereqsMet && !isRunning && (
                     <button
                       onClick={() => handleRun(agentName)}
                       disabled={anyRunning}
