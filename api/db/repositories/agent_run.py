@@ -186,6 +186,10 @@ class AgentRunRepository(BaseRepository):
         output     = row.get('output_full') or ''
         correction = (row.get('consultant_correction') or '').strip()
         if correction:
+            logger.info(
+                f"Correction active for {agent_name} ({len(correction)} chars) — "
+                f"appended to prior context"
+            )
             output = (
                 f"{output}\n\n"
                 f"---\n\n"
