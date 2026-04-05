@@ -25,6 +25,12 @@ export default function AgentPanel({ engagementId }) {
   const [running, setRunning]   = useState({})
   const [runError, setRunError] = useState({})
 
+  // Consultant correction state — keyed by run_id
+  const [correctionOpen,   setCorrectionOpen]   = useState({})
+  const [corrections,      setCorrections]      = useState({})
+  const [correctionSaving, setCorrectionSaving] = useState({})
+  const [correctionSaved,  setCorrectionSaved]  = useState({})
+
   const fetchRuns = () => {
     api.agents.list(engagementId)
       .then(setRuns)
@@ -33,6 +39,20 @@ export default function AgentPanel({ engagementId }) {
   }
 
   useEffect(() => { fetchRuns() }, [engagementId])
+
+  // Seed correction text from DB on load — only sets keys not already in state
+  // so in-progress edits are not overwritten by a background refresh.
+  useEffect(() => {
+    setCorrections(prev => {
+      const next = { ...prev }
+      runs.forEach(r => {
+        if (!(r.run_id in next)) {
+          next[r.run_id] = r.consultant_correction || ''
+        }
+      })
+      return next
+    })
+  }, [runs])
 
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading agent runs...</div>
   if (error)   return <div className="p-6 text-red-600 text-sm">Error: {error}</div>
@@ -79,6 +99,22 @@ export default function AgentPanel({ engagementId }) {
       fetchRuns()
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  const handleSaveCorrection = async (runId) => {
+    setCorrectionSaving(prev => ({ ...prev, [runId]: true  }))
+    setCorrectionSaved (prev => ({ ...prev, [runId]: false }))
+    try {
+      await api.agents.updateCorrection(engagementId, runId, {
+        consultant_correction: corrections[runId] || ''
+      })
+      setCorrectionSaved(prev => ({ ...prev, [runId]: true }))
+      setTimeout(() => setCorrectionSaved(prev => ({ ...prev, [runId]: false })), 2000)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setCorrectionSaving(prev => ({ ...prev, [runId]: false }))
     }
   }
 
@@ -191,6 +227,55 @@ export default function AgentPanel({ engagementId }) {
               {run && run.output_summary && (
                 <div className="px-4 py-3 border-t border-gray-100">
                   <p className="text-xs text-gray-600 leading-relaxed">{run.output_summary}</p>
+                </div>
+              )}
+
+              {/* Consultant Correction — collapsible, accepted runs only */}
+              {run && run.accepted === 1 && (
+                <div className="border-t border-gray-100">
+                  <button
+                    onClick={() => setCorrectionOpen(prev => ({ ...prev, [run.run_id]: !prev[run.run_id] }))}
+                    className="w-full flex items-center justify-between px-4 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="font-medium text-gray-600">Consultant Correction</span>
+                      {corrections[run.run_id] && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                          Active
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-gray-400">{correctionOpen[run.run_id] ? '▲' : '▼'}</span>
+                  </button>
+                  {correctionOpen[run.run_id] && (
+                    <div className="px-4 pb-4 space-y-2">
+                      <p className="text-xs text-gray-400 italic">
+                        Appended to this agent's output when passed to downstream agents.
+                        Leave blank if no correction is needed.
+                      </p>
+                      <textarea
+                        value={corrections[run.run_id] || ''}
+                        onChange={e => setCorrections(prev => ({ ...prev, [run.run_id]: e.target.value }))}
+                        rows={4}
+                        className="w-full text-xs border border-gray-200 rounded p-2 font-sans
+                                   resize-y focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        placeholder="Optional. Describe what is incorrect and provide the correct information. Example: The Director of Delivery's tenure is 18 months, not 3 years as stated above."
+                      />
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleSaveCorrection(run.run_id)}
+                          disabled={correctionSaving[run.run_id]}
+                          className="text-xs px-3 py-1 bg-blue-600 text-white rounded
+                                     hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {correctionSaving[run.run_id] ? 'Saving...' : 'Save Correction'}
+                        </button>
+                        {correctionSaved[run.run_id] && (
+                          <span className="text-xs text-green-600">Saved</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

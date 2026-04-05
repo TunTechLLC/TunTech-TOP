@@ -80,8 +80,11 @@ async def run_agent(
         )
 
     case_packet   = CasePacketService(engagement_id).assemble()
+    # Use get_prior_output() — returns output_full with consultant_correction
+    # appended if one has been saved. get_accepted_output() is for prerequisite
+    # validation only; this path builds the actual downstream agent context.
     prior_outputs = [
-        repo.get_accepted_output(engagement_id, required)
+        repo.get_prior_output(engagement_id, required)
         for required in agent['required_prior_agents']
     ]
 
@@ -125,3 +128,23 @@ def reject_agent_run(
     repo.reject(run_id)
     logger.info(f"Agent run rejected: {run_id}")
     return {'rejected': run_id}
+
+
+@router.patch("/{engagement_id}/agents/{run_id}/correction")
+def update_agent_correction(
+    engagement_id: str,
+    run_id:        str,
+    data:          dict,
+    repo:          AgentRunRepository = Depends(get_repo)
+):
+    """Save or clear the consultant correction on an accepted agent run.
+
+    The correction is appended to this agent's output when it is passed as
+    prior context to downstream agents via get_prior_output(). It does not
+    modify the stored output_full — the original Claude response is preserved.
+    Pass empty string to clear an existing correction.
+    """
+    correction = data.get('consultant_correction', '')
+    repo.update_correction(run_id, correction)
+    logger.info(f"Correction updated for run: {run_id} — {len(correction or '')} chars")
+    return {'updated': run_id}

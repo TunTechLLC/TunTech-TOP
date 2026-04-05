@@ -16,6 +16,7 @@ GET_FOR_ENGAGEMENT = """
            output_full,
            output_doc_link,
            accepted,
+           consultant_correction,
            created_date
     FROM   AgentRuns
     WHERE  engagement_id = ?
@@ -32,6 +33,7 @@ GET_BY_AGENT = """
            output_full,
            output_doc_link,
            accepted,
+           consultant_correction,
            created_date
     FROM   AgentRuns
     WHERE  engagement_id = ?
@@ -42,6 +44,17 @@ GET_BY_AGENT = """
 
 GET_ACCEPTED_OUTPUT = """
     SELECT output_full
+    FROM   AgentRuns
+    WHERE  engagement_id = ?
+    AND    agent_name = ?
+    AND    accepted = 1
+    ORDER  BY created_date DESC
+    LIMIT  1
+"""
+
+GET_ACCEPTED_WITH_CORRECTION = """
+    SELECT output_full,
+           consultant_correction
     FROM   AgentRuns
     WHERE  engagement_id = ?
     AND    agent_name = ?
@@ -68,6 +81,12 @@ ACCEPT_RUN = """
 REJECT_RUN = """
     UPDATE AgentRuns
     SET    accepted = 0
+    WHERE  run_id = ?
+"""
+
+UPDATE_CORRECTION = """
+    UPDATE AgentRuns
+    SET    consultant_correction = ?
     WHERE  run_id = ?
 """
 
@@ -148,3 +167,34 @@ class AgentRunRepository(BaseRepository):
         """Mark an agent run as rejected. Allows re-running the agent."""
         logger.info(f"Rejecting agent run: {run_id}")
         self._write(REJECT_RUN, (run_id,))
+
+    def get_prior_output(self, engagement_id: str, agent_name: str) -> str | None:
+        """Return the effective prior output for downstream agent context.
+
+        Returns output_full with the consultant_correction appended as a clearly
+        labeled block if one has been saved. The correction block is formatted so
+        downstream agents treat it as authoritative over any conflicting claim in
+        the original output.
+
+        Used when assembling prior_outputs for call_claude(). Do not use for
+        prerequisite validation — use get_accepted_output() for that."""
+        rows = self._query(GET_ACCEPTED_WITH_CORRECTION, (engagement_id, agent_name))
+        if not rows:
+            return None
+        row        = dict(rows[0])
+        output     = row.get('output_full') or ''
+        correction = (row.get('consultant_correction') or '').strip()
+        if correction:
+            output = (
+                f"{output}\n\n"
+                f"---\n\n"
+                f"CONSULTANT CORRECTION (added after review — treat as authoritative "
+                f"over any conflicting claim above):\n{correction}"
+            )
+        return output
+
+    def update_correction(self, run_id: str, correction: str) -> None:
+        """Save or clear the consultant correction for an agent run.
+        Pass empty string or None to clear an existing correction."""
+        logger.info(f"Updating correction for run: {run_id}")
+        self._write(UPDATE_CORRECTION, (correction.strip() if correction else None, run_id))

@@ -60,7 +60,12 @@ opd_section mapping corrected, bulk_create() sequential loop, stale comment fixe
 
 ---
 
-### Consultant Correction on Agent Outputs
+### Consultant Correction on Agent Outputs — ✅ Complete
+Schema, backend, and frontend complete. See PROGRESS.md for details.
+
+---
+
+### Consultant Correction on Agent Outputs (archived spec)
 **Problem:** There is no way to correct a specific claim in an agent's output before it
 gets passed to subsequent agents. The only options are rerun (may not improve the specific
 issue) or accept a flawed output and rely on the Skeptic to catch it. Neither is reliable
