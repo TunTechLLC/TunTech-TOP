@@ -11,6 +11,63 @@
 
 ## After Checkpoint 4
 
+### ⚡ NEXT SESSION — Multi-Format File Ingestion (Excel, Word, PDF, PowerPoint)
+
+**Priority: Critical — clients deliver documents in these formats. TOP currently ignores all non-.txt files silently.**
+
+**Problem:**
+`scan_folder()` in `document_processor.py` hard-filters to `.txt` files only. Every Excel
+financial summary, Word SOW, PDF status report, and PowerPoint deck a client provides is
+silently skipped. The consultant must manually convert files to `.txt` before processing,
+which is error-prone and not viable for a paid engagement.
+
+**Supported formats to add:**
+| Format | Extensions | Library | Status |
+|--------|-----------|---------|--------|
+| Word | `.docx` | `python-docx` | Already installed |
+| Excel | `.xlsx`, `.xls` | `openpyxl` | Needs install |
+| PDF | `.pdf` | `pdfplumber` | Needs install |
+| PowerPoint | `.pptx` | `python-pptx` | Needs install |
+
+PDF support covers text-based PDFs only (contracts, SOWs, reports). Scanned/image PDFs
+are out of scope — log a warning and skip if no text is extractable.
+
+**Architectural requirements — read these before writing any code:**
+
+1. **Single extraction function, single place.** Add `extract_text_from_file(file_path: str, file_name: str) -> str` in `document_processor.py`. All format-specific logic lives here and nowhere else. Returns plain UTF-8 text. Raises `ValueError` with a clear message if the format is unsupported or the file yields no extractable text.
+
+2. **`scan_folder()` change is minimal.** Change the `.txt` extension filter to include all supported extensions. The rest of `scan_folder()` — hash, engagement prefix check, duplicate detection — is unchanged.
+
+3. **`process_file()` change is minimal.** Replace the hardcoded `open(..., 'r')` read with a call to `extract_text_from_file()`. Everything downstream (prompt selection, Claude call, candidate extraction) is unchanged.
+
+4. **No new prompts.** The existing PROMPT_MAP (interview, financial, status, sow, other, etc.) already maps file types to extraction prompts. File type detection (`get_file_type()`) derives type from the filename stem — this works for `.docx`, `.xlsx`, `.pdf`, `.pptx` files named with the existing convention (e.g. `E004_financial_Q1.xlsx` → type `financial`). No changes to prompt selection logic.
+
+5. **New dependencies must be in `requirements.txt`.** Add `openpyxl`, `pdfplumber`, and `python-pptx`. `python-docx` is already there. Do not import these at module level — import inside `extract_text_from_file()` so the app starts even if a library is missing (log a warning, raise ValueError for that format).
+
+6. **Excel extraction must be structured, not raw.** For each sheet: emit the sheet name as a header, then rows as tab-separated values. Skip entirely empty rows. This preserves the tabular structure that financial and resource data depends on for signal extraction.
+
+7. **Word extraction must include tables.** Paragraph text alone misses SOW line items, rate tables, and milestone tables. Extract paragraphs AND table cell text in document order.
+
+8. **PDF extraction is page-by-page.** Use `pdfplumber`. If a page yields no text (scanned image), skip it and log at DEBUG level. If the entire document yields no text, raise `ValueError` so the file is skipped and the consultant is notified via the existing error surface in SignalPanel.
+
+9. **PowerPoint extraction is slide-by-slide.** Extract text frames and speaker notes from each slide. Skip slides with no text. Emit slide number as a header for context.
+
+10. **No silent failures.** If extraction fails for any reason, raise an exception — do not return empty string. The caller (`process_file()`) already has error handling that logs and continues to the next file. Empty text passed to Claude produces hallucinated signals.
+
+**Files changed:**
+- `document_processor.py` — `extract_text_from_file()` (new), `scan_folder()` (filter change), `process_file()` (use new function)
+- `requirements.txt` — add `openpyxl`, `pdfplumber`, `python-pptx`
+
+**Files NOT changed:**
+- All prompts in `claude.py` — unchanged
+- All repositories — unchanged
+- All routers — unchanged
+- Frontend — unchanged (SignalPanel already shows file names and error states)
+
+**Commit message:** Multi-format file ingestion — Excel, Word, PDF, PowerPoint support
+
+---
+
 ### Visual 3 — Causal Chain Diagram
 Left-to-right flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. Generated as SVG.
 
