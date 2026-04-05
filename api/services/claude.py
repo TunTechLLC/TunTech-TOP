@@ -404,6 +404,8 @@ Each item must have exactly these fields:
 OWNER RULES — apply these strictly:
 Only assign owners from roles explicitly named in the Synthesizer output or engagement context.
 Do not invent role titles that do not appear in the diagnostic data.
+NEVER use a person's name as an owner — always use the role title (e.g. "Director of Delivery",
+not "Sarah Chen"). Individual consultant and PM names must never appear anywhere in the output.
 Use these heuristics to match initiative content to confirmed roles:
   - SOW gates, delivery authority, project oversight, delivery process design → Director of Delivery
   - Organizational structure changes, CEO behavior changes, firm-level decisions → CEO
@@ -670,9 +672,21 @@ economic_impact_narrative — 3-4 sentences.
   Connect to business stakes: reinvestment capacity, talent retention, competitive position.
   Do not repeat individual finding economic_impact fields verbatim — synthesize them.
 
-future_state_narrative — 2-3 sentences.
+future_state_narrative — 2-3 sentences plus one required CEO day sentence.
   Describe what the firm looks like operationally when the full roadmap is executed.
   Be specific to this engagement — not generic consulting language.
+  REQUIRED: Include exactly one sentence that describes what the CEO's day looks like
+  operationally 18 months from now — specifically what they are no longer doing that
+  they are doing today. This sentence must be grounded in confirmed signals about current
+  CEO time consumption. It must name the CEO's actual role burdens from the diagnostic data.
+  Wrong (generic): "The CEO focuses on strategic priorities rather than operational issues."
+  Right (specific, grounded in signals): "David Park's Tuesday is spent on new client
+  relationships and market positioning — not on escalation calls from a CTO whose project
+  went past deadline, staffing decisions that require his personal approval, or scope disputes
+  that have bypassed the Director of Delivery."
+  The CEO name and specific operational burdens must come from confirmed signals in the
+  engagement data. Do not invent details not present in the diagnostic. If no CEO time
+  consumption signals are confirmed, omit this sentence rather than fabricate it.
 
 domain_analysis — one entry per domain that has findings.
   Use the exact domain name as the key (e.g. "Delivery Operations", "Sales & Pipeline").
@@ -723,11 +737,19 @@ dependency_table_rows — Optimize and Scale items that are blocked by earlier i
   Only include dependencies that are evident from the Synthesizer's sequencing rationale.
   Do not fabricate dependencies. If none are clear from the data, return an empty array.
 
-risk_table_rows — maximum 3 rows.
-  Only include risks explicitly identified in the Synthesizer's Unresolved Dependencies or
-  flagged uncertainties section. Do not generate generic consulting risks not surfaced in
-  this engagement's diagnostic. If fewer than 3 are confirmed, return fewer than 3 rows.
-  likelihood: High if the Synthesizer flagged it as a primary dependency, Medium or Low otherwise.
+risk_table_rows — between 3 and 6 rows. Do not cap at 3. Include all risks that are
+  directly evidenced by the diagnostic data.
+  For each risk, consider all four categories:
+    1. Adoption risks — will the named owner actually change behavior?
+    2. Capacity risks — does the named owner have bandwidth to execute alongside current duties?
+    3. Evidence gap risks — what confirmed uncertainty could change the intervention design
+       if resolved differently?
+    4. Organizational dynamics risks — what people or trust issues could slow execution?
+  Every risk must be grounded in a specific signal, finding, or Skeptic-flagged uncertainty
+  from this engagement. Do not generate generic transformation risks (change management
+  resistance, budget overruns) that are not specifically evidenced in the diagnostic data.
+  Do not name individual ICs in risk descriptions — use role references only.
+  likelihood: High if the Synthesizer flagged it as a primary dependency; Medium or Low otherwise.
 
 next_steps_rows — maximum 10 rows.
   Populate from Priority Zero items first, then the first 3-5 Stabilize initiatives.
@@ -760,6 +782,31 @@ HALLUCINATION PREVENTION — apply to every field:
    Only CONFIRMED figures — never INFERRED. Do not invent figures; the actual dollar amount
    will be sourced from the finding's economic_impact field at render time — your finding_id
    is the link, not the figure itself.
+
+---
+
+PRIVACY / ANONYMIZATION — apply to every field:
+Individual consultant, PM, and IC names must never appear in the report in any context that
+describes their performance, overrun rate, utilization, departure, or other individual
+performance data. This protects the firm from HR exposure when the report is distributed.
+
+Replace named individuals with role-based references:
+  - Named PMs with overrun patterns → "two project managers with confirmed estimation
+    overrun patterns" or "PM-A" and "PM-B" if multiple individuals must be distinguished
+  - Named consultants with utilization issues → "one senior consultant above 100% utilization"
+  - Named departures → "two PM departures in [month/year]" — role and timing only
+
+This rule applies to: root_cause_narrative, domain_analysis opening/closing paragraphs,
+initiative_details success_metric, next_steps_rows completion_criteria, risk_table_rows.
+
+This does NOT apply to:
+  - Named client contacts in leadership roles (CEO, Director of Delivery, VP of Sales) —
+    these are accountability references, not performance data
+  - Named client organizations or project names used as commercial references
+    (e.g. "Glacier Point account", "Meridian Financial project")
+
+When you find individual IC names in the Synthesizer output, anonymize them in your output.
+A missing name is always better than a name that creates HR exposure in a distributed document.
 
 ---
 

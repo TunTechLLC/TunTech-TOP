@@ -3,6 +3,7 @@ import re
 import logging
 import tempfile
 from collections import defaultdict
+from copy import deepcopy
 
 from docx import Document
 from docx.oxml.ns import qn
@@ -104,36 +105,48 @@ _ROLE_READING_GUIDE = [
         'priority':        'Executive Summary, Section {s[priority_zero]}, Section {s[what_happens_next]}',
         'detail':          'Section {s[future_state]} (Future State)',
         'trigger_domains': None,
+        'domain_order':    None,
     },
     {
         'role':            'Director of Delivery',
-        'priority':        'Section {s[domain_analysis]} (Delivery Operations, Project Governance, Resource Management), Section {s[stabilize]}',
+        'priority':        'Section {s[domain_analysis]}{domain_clause}, Section {s[stabilize]}',
         'detail':          'Sections {s[root_cause]}, {s[optimize]}, {s[risks]}',
-        'trigger_domains': {'Delivery Operations', 'Project Governance / PMO', 'Resource Management'},
+        'trigger_domains': {
+            'Delivery Operations', 'Project Governance / PMO',
+            'Resource Management', 'Customer Experience',
+        },
+        'domain_order':    [
+            'Delivery Operations', 'Project Governance / PMO',
+            'Resource Management', 'Customer Experience',
+        ],
     },
     {
         'role':            'VP Sales / Business Development',
-        'priority':        'Section {s[domain_analysis]} (Sales & Pipeline, Sales-to-Delivery Transition), Section {s[stabilize]}',
+        'priority':        'Section {s[domain_analysis]}{domain_clause}, Section {s[stabilize]}',
         'detail':          'Section {s[dependencies]} (Dependencies)',
         'trigger_domains': {'Sales & Pipeline', 'Sales-to-Delivery Transition'},
+        'domain_order':    ['Sales & Pipeline', 'Sales-to-Delivery Transition'],
     },
     {
         'role':            'Finance Lead',
-        'priority':        'Section {s[domain_analysis]} (Finance and Commercial, Consulting Economics), Section {s[economic_impact]}',
+        'priority':        'Section {s[domain_analysis]}{domain_clause}, Section {s[economic_impact]}',
         'detail':          'Sections {s[stabilize]}, {s[optimize]}',
         'trigger_domains': {'Finance and Commercial', 'Consulting Economics'},
+        'domain_order':    ['Finance and Commercial', 'Consulting Economics'],
     },
     {
         'role':            'Project Manager / Senior Consultant',
         'priority':        'Section {s[what_happens_next]} (What Happens Next), Section {s[stabilize]}',
         'detail':          'Section {s[risks]} (Key Risks)',
         'trigger_domains': None,
+        'domain_order':    None,
     },
     {
         'role':            'Operations / Admin',
-        'priority':        'Section {s[domain_analysis]} (AI Readiness, Human Resources), Section {s[optimize]}',
+        'priority':        'Section {s[domain_analysis]}{domain_clause}, Section {s[optimize]}',
         'detail':          'Section {s[what_happens_next]}',
         'trigger_domains': {'AI Readiness', 'Human Resources'},
+        'domain_order':    ['AI Readiness', 'Human Resources'],
     },
 ]
 
@@ -501,6 +514,7 @@ class ReportGeneratorService:
         firm_name = eng.get('firm_name') or self.engagement_id
 
         self._populate_content_controls(doc, firm_name)
+        self._add_cover_page_restriction(doc)
 
         # Lookup dicts used across multiple sections
         findings_by_id = {f['finding_id']: f for f in findings}
@@ -796,6 +810,61 @@ class ReportGeneratorService:
                 break
 
     # ------------------------------------------------------------------
+    # Cover page — distribution restriction
+    # ------------------------------------------------------------------
+
+    def _add_cover_page_restriction(self, doc):
+        """Insert a distribution restriction note on the cover page, immediately
+        below the existing 'Confidential — For internal use only' line.
+
+        Scans doc.paragraphs for the confidentiality line and inserts after it
+        via raw XML (python-docx has no insert_after API). Copies paragraph and
+        run formatting from the confidentiality line so the new note inherits
+        the same style (centering, italic, font size, etc.).
+
+        Always present — the diagnostic context warrants it regardless of whether
+        named individuals appear in this specific report.
+
+        Logs a warning and skips gracefully if the line is not found (e.g. if the
+        template places it in a text box or drawing object outside doc.paragraphs).
+        """
+        RESTRICTION_TEXT = (
+            'Distribution: Restricted \u2014 Contains individual performance assessment data. '
+            'Distribute only to CEO and Director of Delivery unless performance references '
+            'have been reviewed and approved for broader distribution.'
+        )
+        for para in doc.paragraphs:
+            if 'Confidential' in para.text:
+                new_p = OxmlElement('w:p')
+
+                # Copy paragraph properties (alignment, spacing, style) from source
+                pPr_src = para._element.find(qn('w:pPr'))
+                if pPr_src is not None:
+                    new_p.append(deepcopy(pPr_src))
+
+                # Build run, inheriting run formatting (italic, font size, color)
+                new_r = OxmlElement('w:r')
+                if para.runs:
+                    rPr_src = para.runs[0]._element.find(qn('w:rPr'))
+                    if rPr_src is not None:
+                        new_r.append(deepcopy(rPr_src))
+
+                new_t = OxmlElement('w:t')
+                new_t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+                new_t.text = RESTRICTION_TEXT
+                new_r.append(new_t)
+                new_p.append(new_r)
+
+                para._element.addnext(new_p)
+                logger.info('Distribution restriction note added to cover page')
+                return
+
+        logger.warning(
+            'Cover page "Confidential" line not found in doc.paragraphs — '
+            'distribution restriction note not added (text may be in a text box or drawing object)'
+        )
+
+    # ------------------------------------------------------------------
     # Executive Briefing — standalone CEO teaser page
     # ------------------------------------------------------------------
 
@@ -1081,12 +1150,23 @@ class ReportGeneratorService:
         _set_col_widths(table, [1.5, 3.0, 2.0])
 
         for entry in _ROLE_READING_GUIDE:
-            if (entry['trigger_domains'] is None
-                    or entry['trigger_domains'] & finding_domains):
-                row = table.add_row()
-                row.cells[0].text = entry['role']
-                row.cells[1].text = entry['priority'].format(s=_SECTION_MAP)
-                row.cells[2].text = entry['detail'].format(s=_SECTION_MAP)
+            trigger = entry['trigger_domains']
+            if trigger is not None and not (trigger & finding_domains):
+                continue
+
+            # Build domain_clause — only list domains that have accepted findings
+            # in this engagement. Preserves domain_order for consistent display.
+            domain_order = entry.get('domain_order')
+            if domain_order:
+                active = [d for d in domain_order if d in finding_domains]
+                domain_clause = f' ({", ".join(active)})' if active else ''
+            else:
+                domain_clause = ''
+
+            row = table.add_row()
+            row.cells[0].text = entry['role']
+            row.cells[1].text = entry['priority'].format(s=_SECTION_MAP, domain_clause=domain_clause)
+            row.cells[2].text = entry['detail'].format(s=_SECTION_MAP, domain_clause=domain_clause)
         _left_align_table(table)
 
     def _signal_table(self, doc, signals: list):
@@ -1514,7 +1594,7 @@ class ReportGeneratorService:
                         marker = _markers[len(footnote_markers)] if len(footnote_markers) < len(_markers) else '*'
                         footnote_markers[primary_confirmed] = marker
                         footnotes.append((marker, primary_confirmed, seen_confirmed[primary_confirmed]))
-                    display_confirmed = f"{primary_confirmed}{footnote_markers[primary_confirmed]}"
+                    display_confirmed = f"{primary_confirmed} \u2014 shared, see note"
                 else:
                     seen_confirmed[primary_confirmed] = f.get('finding_title', '')
 
