@@ -675,6 +675,27 @@ class ReportGeneratorService:
         # 8 — Transformation Roadmap
         doc.add_heading('Transformation Roadmap', level=1)
 
+        # Visual 2 — Roadmap Timeline chart
+        timeline_path = self._generate_roadmap_timeline(roadmap, initiative_details)
+        if timeline_path:
+            try:
+                doc.add_picture(timeline_path, width=Inches(6.5))
+                caption = doc.add_paragraph(
+                    'Initiative timeline by phase. Months are approximate — '
+                    'adjust at kickoff based on available capacity.'
+                )
+                caption.runs[0].italic = True
+                caption.runs[0].font.size = Pt(9)
+                caption.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                doc.add_paragraph()
+            except Exception as e:
+                logger.warning(f'Failed to embed roadmap timeline: {e}')
+            finally:
+                try:
+                    os.remove(timeline_path)
+                except OSError:
+                    pass
+
         # 8.1 — Priority Zero Actions
         doc.add_heading('Priority Zero Actions — Complete This Week', level=2)
         pz_rows = narrative.get('priority_zero_table_rows', [])
@@ -1282,6 +1303,166 @@ class ReportGeneratorService:
 
         except Exception as exc:
             logger.warning(f'Economic chart generation failed: {exc} — skipping chart')
+            return None
+
+    def _generate_roadmap_timeline(self, roadmap: list, initiative_details: dict):
+        """Generate a Gantt-style timeline chart for the transformation roadmap.
+
+        X-axis: months 1–18 with phase zone background shading.
+        Y-axis: initiative names grouped by phase (Stabilize at top, Scale at bottom).
+        Bars: colored by phase.
+
+        Timeline for each item sourced from initiative_details (narrator output).
+        Falls back to phase-level defaults (Stabilize 1–3, Optimize 3–9, Scale 9–18)
+        when an item has no narrator detail — so the chart always renders even if
+        the narrator omits some initiative_details entries.
+
+        Returns path to a temporary PNG file, or None if generation fails or
+        there is no roadmap data. Caller must delete the file after embedding.
+        """
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as mpatches
+        except ImportError:
+            logger.warning('matplotlib not installed — skipping roadmap timeline')
+            return None
+
+        if not roadmap:
+            return None
+
+        try:
+            PHASE_ORDER = {'Stabilize': 0, 'Optimize': 1, 'Scale': 2}
+            PHASE_COLORS = {
+                'Stabilize': '#2E75B6',
+                'Optimize':  '#ED7D31',
+                'Scale':     '#70AD47',
+            }
+            PHASE_BG = {
+                'Stabilize': '#EBF3FB',
+                'Optimize':  '#FEF3EC',
+                'Scale':     '#F0F7ED',
+            }
+            PHASE_DEFAULTS = {
+                'Stabilize': (1, 3),
+                'Optimize':  (3, 9),
+                'Scale':     (9, 18),
+            }
+
+            def _parse_tl(s):
+                """Parse 'Month X' or 'Months X-Y' → (start, end). None on failure."""
+                if not s:
+                    return None
+                s = s.strip()
+                m = re.match(r'Month\s+(\d+)$', s, re.I)
+                if m:
+                    v = int(m.group(1))
+                    return (v, v)
+                m = re.match(r'Months?\s+(\d+)\s*[-\u2013]\s*(\d+)$', s, re.I)
+                if m:
+                    return (int(m.group(1)), int(m.group(2)))
+                return None
+
+            # Build rows: (label, phase, start_month, end_month)
+            rows = []
+            for item in roadmap:
+                phase    = item.get('phase') or 'Stabilize'
+                raw_name = item.get('initiative_name') or ''
+                label    = (raw_name[:35] + '…') if len(raw_name) > 35 else raw_name
+
+                detail   = initiative_details.get(item.get('item_id', '')) or {}
+                tl       = _parse_tl(detail.get('timeline', ''))
+                if tl is None:
+                    tl = PHASE_DEFAULTS.get(phase, (1, 18))
+
+                rows.append((label, phase, tl[0], tl[1]))
+
+            if not rows:
+                return None
+
+            # Sort by phase order, then start month — keeps phases visually grouped
+            rows.sort(key=lambda r: (PHASE_ORDER.get(r[1], 9), r[2]))
+
+            # barh draws bottom-to-top; reverse so Stabilize appears at top
+            rows = list(reversed(rows))
+            n = len(rows)
+
+            fig_height = max(3.5, n * 0.46 + 1.2)
+            fig, ax    = plt.subplots(figsize=(9, fig_height))
+
+            # Phase zone background shading — non-overlapping intervals
+            for phase_name, zone_start, zone_end in [
+                ('Stabilize', 0.5, 3),
+                ('Optimize',  3,   9),
+                ('Scale',     9,   18.5),
+            ]:
+                ax.axvspan(zone_start, zone_end,
+                           color=PHASE_BG.get(phase_name, '#F5F5F5'),
+                           alpha=0.6, zorder=0)
+                ax.text(
+                    (zone_start + zone_end) / 2, 1.01,
+                    phase_name,
+                    ha='center', va='bottom',
+                    fontsize=8, fontweight='bold',
+                    color=PHASE_COLORS.get(phase_name, '#555555'),
+                    transform=ax.get_xaxis_transform(),
+                    clip_on=False,
+                )
+
+            # Bars
+            for i, (label, phase, start, end) in enumerate(rows):
+                width = max(end - start, 0.4)   # minimum visible width for single-month items
+                ax.barh(i, width, left=start,
+                        height=0.55,
+                        color=PHASE_COLORS.get(phase, '#888888'),
+                        alpha=0.85,
+                        zorder=2)
+
+            # Y-axis
+            ax.set_yticks(range(n))
+            ax.set_yticklabels([r[0] for r in rows], fontsize=8)
+            ax.set_ylim(-0.6, n - 0.4)
+
+            # X-axis
+            ax.set_xlim(0.5, 18.5)
+            ax.set_xticks([1, 3, 6, 9, 12, 15, 18])
+            ax.set_xticklabels(
+                ['Mo 1', 'Mo 3', 'Mo 6', 'Mo 9', 'Mo 12', 'Mo 15', 'Mo 18'],
+                fontsize=8,
+            )
+            ax.set_xlabel('Timeline (months)', fontsize=9)
+
+            # Clean spines
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.tick_params(left=False)
+            ax.yaxis.grid(False)
+            ax.xaxis.grid(False)
+
+            # Legend
+            legend_patches = [
+                mpatches.Patch(
+                    color=PHASE_COLORS[p], label=p, alpha=0.85
+                )
+                for p in ['Stabilize', 'Optimize', 'Scale']
+                if any(r[1] == p for r in rows)
+            ]
+            ax.legend(handles=legend_patches, loc='lower right',
+                      fontsize=8, frameon=True, framealpha=0.9)
+
+            plt.tight_layout()
+
+            tmp      = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+            tmp_path = tmp.name
+            tmp.close()
+            fig.savefig(tmp_path, dpi=150, bbox_inches='tight')
+            plt.close(fig)
+            logger.info(f'Roadmap timeline chart generated — {n} initiatives')
+            return tmp_path
+
+        except Exception as exc:
+            logger.warning(f'Roadmap timeline generation failed: {exc} — skipping chart')
             return None
 
     def _economic_summary_table(self, doc, findings: list):
