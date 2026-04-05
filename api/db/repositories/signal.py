@@ -112,23 +112,31 @@ class SignalRepository(BaseRepository):
         Returns the number of rows inserted.
 
         Each item in rows must be a dict with the same keys as create().
-        Used for Tally CSV import."""
+        Used for Tally CSV import.
+
+        Sequential loop — never list comprehension. next_signal_id() uses MAX+1
+        logic; list comprehension evaluates all calls before any row is written,
+        producing duplicate IDs. Sequential loop commits each ID before the next
+        call reads the new MAX."""
         today = date.today().isoformat()
 
-        params = [(
-            next_signal_id(),
-            row['engagement_id'],
-            row.get('interview_id'),
-            row['signal_name'],
-            row['domain'],
-            row['observed_value'],
-            row['normalized_band'],
-            row['signal_confidence'],
-            row.get('economic_relevance', ''),
-            row['source'],
-            row.get('notes', ''),
-            today
-        ) for row in rows]
+        params = []
+        for row in rows:
+            params.append((
+                next_signal_id(),
+                row['engagement_id'],
+                row.get('interview_id'),
+                row['signal_name'],
+                row['domain'],
+                row['observed_value'],
+                row['normalized_band'],
+                row['signal_confidence'],
+                row.get('economic_relevance', ''),
+                row['source'],
+                row.get('notes', ''),
+                today,
+                row.get('source_file'),
+            ))
 
         logger.info(f"Bulk creating {len(params)} signals")
         return self._write_many(INSERT_SIGNAL, params)

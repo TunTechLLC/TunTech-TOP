@@ -442,12 +442,27 @@ class ReportGeneratorService:
         total_signals   = len(signals)
         domain_count    = len({s['domain'] for s in signals if s.get('domain')})
 
+        # Build cross-reference strings from _SECTION_MAP — single source of truth.
+        # Passed to the narrator so the prompt never hardcodes section numbers.
+        section_refs = {
+            'domain_analysis_ref': (
+                f"(see Section {_SECTION_MAP['domain_analysis']} — Domain Analysis for full findings)"
+            ),
+            'economic_impact_ref': (
+                f"(see Section {_SECTION_MAP['economic_impact']} — Economic Impact Analysis)"
+            ),
+            'priority_zero_ref': (
+                f"(see Section {_SECTION_MAP['priority_zero']} — Priority Zero Actions)"
+            ),
+        }
+
         narrative = await generate_report_narrative(
             synth_output, findings, roadmap, eng,
             interview_roles=interview_roles,
             document_types=document_types,
             total_signals=total_signals,
             domain_count=domain_count,
+            section_refs=section_refs,
         )
 
         if os.path.exists(_TEMPLATE):

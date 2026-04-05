@@ -135,7 +135,7 @@ async def parse_synthesizer_findings(
             item['priority'] = 'High'
         if item.get('effort') not in VALID_EFFORTS:
             item['effort'] = 'Medium'
-        if not isinstance(item.get('opd_section'), int) or not (1 <= item['opd_section'] <= 8):
+        if not isinstance(item.get('opd_section'), int) or not (1 <= item['opd_section'] <= 9):
             item['opd_section'] = 4
         if not isinstance(item.get('suggested_pattern_ids'), list):
             item['suggested_pattern_ids'] = []

@@ -309,10 +309,10 @@ Each item must have exactly these fields:
     - Medium: finding improves operational performance but does not stop active damage, OR has INFERRED economic impact based on estimates or benchmarks, OR is supported primarily by qualitative evidence without a specific dollar figure
     - Low: finding improves quality, capability, or process maturity with no direct economic impact, or is a longer-horizon improvement that requires Stabilize and Optimize work to be complete first
 - effort: string — exactly "High", "Medium", or "Low" (implementation effort to address this finding)
-- opd_section: integer — OPD report section this finding is most relevant to (1-8):
+- opd_section: integer — OPD report section this finding is most relevant to (1-9):
   1 = Executive Summary, 2 = Engagement Overview, 3 = Operational Maturity Overview,
   4 = Domain Analysis, 5 = Root Cause Analysis, 6 = Economic Impact Analysis,
-  7 = Improvement Opportunities, 8 = Transformation Roadmap.
+  7 = Future State, 8 = Transformation Roadmap, 9 = What Happens Next.
   Most findings belong in section 4 or 5.
 - suggested_pattern_ids: list of strings — pattern IDs from the ACCEPTED PATTERNS list that directly support this finding (e.g. ["P12", "P15"]). Only include IDs that appear in the accepted patterns list provided. Do not invent pattern IDs.
 
@@ -493,9 +493,9 @@ JSON SCHEMA — return exactly these keys:
     ]
   },
   "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/INFERRED labels.>",
-  "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/INFERRED labels. End with exactly: (see Section 4 — Domain Analysis for full findings)>",
-  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/INFERRED labels. End with exactly: (see Section 6 — Economic Impact Analysis)>",
-  "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly: (see Section 8.1 — Priority Zero Actions)>",
+  "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/INFERRED labels. End with exactly the text labeled 'domain_analysis_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly the text labeled 'priority_zero_ref' from the SECTION REFERENCES block.>",
   "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
   "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
   "root_cause_narrative": "<4-5 paragraphs separated by \\n\\n>",
@@ -629,18 +629,21 @@ executive_summary_opening — 3-4 sentences:
 executive_summary_para1 — 2-3 sentences:
   Client hypothesis vs diagnostic reality. What did the client believe was causing the
   problem? What does the diagnostic show instead? Name the gap directly. No labels.
-  Close the paragraph with exactly this text: (see Section 4 — Domain Analysis for full findings)
+  Close the paragraph with exactly the text labeled 'domain_analysis_ref' from the SECTION
+  REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
 
 executive_summary_para2 — 2-3 sentences:
   Economic stakes in plain language. Include 2-3 key figures maximum. Do not use
-  CONFIRMED/INFERRED labels here — those appear in Section 6. State what is at stake
-  and what inaction costs.
-  Close the paragraph with exactly this text: (see Section 6 — Economic Impact Analysis)
+  CONFIRMED/INFERRED labels here — those appear in the Economic Impact section. State what
+  is at stake and what inaction costs.
+  Close the paragraph with exactly the text labeled 'economic_impact_ref' from the SECTION
+  REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
 
 executive_summary_para3 — 2-3 sentences:
   Why sequencing matters. What must happen first and why the order is not optional.
   Focus on the Priority Zero items — not a summary of the full roadmap.
-  Close the paragraph with exactly this text: (see Section 8.1 — Priority Zero Actions)
+  Close the paragraph with exactly the text labeled 'priority_zero_ref' from the SECTION
+  REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
 
 margin_trend_brief — one line or null:
   Derive from the Consulting Economics finding's economic_impact field or from the
@@ -735,10 +738,11 @@ next_steps_rows — maximum 10 rows.
     anyone. Use active voice. Name the owner as the subject of the sentence. Be specific
     about the deliverable — not the strategic outcome.
     WRONG: "A PM coverage plan is approved and a handoff document is completed"
-    RIGHT: "Rachel has returned to full-time portfolio oversight. A named PM or senior
-    consultant is covering Summit Capital with a written handoff plan signed by both parties."
+    RIGHT: "[Responsible Role] has returned to full-time [their primary responsibility].
+    A named [role] is covering [Project Name] with a written handoff plan signed by both parties."
     Remove all strategic framing: no "positions the firm to", no "enables future" language.
-    Just what done looks like. No specific calendar dates.
+    Just what done looks like. No specific calendar dates. Use role titles from the engagement
+    data only — never invent names or project names not present in the input.
 
 ---
 
@@ -872,6 +876,7 @@ async def generate_report_narrative(
     document_types: list = None,
     total_signals: int = 0,
     domain_count: int = 0,
+    section_refs: dict = None,
 ) -> dict:
     """Generate narrative prose and structured table content for the OPD report.
 
@@ -950,13 +955,28 @@ async def generate_report_narrative(
         else "Documents reviewed: not available"
     )
 
-    user_message = "\n\n".join([
+    # --- Assemble section cross-references from caller (sourced from _SECTION_MAP in
+    #     report_generator.py — the single source of truth for section numbers).
+    #     Injected as the first block so Claude sees current numbers before prose instructions.
+    message_parts = []
+    if section_refs:
+        ref_lines = [
+            "SECTION REFERENCES (copy these strings verbatim when instructed — "
+            "do not alter section numbers or wording):"
+        ]
+        for key, text in section_refs.items():
+            ref_lines.append(f"{key}: {text}")
+        message_parts.append("\n".join(ref_lines))
+
+    message_parts.extend([
         "SYNTHESIZER OUTPUT:\n\n" + synthesizer_output,
         "\n".join(context_lines),
         "\n".join(file_lines),
         "\n".join(findings_lines),
         "\n".join(roadmap_lines),
     ])
+
+    user_message = "\n\n".join(message_parts)
 
     logger.info(
         f"Generating report narrative — {len(synthesizer_output)} chars synthesizer, "

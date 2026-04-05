@@ -337,7 +337,7 @@ async def process_file(file_info: dict, engagement_id: str,
     prompt = PROMPT_MAP.get(file_type)
 
     if prompt is None:
-        # interview, delivery, other — use SIGNAL_EXTRACTION_PROMPT via extract_signals_from_transcript
+        # interview, other — use SIGNAL_EXTRACTION_PROMPT via extract_signals_from_transcript
         raw = await extract_signals_from_transcript(content)
     else:
         message = await async_client.messages.create(

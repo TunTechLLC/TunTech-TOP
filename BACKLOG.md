@@ -54,6 +54,12 @@ _SECTION_MAP dict in report_generator.py; _ROLE_READING_GUIDE uses format placeh
 
 ---
 
+### Accuracy Guardrail Pass — ✅ Complete
+Five fixes in one commit: narrator section refs dynamic (Option B), example names generic,
+opd_section mapping corrected, bulk_create() sequential loop, stale comment fixed.
+
+---
+
 ### Consultant Correction on Agent Outputs
 **Problem:** There is no way to correct a specific claim in an agent's output before it
 gets passed to subsequent agents. The only options are rerun (may not improve the specific

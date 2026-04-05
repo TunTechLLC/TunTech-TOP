@@ -64,6 +64,7 @@ Checkpoint 4 items.
 | Backlog | Pattern Name on Candidate Review Cards — detect endpoint enriches response with pattern_name (consolidated duplicate get_library() call). PatternPanel.jsx shows name between ID and confidence badge on candidate cards. | ✅ |
 | Backlog | Visual 1 — Economic Breakdown Chart — horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before the economic summary table. Generated with matplotlib (Agg backend), temp PNG deleted after embedding. Same seen_confirmed dedup logic as the economic table. | ✅ |
 | Backlog | Reader guide dynamic section numbers — _SECTION_MAP dict in report_generator.py replaces hardcoded section numbers in _ROLE_READING_GUIDE. All priority/detail strings use format placeholders resolved at render time via .format(s=_SECTION_MAP). One place to update when numbering shifts. | ✅ |
+| Backlog | Accuracy guardrail pass — (1) Narrator section refs now dynamic: _SECTION_MAP in report_generator.py builds section_refs dict passed to generate_report_narrative(); prompt references SECTION REFERENCES block in input, never hardcodes numbers. (2) Replaced specific names in completion_criteria example with generic role/project placeholders — eliminates cross-client contamination risk. (3) opd_section prompt and validation corrected to match current 9-section report structure. (4) bulk_create() in signal.py fixed: list comprehension → sequential loop; added missing source_file field. (5) Stale delivery comment in document_processor.py corrected. | ✅ |
 
 ---
 
