@@ -78,9 +78,8 @@ ACCEPT_RUN = """
     WHERE  run_id = ?
 """
 
-REJECT_RUN = """
-    UPDATE AgentRuns
-    SET    accepted = 0
+DELETE_RUN = """
+    DELETE FROM AgentRuns
     WHERE  run_id = ?
 """
 
@@ -164,9 +163,11 @@ class AgentRunRepository(BaseRepository):
         self._write(ACCEPT_RUN, (run_id,))
 
     def reject(self, run_id: str) -> None:
-        """Mark an agent run as rejected. Allows re-running the agent."""
-        logger.info(f"Rejecting agent run: {run_id}")
-        self._write(REJECT_RUN, (run_id,))
+        """Delete an agent run. Removes the output so the agent can be re-run cleanly.
+        Works on both pending and accepted runs — accepted runs lose their output,
+        so downstream agents will require re-running the deleted agent first."""
+        logger.info(f"Deleting agent run: {run_id}")
+        self._write(DELETE_RUN, (run_id,))
 
     def get_prior_output(self, engagement_id: str, agent_name: str) -> str | None:
         """Return the effective prior output for downstream agent context.
