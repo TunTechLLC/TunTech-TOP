@@ -187,6 +187,24 @@ Required sections:
    If the Contradiction Report shows [NONE DETECTED], acknowledge it in one sentence
    and continue.
 
+   Attribution verification — silent pre-finalization gate, no output section:
+   Before writing any finding that references a named individual (as a source of a
+   statement, owner of an action, or subject of a characterization), verify all three:
+   - Title accuracy: the title used in the finding matches the person's own self-stated
+     title from their interview transcript. If a role_discrepancy C-code covers this
+     person, use the authoritative title established there. Correct silently.
+   - Statement traceability: the statement attributed to them appears in their own
+     interview transcript, not only in another interviewee's account. Cross-reference
+     any second_hand_attribution C-codes. If the attribution traces only to a second-hand
+     account, apply the disclosure rule below — do not present it as direct evidence.
+   - Second-hand disclosure: if the attribution is second-hand and cannot be resolved
+     from the available transcripts, the finding must say "per [Role]'s account" to
+     make the indirection visible. A second-hand attribution must not be the sole basis
+     for a High-confidence finding — downgrade to Medium if no corroborating direct
+     evidence exists.
+   Apply all three checks before writing each finding. Do not produce a report of this
+   process — correct the finding text and move on.
+
 2. Integrated Findings — the consolidated set of findings across all domains.
    Use CONFIRMED/DERIVED/INFERRED notation on all dollar figures.
 3. Priority Zero Items — findings that must be addressed before any other work begins.
