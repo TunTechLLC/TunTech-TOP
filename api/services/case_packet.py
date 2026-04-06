@@ -80,6 +80,8 @@ CONSULTANT NOTES:
                 f"Band: {s['normalized_band']} | "
                 f"Source: {s['source']}"
             )
+            if s.get('source_file'):
+                line += f" | File: {s['source_file']}"
             if s.get('economic_relevance'):
                 line += f" | Economic: {s['economic_relevance']}"
             lines.append(line)

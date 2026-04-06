@@ -282,7 +282,8 @@ def strip_json_fences(text: str) -> str:
 
 
 def scan_folder(folder_path: str, engagement_id: str) -> list[dict]:
-    """Scan a folder for unprocessed .txt files belonging to this engagement.
+    """Scan a folder for unprocessed .txt files.
+    Each engagement uses a dedicated folder, so no filename prefix filter is applied.
     Returns list of dicts with path, name, type, hash."""
     if not folder_path or not os.path.exists(folder_path):
         return []
@@ -292,8 +293,6 @@ def scan_folder(folder_path: str, engagement_id: str) -> list[dict]:
 
     for file_name in sorted(os.listdir(folder_path)):
         if not file_name.endswith('.txt'):
-            continue
-        if not file_name.startswith(engagement_id):
             continue
 
         file_path = os.path.join(folder_path, file_name)

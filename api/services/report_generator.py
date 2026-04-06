@@ -297,7 +297,7 @@ def _compute_confirmed_floor(findings: list) -> str | None:
     total_val = 0.0
     parseable = False
     for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-        conf, _ = _parse_economic_figures(f.get('economic_impact', ''))
+        conf, _, _ = _parse_economic_figures(f.get('economic_impact', ''))
         if conf == '—':
             continue
         primary = conf.split(', ')[0]
@@ -322,6 +322,7 @@ _DOLLAR_RE = re.compile(
     re.IGNORECASE
 )
 _CONFIRMED_RE = re.compile(r'\bCONFIRMED(?:-\w+)?', re.IGNORECASE)
+_DERIVED_RE   = re.compile(r'\bDERIVED(?:-\w+)?',   re.IGNORECASE)
 _INFERRED_RE  = re.compile(r'\bINFERRED(?:-\w+)?',  re.IGNORECASE)
 
 
@@ -345,18 +346,21 @@ def _dollar_to_float(s: str) -> float | None:
 
 
 def _parse_economic_figures(text: str):
-    """Parse an economic_impact string into (confirmed, inferred) figure strings.
+    """Parse an economic_impact string into (confirmed, derived, inferred) figure strings.
 
-    Handles label variants: CONFIRMED, CONFIRMED-QUALIFIED, INFERRED, INFERRED-UNVALIDATED.
+    Handles label variants: CONFIRMED, CONFIRMED-QUALIFIED, DERIVED, INFERRED, INFERRED-UNVALIDATED.
     Labels must appear AFTER the dollar amount (within 80 chars) to be assigned to it.
     This prevents adjective uses like "confirmed overrun exposure: $85K" from incorrectly
     assigning the label to dollar amounts that appear before it in a noun phrase.
+
+    Label precedence when multiple labels follow the same amount: CONFIRMED > DERIVED > INFERRED.
     Returns '—' for each column when no matching figures are found.
     """
     if not text:
-        return '—', '—'
+        return '—', '—', '—'
 
     confirmed_figures = []
+    derived_figures   = []
     inferred_figures  = []
 
     # Split on sentence boundaries — use '. ' (period + space) to avoid splitting
@@ -369,9 +373,10 @@ def _parse_economic_figures(text: str):
             continue
 
         conf_positions = [m.start() for m in _CONFIRMED_RE.finditer(clause)]
+        deriv_positions = [m.start() for m in _DERIVED_RE.finditer(clause)]
         inf_positions  = [m.start() for m in _INFERRED_RE.finditer(clause)]
 
-        if not conf_positions and not inf_positions:
+        if not conf_positions and not deriv_positions and not inf_positions:
             continue  # No labels in this clause
 
         for m in _DOLLAR_RE.finditer(clause):
@@ -388,27 +393,36 @@ def _parse_economic_figures(text: str):
                 continue
 
             # Only consider labels that appear AFTER the dollar amount
-            conf_after = [p for p in conf_positions if p >= amt_end]
-            inf_after  = [p for p in inf_positions  if p >= amt_end]
+            conf_after  = [p for p in conf_positions  if p >= amt_end]
+            deriv_after = [p for p in deriv_positions if p >= amt_end]
+            inf_after   = [p for p in inf_positions   if p >= amt_end]
 
-            d_conf = min((p - amt_end for p in conf_after), default=9999)
-            d_inf  = min((p - amt_end for p in inf_after),  default=9999)
+            d_conf  = min((p - amt_end for p in conf_after),  default=9999)
+            d_deriv = min((p - amt_end for p in deriv_after), default=9999)
+            d_inf   = min((p - amt_end for p in inf_after),   default=9999)
+
+            closest = min(d_conf, d_deriv, d_inf)
 
             # Require label within 80 chars to avoid false positives
-            if min(d_conf, d_inf) > 80:
+            if closest > 80:
                 continue
 
-            if d_conf <= d_inf:
+            # Assign to the closest label; CONFIRMED > DERIVED > INFERRED on tie
+            if d_conf <= d_deriv and d_conf <= d_inf:
                 if amt not in confirmed_figures:
                     confirmed_figures.append(amt)
+            elif d_deriv <= d_inf:
+                if amt not in derived_figures:
+                    derived_figures.append(amt)
             else:
                 if amt not in inferred_figures:
                     inferred_figures.append(amt)
 
     # Cap at 3 figures per column so cells remain readable
     confirmed = ', '.join(confirmed_figures[:3]) if confirmed_figures else '—'
+    derived   = ', '.join(derived_figures[:3])   if derived_figures   else '—'
     inferred  = ', '.join(inferred_figures[:3])  if inferred_figures  else '—'
-    return confirmed, inferred
+    return confirmed, derived, inferred
 
 
 class ReportGeneratorService:
@@ -555,9 +569,10 @@ class ReportGeneratorService:
                 None
             )
             if _rev_f:
-                _conf, _ = _parse_economic_figures(_rev_f.get('economic_impact', ''))
-                if _conf != '—':
-                    revenue_at_risk = _conf.split(', ')[0]
+                _conf, _deriv, _ = _parse_economic_figures(_rev_f.get('economic_impact', ''))
+                _primary = _conf if _conf != '—' else _deriv
+                if _primary != '—':
+                    revenue_at_risk = _primary.split(', ')[0]
                     break
         if revenue_at_risk:
             kf_rows.append(('Revenue at Risk', revenue_at_risk))
@@ -878,7 +893,7 @@ class ReportGeneratorService:
                         and impact_brief (20 words). finding_id validated against DB.
           Numbers     — executive_briefing.numbers from Narrator: label (4 words) and
                         finding_id. Dollar figure sourced from DB via _parse_economic_figures()
-                        — CONFIRMED only. finding_id validated against DB.
+                        — CONFIRMED or DERIVED. finding_id validated against DB.
           Actions     — priority_zero_table_rows[0:3] from existing Narrator output.
 
         Visual: bold paragraph header anchors each block; spacer paragraphs between blocks.
@@ -963,7 +978,9 @@ class ReportGeneratorService:
 
         # Component C — Three Numbers That Matter
         # Narrator supplies label + finding_id (ordered by urgency: immediate → structural → existential).
-        # Dollar figure sourced from DB — CONFIRMED only. Invalid or INFERRED entries are skipped.
+        # Dollar figure sourced from DB — CONFIRMED or DERIVED. INFERRED entries are skipped.
+        # DERIVED figures include a "Calculated from:" disclosure extracted from the economic_impact
+        # parenthetical so the reader knows the figure is computed, not stated.
         raw_numbers = eb.get('numbers', [])
         number_rows = []
         for item in (raw_numbers[:3] if isinstance(raw_numbers, list) else []):
@@ -978,27 +995,47 @@ class ReportGeneratorService:
                     f"Executive briefing: number finding_id {fid!r} not in findings — skipping"
                 )
                 continue
-            conf_str, _ = _parse_economic_figures(
-                findings_by_id[fid].get('economic_impact', '')
-            )
-            if conf_str == '—':
+            econ_text = findings_by_id[fid].get('economic_impact', '')
+            conf_str, deriv_str, _ = _parse_economic_figures(econ_text)
+            is_derived = False
+            if conf_str != '—':
+                primary = conf_str.split(', ')[0]
+            elif deriv_str != '—':
+                primary = deriv_str.split(', ')[0]
+                is_derived = True
+            else:
                 logger.warning(
-                    f"Executive briefing: finding {fid} has no CONFIRMED figure — skipping number row"
+                    f"Executive briefing: finding {fid} has no CONFIRMED or DERIVED figure — skipping"
                 )
                 continue
-            primary = conf_str.split(', ')[0]
-            number_rows.append((label, primary))
+            # For DERIVED figures, extract the parenthetical calculation text after "DERIVED:"
+            # to show a "Calculated from:" disclosure in the cell.
+            calc_disclosure = None
+            if is_derived:
+                deriv_match = re.search(
+                    r'\bDERIVED\s*:\s*([^)]{5,120})', econ_text, re.IGNORECASE
+                )
+                if deriv_match:
+                    calc_disclosure = 'Calculated from: ' + deriv_match.group(1).strip().rstrip(',; ')
+            number_rows.append((label, primary, calc_disclosure))
 
         if number_rows:
             self._briefing_block_header(doc, 'Three Numbers That Matter')
             tbl = doc.add_table(rows=0, cols=2)
             tbl.style = 'Table Grid'
-            for label, amount in number_rows:
+            for label, amount, calc_disclosure in number_rows:
                 row = tbl.add_row()
                 row.cells[0].text = label
-                row.cells[1].text = amount
-                if row.cells[1].paragraphs[0].runs:
-                    row.cells[1].paragraphs[0].runs[0].bold = True
+                # Amount cell: bold dollar figure, plus italic disclosure for DERIVED figures
+                amt_cell  = row.cells[1]
+                amt_para  = amt_cell.paragraphs[0]
+                amt_run   = amt_para.add_run(amount)
+                amt_run.bold = True
+                if calc_disclosure:
+                    disc_para = amt_cell.add_paragraph()
+                    disc_run  = disc_para.add_run(calc_disclosure)
+                    disc_run.italic = True
+                    disc_run.font.size = Pt(8)
             _set_col_widths(tbl, [4.5, 2.0])
             _left_align_table(tbl)
 
@@ -1295,11 +1332,14 @@ class ReportGeneratorService:
     # ------------------------------------------------------------------
 
     def _generate_economic_chart(self, findings: list):
-        """Generate a horizontal bar chart of confirmed economic exposure by finding.
+        """Generate a horizontal bar chart of direct and derived economic exposure by finding.
 
-        Uses the same deduplication logic as _economic_summary_table — seen_confirmed
-        ensures duplicated figures produce only one bar (primary occurrence wins).
-        Only findings with a parseable confirmed figure receive a bar.
+        Includes both CONFIRMED (direct) and DERIVED (computed from confirmed inputs) figures.
+        Uses the same deduplication logic as _economic_summary_table — seen_figures tracks
+        unique dollar amounts so a figure shared between findings only produces one bar.
+
+        Direct (CONFIRMED) bars render in dark navy; Derived bars render in steel blue.
+        A legend is shown only when both types are present.
 
         Returns the path to a temporary PNG file, or None if generation fails or
         there is no chart-worthy data. Caller must delete the file after embedding.
@@ -1312,25 +1352,36 @@ class ReportGeneratorService:
             logger.warning('matplotlib not installed — skipping economic chart')
             return None
 
+        _COLOR_DIRECT  = '#1F3864'   # dark navy — CONFIRMED (directly stated)
+        _COLOR_DERIVED = '#4472C4'   # steel blue — DERIVED (computed from confirmed inputs)
+
         try:
             # Build chart data — same priority sort and dedup as _economic_summary_table
-            seen_confirmed: dict = {}
+            seen_figures: dict = {}
             chart_data: list = []
             for f in sorted(findings,
                             key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-                conf_str, _ = _parse_economic_figures(f.get('economic_impact', ''))
-                if conf_str == '—':
+                conf_str, deriv_str, _ = _parse_economic_figures(f.get('economic_impact', ''))
+                # Prefer CONFIRMED over DERIVED per finding — same precedence as the table
+                if conf_str != '—':
+                    primary    = conf_str.split(', ')[0]
+                    bar_color  = _COLOR_DIRECT
+                    bar_type   = 'Direct'
+                elif deriv_str != '—':
+                    primary    = deriv_str.split(', ')[0]
+                    bar_color  = _COLOR_DERIVED
+                    bar_type   = 'Derived'
+                else:
                     continue
-                primary = conf_str.split(', ')[0]
-                if primary in seen_confirmed:
+                if primary in seen_figures:
                     continue                     # duplicate figure — skip
-                seen_confirmed[primary] = True
+                seen_figures[primary] = True
                 val = _dollar_to_float(primary)
                 if val is None:
                     continue
                 raw_title = f.get('finding_title') or ''
                 label = raw_title[:40] + ('...' if len(raw_title) > 40 else '')
-                chart_data.append((label, val))
+                chart_data.append((label, val, bar_color, bar_type))
 
             if not chart_data:
                 return None
@@ -1344,12 +1395,14 @@ class ReportGeneratorService:
             chart_data.sort(key=lambda x: x[1])
             labels = [d[0] for d in chart_data]
             values = [d[1] for d in chart_data]
+            colors = [d[2] for d in chart_data]
+            types  = [d[3] for d in chart_data]
             max_val = max(values)
 
             n = len(chart_data)
             fig, ax = plt.subplots(figsize=(8, max(3.0, n * 0.6)))
 
-            bars = ax.barh(labels, values, color='#1F3864', height=0.5)
+            bars = ax.barh(labels, values, color=colors, height=0.5)
 
             # Value label at the end of each bar
             for bar, val in zip(bars, values):
@@ -1360,7 +1413,7 @@ class ReportGeneratorService:
                     va='center', ha='left', fontsize=9,
                 )
 
-            ax.set_xlabel('Confirmed Exposure')
+            ax.set_xlabel('Exposure')
             ax.set_xlim(0, max_val * 1.20)      # headroom for value labels
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
@@ -1371,6 +1424,18 @@ class ReportGeneratorService:
             ax.xaxis.set_major_formatter(
                 plt.FuncFormatter(lambda v, _: _fmt(v))
             )
+            ax.set_title('Direct and Derived Economic Exposure', fontsize=11, pad=8)
+
+            # Show legend only when both bar types are present
+            type_set = set(types)
+            if len(type_set) > 1:
+                from matplotlib.patches import Patch
+                legend_elements = []
+                if 'Direct' in type_set:
+                    legend_elements.append(Patch(facecolor=_COLOR_DIRECT,  label='Direct (confirmed)'))
+                if 'Derived' in type_set:
+                    legend_elements.append(Patch(facecolor=_COLOR_DERIVED, label='Derived (calculated)'))
+                ax.legend(handles=legend_elements, loc='lower right', fontsize=8)
 
             plt.tight_layout()
 
@@ -1547,12 +1612,14 @@ class ReportGeneratorService:
 
     def _economic_summary_table(self, doc, findings: list):
         """Section 6 summary table.
-        Columns: Finding | Confirmed Exposure | Annual Drag (Inferred) | Recovery Potential
+        Columns: Finding | Confirmed Exposure | Derived Exposure | Annual Drag (Inferred) | Recovery Potential
 
-        Confirmed Exposure and Annual Drag are parsed from the finding's economic_impact
-        field — every value traces directly to source text. Recovery Potential derives
-        from the finding's priority field. A totals row closes the table using the
-        Consulting Economics finding as the aggregate drag source."""
+        Confirmed = figure explicitly stated in a source document.
+        Derived   = arithmetic result of confirmed inputs; value never stated in any source.
+        Inferred  = estimate with at least one non-document input.
+        Recovery Potential derives from the finding's priority field.
+        A totals row closes the table; a disclaimer footnote clarifies that Confirmed and
+        Derived totals are not additive."""
         rows_with_impact = [
             f for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2))
             if f.get('economic_impact')
@@ -1561,27 +1628,29 @@ class ReportGeneratorService:
             doc.add_paragraph('No economic impact data recorded for this engagement.')
             return
 
-        table = doc.add_table(rows=1, cols=4)
+        table = doc.add_table(rows=1, cols=5)
         table.style = 'Table Grid'
-        for i, h in enumerate(['Finding', 'Confirmed Exposure',
+        for i, h in enumerate(['Finding', 'Confirmed Exposure', 'Derived Exposure',
                                 'Annual Drag (Inferred)', 'Recovery Potential']):
             cell = table.rows[0].cells[i]
             cell.text = h
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [2.0, 1.4, 1.6, 1.5])
+        _set_col_widths(table, [1.7, 1.1, 1.1, 1.4, 1.2])
 
         recovery_map = {'High': 'High', 'Medium': 'Medium', 'Low': 'Low'}
 
         seen_confirmed   = {}   # figure string → first finding_title that used it
-        footnote_markers = {}   # figure string → marker symbol
-        footnotes        = []   # list of (marker, figure, first_title)
-        _markers         = ['*', '**', '†']
+        seen_derived     = {}   # figure string → first finding_title that used it
+        footnote_markers = {}   # figure string → marker symbol (shared pool for both types)
+        footnotes        = []   # list of (marker, figure, first_title, label_type)
+        _markers         = ['*', '**', '†', '††', '‡']
 
         for f in rows_with_impact:
-            confirmed, inferred = _parse_economic_figures(f.get('economic_impact', ''))
+            confirmed, derived, inferred = _parse_economic_figures(f.get('economic_impact', ''))
             primary_confirmed = confirmed.split(', ')[0] if confirmed != '—' else '—'
+            primary_derived   = derived.split(', ')[0]   if derived   != '—' else '—'
             primary_inferred  = inferred.split(', ')[0]  if inferred  != '—' else '—'
 
             # Detect duplicate confirmed figures — same dollar amount in two rows means
@@ -1593,32 +1662,42 @@ class ReportGeneratorService:
                     if primary_confirmed not in footnote_markers:
                         marker = _markers[len(footnote_markers)] if len(footnote_markers) < len(_markers) else '*'
                         footnote_markers[primary_confirmed] = marker
-                        footnotes.append((marker, primary_confirmed, seen_confirmed[primary_confirmed]))
+                        footnotes.append((marker, primary_confirmed, seen_confirmed[primary_confirmed], 'confirmed'))
                     display_confirmed = f"{primary_confirmed} \u2014 shared, see note"
                 else:
                     seen_confirmed[primary_confirmed] = f.get('finding_title', '')
 
+            # Same dedup logic for derived figures
+            display_derived = primary_derived
+            if primary_derived != '—':
+                if primary_derived in seen_derived:
+                    if primary_derived not in footnote_markers:
+                        marker = _markers[len(footnote_markers)] if len(footnote_markers) < len(_markers) else '*'
+                        footnote_markers[primary_derived] = marker
+                        footnotes.append((marker, primary_derived, seen_derived[primary_derived], 'derived'))
+                    display_derived = f"{primary_derived} \u2014 shared, see note"
+                else:
+                    seen_derived[primary_derived] = f.get('finding_title', '')
+
             row = table.add_row()
             row.cells[0].text = f.get('finding_title') or ''
             row.cells[1].text = display_confirmed
-            row.cells[2].text = primary_inferred
-            row.cells[3].text = recovery_map.get(f.get('priority', ''), '—')
+            row.cells[2].text = display_derived
+            row.cells[3].text = primary_inferred
+            row.cells[4].text = recovery_map.get(f.get('priority', ''), '—')
 
         # Totals row
-        # Confirmed floor: sum unique confirmed figures from seen_confirmed.
-        # seen_confirmed holds only first occurrences — duplicates were footnoted above,
-        # so this sum does not double-count any underlying cost.
+        # Confirmed floor: sum unique confirmed figures (excludes concentration/relationship-risk).
+        # Derived floor: same sum logic applied to seen_derived.
+        # These totals are not additive — a footnote below the table makes this explicit.
         total_confirmed = '—'
+        total_derived   = '—'
         total_inferred  = '—'
 
         if seen_confirmed:
             total_val  = 0.0
             parseable  = False
             for fig, fig_title in seen_confirmed.items():
-                # Exclude concentration and relationship-risk findings — these represent
-                # structural exposure (e.g. revenue concentration), not a directly
-                # recoverable cost. Including them inflates the total vs. what intervention
-                # can realistically address.
                 _title_low = (fig_title or '').lower()
                 if 'concentration' in _title_low or 'relationship risk' in _title_low:
                     continue
@@ -1633,6 +1712,24 @@ class ReportGeneratorService:
                     formatted = f'~${int(round(total_val / 1000))}K'
                 total_confirmed = f'{formatted}+ (non-overlapping direct exposures)'
 
+        if seen_derived:
+            total_val  = 0.0
+            parseable  = False
+            for fig, fig_title in seen_derived.items():
+                _title_low = (fig_title or '').lower()
+                if 'concentration' in _title_low or 'relationship risk' in _title_low:
+                    continue
+                val = _dollar_to_float(fig)
+                if val is not None:
+                    total_val += val
+                    parseable  = True
+            if parseable:
+                if total_val >= 1_000_000:
+                    formatted = f'~${total_val / 1_000_000:.1f}M'
+                else:
+                    formatted = f'~${int(round(total_val / 1000))}K'
+                total_derived = f'{formatted}+ (non-overlapping derived exposures)'
+
         # Annual Drag: use aggregate inferred range from Consulting Economics finding if present.
         # If none exists, leave as '—' — do not fabricate an aggregate.
         econ_finding = next(
@@ -1641,9 +1738,9 @@ class ReportGeneratorService:
             None
         )
         if econ_finding:
-            _, inf_str = _parse_economic_figures(econ_finding['economic_impact'])
+            _, _, inf_str = _parse_economic_figures(econ_finding['economic_impact'])
             if inf_str != '—':
-                parts      = [p.strip() for p in inf_str.split(', ')]
+                parts       = [p.strip() for p in inf_str.split(', ')]
                 range_parts = [p for p in parts if '–' in p]
                 drag_range  = range_parts[0] if range_parts else parts[0]
                 total_inferred = f'{drag_range} INFERRED annually'
@@ -1655,18 +1752,29 @@ class ReportGeneratorService:
         if totals_row.cells[0].paragraphs[0].runs:
             totals_row.cells[0].paragraphs[0].runs[0].bold = True
         totals_row.cells[1].text = total_confirmed
-        totals_row.cells[2].text = total_inferred
-        totals_row.cells[3].text = '—'
+        totals_row.cells[2].text = total_derived
+        totals_row.cells[3].text = total_inferred
+        totals_row.cells[4].text = '—'
 
         _left_align_table(table)
 
-        # Footnotes for duplicate confirmed figures — rendered as italic text below the table
-        for marker, figure, first_title in footnotes:
+        # Footnotes for duplicate confirmed/derived figures
+        for marker, figure, first_title, label_type in footnotes:
             fn = doc.add_paragraph(
                 f'{marker} {figure} also appears in "{first_title}" — '
                 f'these represent the same underlying cost, not separate exposures. Do not sum.'
             )
             fn.runs[0].italic = True
+
+        # Additive disclaimer — shown whenever a derived total exists so the reader does not
+        # sum the Confirmed and Derived columns as independent exposures.
+        if total_derived != '—':
+            disclaimer = doc.add_paragraph(
+                'Derived total represents arithmetic results of confirmed inputs; '
+                'not additive with the Confirmed total.'
+            )
+            if disclaimer.runs:
+                disclaimer.runs[0].italic = True
 
     def _future_state_table(self, doc, rows: list):
         """Section 7 future state metrics table.

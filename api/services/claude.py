@@ -62,12 +62,14 @@ ECONOMICS_PROMPT = """You are the Consulting Economics agent in the TOP multi-ag
 
 Analyze the financial economics of this consulting firm and produce these required sections:
 1. Economic Baseline — establish revenue, headcount, and margin baseline.
-   Mark every figure as CONFIRMED (from document evidence) or INFERRED (calculated estimate).
-   Do not present inferred figures as confirmed facts.
+   Mark every figure as CONFIRMED (from document evidence), DERIVED (arithmetic result of
+   confirmed inputs — the computed value was never stated in any source), or INFERRED
+   (calculated estimate with at least one non-confirmed input).
+   Do not present inferred or derived figures as confirmed facts.
 2. Margin Decomposition — break down where margin is being lost
 3. Utilization Analysis — assess billable utilization against industry benchmarks
 4. Economic Impact by Pattern — quantify the cost of each accepted pattern where possible.
-   Use ranges not point estimates. Mark all figures CONFIRMED or INFERRED.
+   Use ranges not point estimates. Mark all figures CONFIRMED, DERIVED, or INFERRED.
 5. ROI Case — build the business case for transformation investment
 6. Interdependency Table — show how economic factors interact
 
@@ -75,7 +77,7 @@ Domains in scope: Sales & Pipeline, Sales-to-Delivery Transition, Delivery Opera
 Resource Management, Project Governance / PMO, Consulting Economics, Customer Experience,
 AI Readiness, Human Resources, Finance and Commercial.
 
-CRITICAL: Every dollar figure must be marked CONFIRMED or INFERRED. The CFO will
+CRITICAL: Every dollar figure must be marked CONFIRMED, DERIVED, or INFERRED. The CFO will
 scrutinize these numbers. Unconfirmed figures presented as facts destroy credibility."""
 
 SKEPTIC_PROMPT = """You are the Skeptic agent in the TOP multi-agent consulting diagnostic system.
@@ -93,6 +95,68 @@ Produce these required sections:
    fits the evidence equally well? The consultant must rule these out.
 5. Overall Confidence Rating — rate the diagnostic 1-10 and explain the rating.
    What single piece of information would most increase confidence?
+6. Contradiction Report — a discrete pass over all signals in the case packet to surface
+   cross-document conflicts, retractions, role discrepancies, and second-hand attributions.
+   This section is separate from plausibility review. Produce it even if you found no issues
+   in sections 1–5.
+
+   FOUR TYPES TO DETECT:
+
+   factual_conflict — two signals from different source documents make conflicting factual
+   claims about the same entity (person, project, date, number, metric, or event).
+   Precedence rules:
+   - Interview vs. interview: flag both; note which is more recent.
+   - Interview vs. document: interview takes precedence UNLESS the conflict involves a
+     contractual term, a dated financial figure from prepared financials, or a formal
+     operational record (SOW or status report authoritative as of its stated date). In
+     those narrow cases, the document governs for the period it covers — flag the conflict
+     for the consultant rather than resolving it silently.
+   - Document vs. document: the more recent document takes precedence for current-state
+     facts; flag both.
+
+   retraction — a signal from a later interview contradicts or walks back a claim from
+   an earlier one (same or different interviewee). The later statement is operative.
+   Preserve both. Note whether the retraction was explicit ("actually, it's closer to...")
+   or implicit (second speaker states a different fact without acknowledging the first).
+
+   role_discrepancy — a named person's title or role differs between two sources.
+   The interviewee's own self-stated title is authoritative regardless of document date
+   or how an interviewer addressed them. If no self-stated title is available, flag both
+   sources and note which document is more recent.
+
+   second_hand_attribution — a signal whose evidence is one interviewee describing what
+   another named person said or did, rather than a direct account. This is not a
+   contradiction but an unconfirmed claim. Flag it so the Synthesizer knows the attribution
+   cannot be treated as confirmed until the named party's own transcript is checked.
+   Indicators: "John told me that...", "I heard from the CEO that...", "Apparently the
+   Director decided to...", any claim about a named third party's intent, statement, or
+   action sourced only from a second party's account.
+
+   FORMAT — produce one entry per detected issue in this exact format:
+
+   [C001]
+   Type: factual_conflict
+   Entity: <the person, project, metric, date, or event being described>
+   Signal A: [S_ID] | Source: <file name> | Claim: "<exact value or quote>"
+   Signal B: [S_ID] | Source: <file name> | Claim: "<exact value or quote>"
+   Operative Fact: <which claim is authoritative and the specific reason — cite the
+     applicable precedence rule. For document-wins cases, name the basis (contractual
+     term / prepared financial figure / formal operational record) and note the conflict
+     must be surfaced to the consultant, not silently resolved.>
+   Findings at Risk: <domain(s) where any finding referencing either signal must be
+     verified before acceptance>
+
+   For second_hand_attribution entries, use this variation:
+   Signal A: [S_ID] | Source: <file name> | Claim: "<what the interviewee reported>"
+   Signal B: [none] | Source: unverified | Claim: "<what was attributed to the named party>"
+   Operative Fact: Unconfirmed — attributed claim cannot be treated as direct evidence
+     until the named party's own account is available.
+
+   If no issues are detected across all four types, output exactly:
+   [NONE DETECTED]
+
+   Do not produce narrative commentary in this section. Every detected issue must use
+   the labeled-field format above. No other format is acceptable.
 
 Domains in scope: Sales & Pipeline, Sales-to-Delivery Transition, Delivery Operations,
 Resource Management, Project Governance / PMO, Consulting Economics, Customer Experience,
@@ -107,12 +171,28 @@ challenge may be silently dropped.
 Required sections:
 1. Response to Skeptic — address each Skeptic challenge by name. State whether you
    incorporate, flag as uncertainty, or rebut with evidence.
+
+   Contradiction Report resolution — required before generating any finding:
+   For each C-code in the Skeptic's Contradiction Report, address it explicitly:
+   - factual_conflict: state which claim you accept as operative and confirm that any
+     finding touching the contradicted signal uses that claim, not the other. For
+     document-wins cases the Skeptic flagged: surface the conflict in the finding itself
+     rather than resolving it silently.
+   - retraction: confirm the later statement is the operative fact used in findings.
+   - role_discrepancy: confirm any finding that names the individual uses the
+     authoritative title (interviewee's self-stated title if available).
+   - second_hand_attribution: confirm that no finding presents the attributed claim as
+     confirmed evidence. Treat it as unverified context only; do not base a finding's
+     confidence on it.
+   If the Contradiction Report shows [NONE DETECTED], acknowledge it in one sentence
+   and continue.
+
 2. Integrated Findings — the consolidated set of findings across all domains.
-   Use CONFIRMED/INFERRED notation on all dollar figures.
+   Use CONFIRMED/DERIVED/INFERRED notation on all dollar figures.
 3. Priority Zero Items — findings that must be addressed before any other work begins.
    These are blockers, not just high priorities.
 4. Unresolved Dependencies — what remains uncertain and how it affects the recommendations.
-5. Economic Summary — total economic impact range with CONFIRMED/INFERRED breakdown.
+5. Economic Summary — total economic impact range with CONFIRMED/DERIVED/INFERRED breakdown.
 
 Domains in scope: Sales & Pipeline, Sales-to-Delivery Transition, Delivery Operations,
 Resource Management, Project Governance / PMO, Consulting Economics, Customer Experience,
@@ -288,13 +368,16 @@ Extract between 5 and 10 findings. Findings must be distinct — do not split on
 
 ECONOMIC IMPACT REQUIREMENT:
 Every economic_impact value must show the reasoning, not just the conclusion. A CFO must be able to follow the logic and argue with the assumptions. Format:
-  "$[figure] ([CONFIRMED or INFERRED]: [calculation] — [source of each input])"
+  "$[figure] ([CONFIRMED, DERIVED, or INFERRED]: [calculation] — [source of each input])"
 
-- CONFIRMED = figure comes directly from a document (financial statement, contract, invoice, etc.)
-- INFERRED = figure is a calculated estimate from interview statements, observed patterns, or industry benchmarks
+- CONFIRMED = figure appears explicitly in a source document (financial statement, contract, invoice, etc.)
+- DERIVED = figure is the arithmetic result of two or more CONFIRMED inputs; the computed value was never stated in any source document. Use this when you multiply or divide confirmed figures to produce a new number (e.g. confirmed bill rate gap × confirmed billable hours → rate leakage dollar amount; confirmed margin % endpoints → EBITDA erosion figure).
+- INFERRED = figure is a calculated estimate where at least one input comes from an interview statement, observed pattern, or industry benchmark rather than a document
 - Calculation: show the multiplication or formula used (e.g. "14 projects × 30% overrun rate × $67K avg value")
 - Source: for each input, state where it came from — "from CEO interview", "from pipeline document", "industry benchmark for mid-size consulting firms"
 - Use ranges not point estimates when inputs are estimated
+
+CLASSIFICATION RULE: If every input to a calculation is CONFIRMED, the result is DERIVED — not CONFIRMED (the result was never stated in a document) and not INFERRED (no estimates were used). If any input is estimated, benchmarked, or sourced only from an interview, the result is INFERRED.
 
 Each item must have exactly these fields:
 - finding_title: string — concise title (e.g. "Chronic Project Overruns")
@@ -305,7 +388,7 @@ Each item must have exactly these fields:
 - root_cause: string — one sentence root cause statement
 - recommendation: string — one sentence actionable recommendation
 - priority: string — derived from these criteria, apply in order, first match wins:
-    - High: finding addresses active margin bleed or financial loss occurring now, OR is a structural blocker that prevents other improvements from working, OR has CONFIRMED economic impact from a document source
+    - High: finding addresses active margin bleed or financial loss occurring now, OR is a structural blocker that prevents other improvements from working, OR has CONFIRMED or DERIVED economic impact (confirmed-input calculation)
     - Medium: finding improves operational performance but does not stop active damage, OR has INFERRED economic impact based on estimates or benchmarks, OR is supported primarily by qualitative evidence without a specific dollar figure
     - Low: finding improves quality, capability, or process maturity with no direct economic impact, or is a longer-horizon improvement that requires Stabilize and Optimize work to be complete first
 - effort: string — exactly "High", "Medium", or "Low" (implementation effort to address this finding)
@@ -479,7 +562,7 @@ JSON SCHEMA — return exactly these keys:
 
 {
   "executive_briefing": {
-    "headline": "<EXACTLY TWO SENTENCES. Sentence 1: structural multi-year trend with key metrics — do not start with a financial metric. Sentence 2: most urgent active risk happening right now. Do not combine into one sentence. Do not use CONFIRMED/INFERRED labels.>",
+    "headline": "<EXACTLY TWO SENTENCES. Sentence 1: structural multi-year trend with key metrics — do not start with a financial metric. Sentence 2: most urgent active risk happening right now. Do not combine into one sentence. Do not use CONFIRMED/DERIVED/INFERRED labels.>",
     "problems": [
       {
         "finding_id": "<exact finding_id from ACCEPTED FINDINGS — e.g. F001>",
@@ -489,14 +572,14 @@ JSON SCHEMA — return exactly these keys:
     ],
     "numbers": [
       {
-        "finding_id": "<exact finding_id the CONFIRMED figure comes from — the figure will be sourced from that finding's economic_impact field, not from this object>",
+        "finding_id": "<exact finding_id the CONFIRMED or DERIVED figure comes from — the figure will be sourced from that finding's economic_impact field, not from this object>",
         "label": "<4 words maximum — plain English label for this number. Bad: 'Economic Impact from F003'. Good: 'Annual delivery overrun cost'.>"
       }
     ]
   },
-  "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/INFERRED labels.>",
-  "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/INFERRED labels. End with exactly the text labeled 'domain_analysis_ref' from the SECTION REFERENCES block.>",
-  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/DERIVED/INFERRED labels.>",
+  "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'domain_analysis_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
   "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly the text labeled 'priority_zero_ref' from the SECTION REFERENCES block.>",
   "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
   "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
@@ -520,7 +603,7 @@ JSON SCHEMA — return exactly these keys:
       "current_state": "<current value or description>",
       "benchmark": "<industry benchmark or stated target>",
       "target": "<target post-roadmap>",
-      "sourced_from": "<CONFIRMED or INFERRED>"
+      "sourced_from": "<CONFIRMED, DERIVED, or INFERRED>"
     }
   ],
   "priority_zero_table_rows": [
@@ -582,7 +665,7 @@ executive_briefing — structured object for the one-page CEO teaser:
       with the business condition the metrics describe.
     Sentence 2: the most urgent active risk right now — something that is happening
       today, not a trend. If a Priority Zero item exists, use it. Make it specific.
-    Do not use CONFIRMED/INFERRED labels. Do not begin either sentence with "The
+    Do not use CONFIRMED/DERIVED/INFERRED labels. Do not begin either sentence with "The
     diagnostic found" or "Our analysis shows."
 
   problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
@@ -613,8 +696,8 @@ executive_briefing — structured object for the one-page CEO teaser:
       Name a figure, percentage, or specific named consequence. Do not generalize.
     Select the 3 most important findings — High priority first.
 
-  numbers: exactly 3 entries (or fewer if fewer than 3 confirmed figures exist).
-    Only CONFIRMED figures may appear here — never INFERRED.
+  numbers: exactly 3 entries (or fewer if fewer than 3 confirmed or derived figures exist).
+    Only CONFIRMED or DERIVED figures may appear here — never INFERRED.
     Order by urgency: (1) most immediate at-risk figure, (2) most structural annual drag,
     (3) most existential risk. The ordering conveys the story — immediate → chronic → fatal.
     finding_id: the finding the confirmed figure comes from. Must be a real finding ID.
@@ -625,8 +708,8 @@ executive_briefing — structured object for the one-page CEO teaser:
 executive_summary_opening — 3-4 sentences:
   The single most important finding this engagement produced. Written for a CEO who reads
   nothing else. Lead with the headline — not background, not context-setting.
-  If the finding has a dollar figure, use it. Do not label it CONFIRMED or INFERRED here —
-  those labels belong in Sections 4, 6, and all tables, not in Executive Summary prose.
+  If the finding has a dollar figure, use it. Do not label it CONFIRMED, DERIVED, or INFERRED
+  here — those labels belong in Sections 4, 6, and all tables, not in Executive Summary prose.
 
 executive_summary_para1 — 2-3 sentences:
   Client hypothesis vs diagnostic reality. What did the client believe was causing the
@@ -636,8 +719,8 @@ executive_summary_para1 — 2-3 sentences:
 
 executive_summary_para2 — 2-3 sentences:
   Economic stakes in plain language. Include 2-3 key figures maximum. Do not use
-  CONFIRMED/INFERRED labels here — those appear in the Economic Impact section. State what
-  is at stake and what inaction costs.
+  CONFIRMED/DERIVED/INFERRED labels here — those appear in the Economic Impact section. State
+  what is at stake and what inaction costs.
   Close the paragraph with exactly the text labeled 'economic_impact_ref' from the SECTION
   REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
 
@@ -668,7 +751,7 @@ root_cause_narrative — 4-5 paragraphs tracing the causal chain across findings
   firm in this situation and why has it persisted? Name structural factors, not individual failures.
 
 economic_impact_narrative — 3-4 sentences.
-  Lead with total exposure range (CONFIRMED + INFERRED labeled separately).
+  Lead with total exposure range (CONFIRMED + DERIVED + INFERRED labeled separately).
   Connect to business stakes: reinvestment capacity, talent retention, competitive position.
   Do not repeat individual finding economic_impact fields verbatim — synthesize them.
 
@@ -769,7 +852,7 @@ next_steps_rows — maximum 10 rows.
 ---
 
 HALLUCINATION PREVENTION — apply to every field:
-1. Every dollar figure carries CONFIRMED or INFERRED exactly as in the source. Never strip these labels.
+1. Every dollar figure carries CONFIRMED, DERIVED, or INFERRED exactly as in the source. Never strip these labels.
 2. Owners must be roles named in the Synthesizer output or engagement context. Never invent roles.
 3. No specific dates — use relative timing only (Month 1, Months 3-6, etc.).
 4. future_state_table_rows: omit any row where current or target cannot be sourced from the data.
@@ -779,9 +862,9 @@ HALLUCINATION PREVENTION — apply to every field:
    Do not invent finding IDs. plain_title must describe the actual finding, not a generic
    business problem. impact_brief must be grounded in the finding's evidence.
 8. executive_briefing.numbers: every finding_id must match an ID in ACCEPTED FINDINGS exactly.
-   Only CONFIRMED figures — never INFERRED. Do not invent figures; the actual dollar amount
-   will be sourced from the finding's economic_impact field at render time — your finding_id
-   is the link, not the figure itself.
+   Only CONFIRMED or DERIVED figures — never INFERRED. Do not invent figures; the actual dollar
+   amount will be sourced from the finding's economic_impact field at render time — your
+   finding_id is the link, not the figure itself.
 
 ---
 
@@ -814,7 +897,7 @@ WRITING RULES:
 1. Write as a senior consultant. Direct, confident, grounded in evidence. Not corporate filler.
 2. Lead with the most important insight. Not with background or context-setting.
 3. Use specific numbers, names, and references from the Synthesizer. Do not generalize where specifics exist.
-4. Every dollar figure carries CONFIRMED or INFERRED notation exactly as in the source.
+4. Every dollar figure carries CONFIRMED, DERIVED, or INFERRED notation exactly as in the source.
 5. Do not repeat the same content across sections. Each section adds something new.
 6. State conclusions where evidence supports them. Use "the evidence suggests" only where
    the Skeptic's challenges remain unresolved.
@@ -831,7 +914,7 @@ Compress the text for brevity. Target 25-30% shorter.
 PRESERVE EXACTLY — do not alter or remove:
 - All dollar figures, percentages, and numeric values
 - All names (firm names, role names, person names)
-- All CONFIRMED and INFERRED labels
+- All CONFIRMED, DERIVED, and INFERRED labels
 - Any text in parentheses beginning with "(see Section"
 - All factual claims — only change how they are expressed, not what they say
 - All specific completion criteria details — do not generalize what done looks like
@@ -849,7 +932,7 @@ Return only the compressed text. No explanation. No markup. No commentary."""
 async def compress_narrative(text: str, section_name: str) -> str:
     """Compress a narrator prose string for brevity (target 25-30% reduction).
 
-    Preserves all figures, names, CONFIRMED/INFERRED labels, and factual claims.
+    Preserves all figures, names, CONFIRMED/DERIVED/INFERRED labels, and factual claims.
     Falls back to the original text if the call fails, returns empty output, or
     produces output longer than the input.
     section_name is used for logging only.
