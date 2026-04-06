@@ -251,12 +251,43 @@ PROMPT_MAP = {
 
 
 def get_file_type(file_name: str) -> str:
-    """Extract file type from filename.
-    Expected format: {engagement_id}_{type}_{description}.txt
-    Returns 'other' if type cannot be determined or is not recognized."""
+    """Determine file type from filename for prompt routing.
+
+    Supports two conventions:
+    - New:    Interview_{role}.txt  → 'interview'
+              Doc_{type}_{desc}.txt → mapped by stem substring
+    - Legacy: {engagement_id}_{type}_{desc}.txt → parts[1] lookup
+
+    Returns one of VALID_FILE_TYPES, defaulting to 'other'.
+    """
     parts = Path(file_name).stem.split('_')
+    prefix = parts[0].lower()
+
+    # New convention — Interview_ prefix
+    if prefix == 'interview':
+        return 'interview'
+
+    # New convention — Doc_ prefix; map remainder to file type
+    if prefix == 'doc' and len(parts) >= 2:
+        remainder = '_'.join(parts[1:]).lower()
+        if 'financial' in remainder:
+            return 'financial'
+        if 'portfolio' in remainder:
+            return 'portfolio'
+        if 'sow' in remainder:
+            return 'sow'
+        if 'status' in remainder:
+            return 'status'
+        if 'resource' in remainder:
+            return 'resource'
+        if 'delivery' in remainder:
+            return 'delivery'
+        return 'other'
+
+    # Legacy convention — {engagement_id}_{type}_{desc}
     if len(parts) >= 2 and parts[1].lower() in VALID_FILE_TYPES:
         return parts[1].lower()
+
     return 'other'
 
 
