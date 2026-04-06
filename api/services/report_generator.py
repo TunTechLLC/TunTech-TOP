@@ -887,8 +887,6 @@ class ReportGeneratorService:
         """One-page standalone briefing shown to the CEO before the full report.
 
         Content sourcing:
-          Headline    — executive_briefing.headline from Narrator; falls back to first
-                        sentence of executive_summary_opening.
           Problems    — executive_briefing.problems from Narrator: plain_title (5 words)
                         and impact_brief (20 words). finding_id validated against DB.
           Numbers     — executive_briefing.numbers from Narrator: label (4 words) and
@@ -911,26 +909,17 @@ class ReportGeneratorService:
 
         doc.add_paragraph()
 
-        # Component A — Headline
-        headline = eb.get('headline', '').strip()
-        if not headline:
-            opening = narrative.get('executive_summary_opening', '')
-            dot = opening.find('. ')
-            headline = (opening[:dot + 1] if dot > 0 else opening).strip()
-        if headline:
-            p = doc.add_paragraph()
-            run = p.add_run(headline)
-            run.bold = True
-            run.font.size = Pt(13)
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-            # Thin horizontal rule separates the opening statement from the three blocks
+        # Executive Snapshot — three sentences, first thing on the page
+        # Skips silently if key absent (backward compat with cached narrator outputs)
+        snapshot = eb.get('executive_snapshot', '')
+        if snapshot:
+            self._add_narrative_paragraphs(doc, snapshot)
             rule = doc.add_paragraph()
             pPr = rule._p.get_or_add_pPr()
             pBdr = OxmlElement('w:pBdr')
             bottom = OxmlElement('w:bottom')
             bottom.set(qn('w:val'), 'single')
-            bottom.set(qn('w:sz'), '6')      # 0.75pt line
+            bottom.set(qn('w:sz'), '6')
             bottom.set(qn('w:space'), '1')
             bottom.set(qn('w:color'), 'auto')
             pBdr.append(bottom)

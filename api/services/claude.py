@@ -594,7 +594,7 @@ JSON SCHEMA — return exactly these keys:
 
 {
   "executive_briefing": {
-    "headline": "<EXACTLY TWO SENTENCES. Sentence 1: structural multi-year trend with key metrics — do not start with a financial metric. Sentence 2: most urgent active risk happening right now. Do not combine into one sentence. Do not use CONFIRMED/DERIVED/INFERRED labels.>",
+    "executive_snapshot": "<EXACTLY THREE SENTENCES. Sentence 1: primary diagnosis in plain language. Sentence 2: most urgent active risk with dollar figure if one is confirmed. Sentence 3: what must happen this week and who owns it. No qualifications. Readable in under 30 seconds.>",
     "problems": [
       {
         "finding_id": "<exact finding_id from ACCEPTED FINDINGS — e.g. F001>",
@@ -689,16 +689,11 @@ executive_briefing — structured object for the one-page CEO teaser:
   This page is shown to a CEO before they decide whether to pay for the full report.
   Every field must be specific to this engagement. Generic language is a failure here.
 
-  headline: EXACTLY TWO SENTENCES. Do not combine them into one sentence with "while",
-    "and", or any other conjunction. Do not write three sentences. Exactly two.
-    Sentence 1: the structural multi-year trend — what has been happening to the firm
-      over time. Include the key metrics that prove it (e.g. headcount growth vs revenue
-      growth, margin decline over years). Do NOT start with a financial metric — start
-      with the business condition the metrics describe.
-    Sentence 2: the most urgent active risk right now — something that is happening
-      today, not a trend. If a Priority Zero item exists, use it. Make it specific.
-    Do not use CONFIRMED/DERIVED/INFERRED labels. Do not begin either sentence with "The
-    diagnostic found" or "Our analysis shows."
+  executive_snapshot: exactly three sentences. The Executive Snapshot opens the Executive
+    Briefing page. It is the first thing a reader sees. Sentence 1: primary diagnosis in
+    plain language. Sentence 2: most urgent active risk with a dollar figure if one is
+    confirmed. Sentence 3: what must happen this week and who owns it. No headers, no
+    sub-bullets, no qualifications. Readable in under 30 seconds.
 
   problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
     finding_id: must be an ID that appears in the ACCEPTED FINDINGS list — e.g. F001.
