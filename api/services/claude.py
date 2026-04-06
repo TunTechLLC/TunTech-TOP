@@ -207,6 +207,20 @@ Required sections:
 
 2. Integrated Findings — the consolidated set of findings across all domains.
    Use CONFIRMED/DERIVED/INFERRED notation on all dollar figures.
+   Customer Experience standalone rule: If the case packet contains signals from a
+   Customer Experience domain (NPS data, client satisfaction scores, client escalations,
+   PM responsiveness scores, or survey response data), Customer Experience must be
+   generated as a standalone integrated finding. It may not be dissolved into Delivery
+   Operations, Project Governance, or any other domain finding even when the causal chain
+   connects them. Cross-reference to the relevant delivery or governance findings is
+   appropriate; consolidation is not.
+   Confirmed notation rule: When writing economic impact for a finding, the
+   CONFIRMED-labeled figure must be a dollar amount or omitted entirely — never a rate
+   ($/hr), a percentage, or a target figure. If the only confirmed fact for a finding is
+   a rate or percentage — for example, a $10/hr bill rate gap or a 5.4% margin variance —
+   do not apply the CONFIRMED label. Instead, compute the dollar impact, label it DERIVED,
+   and show the calculation inline. Do not apply CONFIRMED to rate card values, bill rate
+   targets, or gap percentages under any circumstance.
 3. Priority Zero Items — findings that must be addressed before any other work begins.
    These are blockers, not just high priorities.
 4. Unresolved Dependencies — what remains uncertain and how it affects the recommendations.
