@@ -5,6 +5,34 @@
 
 ## After Checkpoint 4
 
+### Domain Maturity Scoring
+**Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
+no maturity score. Clients respond to scorecards in a way they don't respond to tables.
+
+**Design:**
+- Compute a 1–5 maturity score per domain at report generation time from existing data:
+  - Pattern count (more patterns = more problems = lower score)
+  - Average pattern confidence (High-confidence patterns weight more heavily)
+  - Finding severity (High-priority findings pull score down)
+- Domains with zero signals AND zero patterns show "No data" — a score of 5 would be
+  misleading since it could mean genuinely healthy or simply unexamined
+- Show as a scorecard table in Section 3 alongside the existing signal count table
+- No new database columns — computed entirely at report time
+- Future value: as TOP accumulates data across engagements, scoring becomes benchmarked
+
+**Scoring formula (starting point — refine after first use):**
+- Base score: 5
+- Subtract 0.5 per accepted High-confidence pattern in the domain
+- Subtract 0.25 per accepted Medium-confidence pattern
+- Subtract 0.5 per High-priority finding in the domain
+- Floor at 1; show "No data" if zero signals and zero patterns
+
+**File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
+
+**Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
+
+---
+
 ### DEFAULT_DOMAIN Constant — Centralize Hardcoded Domain Fallback
 
 **Problem:** The string `'Delivery Operations'` is hardcoded as a fallback default in 3 backend
@@ -55,7 +83,7 @@ Left-to-right flow showing how upstream failures produce downstream consequences
 call out which items the client can act on immediately. Executives leave the presentation
 wanting something concrete to do next week — the report should give them that explicitly.
 
-**Note:** Section 8.1 (Priority Zero Actions) and Section 9 (Immediate Next Steps) now
+**Note:** Section Priority Zero Actions and Section Immediate Next Steps now
 address the most urgent items from the Synthesizer output. Quick Wins as defined here —
 a filtered table of priority=High AND effort=Low roadmap items — is still distinct and
 worth adding, but is lower priority than before given the new sections.
@@ -110,34 +138,6 @@ pattern. Knowledge should too. Also, existing knowledge promotions have no Edit 
 - `PATCH /{engagement_id}/knowledge/{knowledge_id}` (if not already present)
 
 **Commit message:** Knowledge panel — suggest-review-load + edit/delete on existing promotions
-
----
-
-### Domain Maturity Scoring
-**Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
-no maturity score. Clients respond to scorecards in a way they don't respond to tables.
-
-**Design:**
-- Compute a 1–5 maturity score per domain at report generation time from existing data:
-  - Pattern count (more patterns = more problems = lower score)
-  - Average pattern confidence (High-confidence patterns weight more heavily)
-  - Finding severity (High-priority findings pull score down)
-- Domains with zero signals AND zero patterns show "No data" — a score of 5 would be
-  misleading since it could mean genuinely healthy or simply unexamined
-- Show as a scorecard table in Section 3 alongside the existing signal count table
-- No new database columns — computed entirely at report time
-- Future value: as TOP accumulates data across engagements, scoring becomes benchmarked
-
-**Scoring formula (starting point — refine after first use):**
-- Base score: 5
-- Subtract 0.5 per accepted High-confidence pattern in the domain
-- Subtract 0.25 per accepted Medium-confidence pattern
-- Subtract 0.5 per High-priority finding in the domain
-- Floor at 1; show "No data" if zero signals and zero patterns
-
-**File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
-
-**Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
 
 ---
 
