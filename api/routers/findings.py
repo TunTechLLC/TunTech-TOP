@@ -126,8 +126,9 @@ def create_finding(
 
     # Compute evidence_summary unless already provided (Parse Findings flow passes it through)
     if not payload.get('evidence_summary'):
-        all_patterns = pattern_repo.get_for_engagement(engagement_id)
-        accepted_patterns = [p for p in all_patterns if p.get('accepted') == 1]
+        # Use all loaded patterns — accepted=1 is set atomically when findings are created,
+        # so at first finding creation time accepted_patterns would otherwise be empty.
+        accepted_patterns = pattern_repo.get_for_engagement(engagement_id)
 
         domain_summary_rows = signal_repo.get_domain_summary(engagement_id)
         domain_signal_counts: dict = {}
@@ -195,8 +196,9 @@ async def parse_synthesizer_findings(
                    f"the full output was not saved. Re-run and accept the Synthesizer agent."
         )
 
-    all_patterns      = pattern_repo.get_for_engagement(engagement_id)
-    accepted_patterns = [p for p in all_patterns if p.get('accepted') == 1]
+    # Use all loaded patterns — accepted=1 is set atomically when findings are created,
+    # so at parse time (before any findings exist) accepted_patterns would otherwise be empty.
+    accepted_patterns = pattern_repo.get_for_engagement(engagement_id)
 
     # Build signals_by_domain for key quote selection
     all_signals = signal_repo.get_for_engagement(engagement_id)

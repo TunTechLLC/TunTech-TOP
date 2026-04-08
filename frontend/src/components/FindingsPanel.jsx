@@ -61,7 +61,9 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading findings...</div>
   if (error)   return <div className="p-6 text-red-600 text-sm">Error: {error}</div>
 
-  const acceptedPatterns    = patterns.filter(p => p.accepted === 1)
+  // Show all loaded patterns in checklists — accepted=1 is set atomically when findings
+  // are created, so filtering to accepted=1 would show nothing before the first finding exists.
+  const acceptedPatterns    = patterns
   const synthesizerAccepted = agentRuns.some(r => r.agent_name === 'Synthesizer' && r.accepted === 1)
   const synthApprovedCount  = Object.values(synthApproved).filter(Boolean).length
 
