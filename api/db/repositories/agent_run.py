@@ -2,6 +2,7 @@ import logging
 from datetime import date
 from .base import BaseRepository
 from api.utils.ids import next_agent_run_id
+from config import MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ class AgentRunRepository(BaseRepository):
             run_id,
             data['engagement_id'],
             data['agent_name'],
-            data.get('model_used', 'claude-sonnet-4-6'),
+            data.get('model_used', MODEL),
             today,
             data.get('output_summary', ''),
             data.get('output_full', ''),

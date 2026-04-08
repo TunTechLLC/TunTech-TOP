@@ -8,7 +8,10 @@
       "Bash(git commit:*)",
       "Bash(find:*)",
       "Bash(pip install:*)",
-      "Bash(pytest tests/ -v)"
+      "Bash(pytest tests/ -v)",
+      "Bash(git push:*)",
+      "Bash(grep:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.agent_run import AgentRunRepository
 from api.models.agent import AgentRunResponse, AgentRegistryEntry
+from config import MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ async def run_agent(
         'agent_name':     agent_name,
         'output_full':    output,
         'output_summary': summary,
-        'model_used':     'claude-sonnet-4-6',
+        'model_used':     MODEL,
     })
 
     logger.info(f"Agent {agent_name} run complete. run_id: {run_id}")

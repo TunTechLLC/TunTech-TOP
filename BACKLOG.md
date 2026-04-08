@@ -5,6 +5,38 @@
 
 ## After Checkpoint 4
 
+### DEFAULT_DOMAIN Constant — Centralize Hardcoded Domain Fallback
+
+**Problem:** The string `'Delivery Operations'` is hardcoded as a fallback default in 3 backend
+files and 4 frontend components. If the default ever changes it must be updated in 7 places.
+
+**Backend — add to `api/utils/domains.py`:**
+```python
+DEFAULT_DOMAIN = 'Delivery Operations'
+```
+Replace hardcoded strings in:
+- `api/services/document_processor.py` — invalid domain fallback in `process_file()`
+- `api/routers/findings.py` — invalid domain fallback in parse-synthesizer
+- `api/routers/roadmap.py` — invalid domain fallback in parse-synthesizer
+
+**Frontend — add to `src/constants.js`:**
+```javascript
+export const DEFAULT_DOMAIN = 'Delivery Operations'
+```
+Replace hardcoded strings in:
+- `SignalPanel.jsx` — `EMPTY_FORM` default + inline candidate card fallback
+- `FindingsPanel.jsx` — `EMPTY_FORM` default + inline candidate card fallback
+- `RoadmapPanel.jsx` — `EMPTY_FORM` default + two inline candidate card fallbacks
+
+**Also flag:** Domain lists are hardcoded in all extraction prompts in `document_processor.py`
+and `claude.py` instead of being injected from `VALID_DOMAINS`. This is the same violation
+at a larger scale — domain added to `domains.py` without updating prompt strings would be
+silently ignored by Claude. Consider dynamic prompt injection in the same session.
+
+**Commit message:** Centralize DEFAULT_DOMAIN constant — remove hardcoded domain fallbacks
+
+---
+
 ### Visual 3 — Causal Chain Diagram
 Left-to-right flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. Generated as SVG.
 
