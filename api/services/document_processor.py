@@ -13,6 +13,7 @@ from api.services.claude import extract_text
 logger = logging.getLogger(__name__)
 
 VALID_FILE_TYPES = {'interview', 'financial', 'portfolio', 'sow', 'status', 'resource', 'delivery', 'other'}
+SUPPORTED_EXTENSIONS = {'.txt', '.docx', '.xlsx', '.pdf', '.pptx'}
 
 FINANCIAL_EXTRACTION_PROMPT = """You are analyzing a financial document from a consulting firm diagnostic engagement.
 
@@ -297,6 +298,137 @@ def hash_file(file_path: str) -> str:
         return hashlib.md5(f.read()).hexdigest()
 
 
+def extract_text_from_file(file_path: str, file_name: str) -> str:
+    """Extract plain UTF-8 text from a file.
+
+    Supported formats: .txt, .docx, .xlsx, .pdf, .pptx
+    Raises ValueError if the format is unsupported, the file yields no
+    extractable text, or a required library is not installed.
+    Never returns empty string — empty text passed to Claude produces
+    hallucinated signals."""
+    suffix = Path(file_name).suffix.lower()
+
+    if suffix == '.txt':
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        if not content.strip():
+            raise ValueError(f"{file_name}: file is empty")
+        return content
+
+    if suffix == '.docx':
+        try:
+            from docx import Document
+            from docx.oxml.ns import qn
+            from docx.text.paragraph import Paragraph
+            from docx.table import Table as DocxTable
+        except ImportError:
+            logger.warning("python-docx not installed — cannot process .docx files")
+            raise ValueError(f"{file_name}: python-docx not installed")
+
+        doc = Document(file_path)
+        parts = []
+        # Iterate body children in document order so paragraphs and tables
+        # are interleaved correctly (doc.paragraphs and doc.tables are separate
+        # lists that lose interleaving order).
+        for child in doc.element.body.iterchildren():
+            if child.tag == qn('w:p'):
+                text = Paragraph(child, doc).text.strip()
+                if text:
+                    parts.append(text)
+            elif child.tag == qn('w:tbl'):
+                for row in DocxTable(child, doc).rows:
+                    cells = [cell.text.strip() for cell in row.cells]
+                    row_text = '\t'.join(c for c in cells if c)
+                    if row_text:
+                        parts.append(row_text)
+        if not parts:
+            raise ValueError(f"{file_name}: no extractable text found in Word document")
+        return '\n'.join(parts)
+
+    if suffix == '.xlsx':
+        try:
+            import openpyxl
+        except ImportError:
+            logger.warning("openpyxl not installed — cannot process .xlsx files")
+            raise ValueError(f"{file_name}: openpyxl not installed")
+
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        parts = []
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            parts.append(f"[Sheet: {sheet_name}]")
+            for row in ws.iter_rows(values_only=True):
+                cells = [str(c) if c is not None else '' for c in row]
+                if any(c.strip() for c in cells):
+                    parts.append('\t'.join(cells))
+        wb.close()
+        # Check that something beyond sheet headers was extracted
+        if not any(p.strip() and not p.startswith('[Sheet:') for p in parts):
+            raise ValueError(f"{file_name}: no extractable data found in Excel workbook")
+        return '\n'.join(parts)
+
+    if suffix == '.pdf':
+        try:
+            import pdfplumber
+        except ImportError:
+            logger.warning("pdfplumber not installed — cannot process .pdf files")
+            raise ValueError(f"{file_name}: pdfplumber not installed")
+
+        parts = []
+        with pdfplumber.open(file_path) as pdf:
+            for i, page in enumerate(pdf.pages, start=1):
+                text = page.extract_text()
+                if not text or not text.strip():
+                    logger.debug(
+                        f"{file_name}: page {i} yielded no text "
+                        "(possibly scanned image) — skipped"
+                    )
+                    continue
+                parts.append(text.strip())
+        if not parts:
+            raise ValueError(
+                f"{file_name}: no extractable text found — PDF may be scanned or "
+                "image-only. Convert to a text-searchable PDF or provide a .txt transcript."
+            )
+        return '\n\n'.join(parts)
+
+    if suffix == '.pptx':
+        try:
+            from pptx import Presentation
+        except ImportError:
+            logger.warning("python-pptx not installed — cannot process .pptx files")
+            raise ValueError(f"{file_name}: python-pptx not installed")
+
+        prs = Presentation(file_path)
+        parts = []
+        for i, slide in enumerate(prs.slides, start=1):
+            slide_parts = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for para in shape.text_frame.paragraphs:
+                        text = para.text.strip()
+                        if text:
+                            slide_parts.append(text)
+            if slide.has_notes_slide:
+                try:
+                    notes_text = slide.notes_slide.notes_text_frame.text.strip()
+                    if notes_text:
+                        slide_parts.append(f"[Notes: {notes_text}]")
+                except (IndexError, AttributeError):
+                    pass
+            if slide_parts:
+                parts.append(f"[Slide {i}]")
+                parts.extend(slide_parts)
+        if not parts:
+            raise ValueError(f"{file_name}: no extractable text found in PowerPoint file")
+        return '\n'.join(parts)
+
+    raise ValueError(
+        f"{file_name}: unsupported file format '{suffix}'. "
+        f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+    )
+
+
 def strip_json_fences(text: str) -> str:
     """Remove markdown code fences from Claude response.
     Handles ```json, ```, and no-fence cases.
@@ -323,7 +455,7 @@ def scan_folder(folder_path: str, engagement_id: str) -> list[dict]:
     candidates = []
 
     for file_name in sorted(os.listdir(folder_path)):
-        if not file_name.endswith('.txt'):
+        if Path(file_name).suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
         file_path = os.path.join(folder_path, file_name)
@@ -359,8 +491,7 @@ async def process_file(file_info: dict, engagement_id: str,
     file_path = file_info['path']
     file_name = file_info['name']
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    content = extract_text_from_file(file_path, file_name)
 
     logger.info(f"Processing {file_type} file: {file_name} ({len(content)} chars)")
 
@@ -591,10 +722,11 @@ def archive_candidate_files(engagement_id: str, candidates_folder: str,
     if merged_file and os.path.exists(merged_file):
         files_to_archive.append(merged_file)
 
-    # Individual per-file candidate JSONs for this engagement
+    # Individual per-file candidate JSONs — candidates_folder is per-engagement,
+    # so all *_candidates.json files here (excluding the merged file) belong to
+    # this engagement regardless of naming convention.
     for entry in os.scandir(candidates_folder):
         if (entry.is_file()
-                and entry.name.startswith(engagement_id + '_')
                 and entry.name.endswith('_candidates.json')
                 and entry.path != merged_file):
             files_to_archive.append(entry.path)
