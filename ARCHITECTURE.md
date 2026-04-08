@@ -95,7 +95,6 @@ Never open a SQLite connection outside this layer.
 |------|---------------|
 | `domains.py` | Single source of truth for all enumerated values (domains, confidences, priorities, phases, etc.). Import here — never hardcode. |
 | `ids.py` | ID generation via MAX+1 logic. One function per entity type. |
-| `formatting.py` | CLI formatting helpers (legacy; not used by the API). |
 
 ### `config.py`
 Single source of truth for environment-backed configuration. Every path and
