@@ -22,7 +22,7 @@ GET_FOR_ENGAGEMENT = """
     FROM   EngagementPatterns ep
     JOIN   Patterns p ON ep.pattern_id = p.pattern_id
     WHERE  ep.engagement_id = ?
-    ORDER  BY ep.confidence DESC, ep.pattern_id
+    ORDER  BY ep.pattern_id
 """
 
 GET_LIBRARY = """
