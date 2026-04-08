@@ -113,6 +113,11 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       setParseError('Select at least one finding to load.')
       return
     }
+    const missingPatterns = approvedList.filter(f => !f.contributing_ep_ids || f.contributing_ep_ids.length === 0)
+    if (missingPatterns.length > 0) {
+      setParseError(`${missingPatterns.length} selected finding(s) have no contributing patterns. Select at least one pattern for each approved finding.`)
+      return
+    }
     setLoadingFindings(true)
     setParseError(null)
     try {
@@ -417,6 +422,31 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                       </div>
                     )}
 
+                    {/* Evidence summary */}
+                    {c.evidence_summary && (
+                      <p className="text-xs text-gray-500 italic">{c.evidence_summary}</p>
+                    )}
+
+                    {/* Key quotes */}
+                    {c.key_quotes && (() => {
+                      try {
+                        const quotes = JSON.parse(c.key_quotes)
+                        if (quotes.length === 0) return null
+                        return (
+                          <div>
+                            <div className="text-xs font-medium text-gray-600 mb-1">Key quotes</div>
+                            <ul className="space-y-1">
+                              {quotes.map((q, qi) => (
+                                <li key={qi} className="text-xs text-gray-600 border-l-2 border-gray-300 pl-2 italic">
+                                  "{q}"
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )
+                      } catch { return null }
+                    })()}
+
                   </div>
                 </div>
               </div>
@@ -655,6 +685,29 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                       <p className="text-xs text-gray-700 leading-relaxed">{f.recommendation}</p>
                     </div>
                   )}
+                  {f.evidence_summary && (
+                    <p className="text-xs text-gray-500 italic">{f.evidence_summary}</p>
+                  )}
+                  {f.key_quotes && (() => {
+                    try {
+                      const quotes = JSON.parse(f.key_quotes)
+                      if (quotes.length === 0) return null
+                      return (
+                        <div>
+                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                            Key Quotes
+                          </div>
+                          <ul className="space-y-1">
+                            {quotes.map((q, qi) => (
+                              <li key={qi} className="text-xs text-gray-600 border-l-2 border-gray-300 pl-2 italic">
+                                "{q}"
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )
+                    } catch { return null }
+                  })()}
                 </div>
               )}
             </div>

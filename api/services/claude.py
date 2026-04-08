@@ -430,6 +430,7 @@ Each item must have exactly these fields:
   7 = Future State, 8 = Transformation Roadmap, 9 = What Happens Next.
   Most findings belong in section 4 or 5.
 - suggested_pattern_ids: list of strings — pattern IDs from the ACCEPTED PATTERNS list that directly support this finding (e.g. ["P12", "P15"]). Only include IDs that appear in the accepted patterns list provided. Do not invent pattern IDs.
+- key_quotes: list of 2–3 strings — verbatim quotes selected from the DOMAIN SIGNALS provided for this finding's domain. Each quote must appear word-for-word in the signal notes provided. Do not paraphrase, summarise, or fabricate quotes. If fewer than 2 quotes are available for the domain, include what exists. If no signal notes are provided for the domain, return an empty list.
 
 CRITICAL OUTPUT FORMAT:
 Your response must begin with the character [ and end with the character ]
@@ -450,28 +451,52 @@ Return format:
     "priority": "Medium",
     "effort": "Medium",
     "opd_section": 4,
-    "suggested_pattern_ids": ["P12", "P15"]
+    "suggested_pattern_ids": ["P12", "P15"],
+    "key_quotes": [
+      "We sign the SOW and then tell delivery what we sold them — by then it's too late to push back.",
+      "I've never once seen a delivery lead in the room during a proposal."
+    ]
   }
 ]"""
 
 
 async def extract_findings_from_synthesizer(synthesizer_output: str,
-                                            accepted_patterns: list) -> str:
+                                            accepted_patterns: list,
+                                            signals_by_domain: dict | None = None) -> str:
     """Extract structured findings from an accepted Synthesizer output.
+    signals_by_domain: {domain: [notes strings]} — used for key quote selection.
     Returns raw JSON string — fence stripping handled inside this function."""
     pattern_lines = [
-        f"- {p['pattern_id']}: {p['pattern_name']} ({p['domain']})"
+        f"- {p['pattern_id']}: {p['pattern_name']} ({p['domain']}, confidence: {p.get('confidence', 'Unknown')})"
         for p in accepted_patterns
     ]
     pattern_summary = "\n".join(pattern_lines) if pattern_lines else "(none)"
+
+    # Build domain signals block for key quote selection
+    if signals_by_domain:
+        domain_blocks = []
+        for domain, notes_list in signals_by_domain.items():
+            if notes_list:
+                notes_text = "\n".join(f"  - {n}" for n in notes_list)
+                domain_blocks.append(f"{domain}:\n{notes_text}")
+        signals_section = (
+            "---\n\n"
+            "DOMAIN SIGNALS (select key_quotes verbatim from these notes only):\n\n"
+            + "\n\n".join(domain_blocks)
+        ) if domain_blocks else ""
+    else:
+        signals_section = ""
+
     user_message = (
         f"SYNTHESIZER OUTPUT:\n\n{synthesizer_output}\n\n"
         f"---\n\n"
-        f"ACCEPTED PATTERNS (use only these IDs in suggested_pattern_ids):\n\n{pattern_summary}"
+        f"ACCEPTED PATTERNS (use only these IDs in suggested_pattern_ids):\n\n{pattern_summary}\n\n"
+        + (signals_section if signals_section else "")
     )
     logger.info(
         f"Extracting findings from synthesizer — {len(synthesizer_output)} chars, "
-        f"{len(accepted_patterns)} accepted patterns"
+        f"{len(accepted_patterns)} accepted patterns, "
+        f"{sum(len(v) for v in (signals_by_domain or {}).values())} signal notes"
     )
     message = await async_client.messages.create(
         model=MODEL,
@@ -515,6 +540,8 @@ Each item must have exactly these fields:
 - estimated_impact: string — one sentence on what this initiative achieves when complete (e.g. "Eliminates below-cost deals from pipeline before SOW signature")
 - rationale: string — one sentence citing the specific finding or Synthesizer evidence that drives this initiative
 - owner: string — the role responsible for driving this initiative to completion (see owner rules below)
+- capability: string — one sentence describing what the organisation will be able to do once this initiative is complete, stated as an organisational capability (e.g. "The ability to consistently scope and price engagements before delivery begins, such that every project enters delivery with a signed SOW and agreed success criteria.")
+- addressing_finding_ids: list of strings — the finding_ids from ACCEPTED FINDINGS that this initiative directly addresses. Use the exact finding_id values (e.g. ["F001", "F003"]). If no accepted findings are provided or none are relevant, return an empty list [].
 
 OWNER RULES — apply these strictly:
 Only assign owners from roles explicitly named in the Synthesizer output or engagement context.
@@ -568,7 +595,9 @@ Return format:
     "effort": "Low",
     "estimated_impact": "Removes organizational veto on delivery improvements and enables all subsequent delivery-dependent initiatives",
     "rationale": "Two prior improvement initiatives were blocked by the CEO bypass dynamic; all delivery fixes depend on this structural change",
-    "owner": "CEO"
+    "owner": "CEO",
+    "capability": "The ability to make and enforce delivery decisions without CEO override, such that process changes implemented in Optimize and Scale phases are not reversed at the project level.",
+    "addressing_finding_ids": ["F002", "F005"]
   }
 ]"""
 
@@ -805,8 +834,13 @@ domain_analysis — one entry per domain that has findings.
 
 roadmap_rationale — one entry per phase that has items.
   Stabilize: why these items are sequenced first — what active damage stops, what gets unblocked.
+    Include 1–2 sentences on the economic stakes of this phase if any Stabilize items have
+    "Addresses economic impact" data in the ROADMAP ITEMS input — synthesize the exposure being
+    stopped or protected, using CONFIRMED/DERIVED/INFERRED notation. Omit if no economic data.
   Optimize: what foundation Stabilize created, what becomes possible now.
+    Include 1–2 sentences on economic stakes if relevant Optimize items have economic linkage data.
   Scale: what the payoff looks like — what the firm can do when Scale work is complete.
+    Include 1–2 sentences on economic stakes if relevant Scale items have economic linkage data.
 
 future_state_table_rows — metrics table for Section 7.
   Only include rows where both current_state and target can be sourced from the Synthesizer
@@ -1067,15 +1101,19 @@ async def generate_report_narrative(
             findings_lines.append(f"  Recommendation: {f['recommendation']}")
         findings_lines.append("")
 
-    # --- Assemble roadmap summary — include item_id, effort, and owner so the
-    #     narrator can key initiative_details by item_id and use confirmed owners ---
+    # --- Build findings lookup for economic linkage resolution ---
+    findings_by_id = {f.get('finding_id'): f for f in findings if f.get('finding_id')}
+
+    # --- Assemble roadmap summary — include item_id, effort, owner, capability,
+    #     and resolved economic linkage so the narrator can synthesize economic
+    #     stakes per phase and key initiative_details by item_id ---
     roadmap_lines = ["ROADMAP ITEMS BY PHASE:\n"]
     for phase in ['Stabilize', 'Optimize', 'Scale']:
         items = [r for r in roadmap if r.get('phase') == phase]
         if items:
             roadmap_lines.append(f"{phase}:")
             for item in items:
-                roadmap_lines.append(
+                line = (
                     f"  - [{item.get('item_id', '')}] {item.get('initiative_name', '')} | "
                     f"Domain: {item.get('domain', '')} | "
                     f"Priority: {item.get('priority', '')} | "
@@ -1083,6 +1121,23 @@ async def generate_report_narrative(
                     f"Owner: {item.get('owner') or 'TBD'} | "
                     f"Est. Impact: {item.get('estimated_impact', '')}"
                 )
+                if item.get('capability'):
+                    line += f" | Capability: {item['capability']}"
+                # Resolve addressing_finding_ids to economic_impact strings
+                raw_ids = item.get('addressing_finding_ids') or '[]'
+                try:
+                    import json as _json
+                    fids = _json.loads(raw_ids)
+                except Exception:
+                    fids = []
+                econ_parts = [
+                    findings_by_id[fid]['economic_impact']
+                    for fid in fids
+                    if fid in findings_by_id and findings_by_id[fid].get('economic_impact')
+                ]
+                if econ_parts:
+                    line += f" | Addresses economic impact: {'; '.join(econ_parts)}"
+                roadmap_lines.append(line)
             roadmap_lines.append("")
 
     # --- Assemble engagement context ---
@@ -1194,13 +1249,16 @@ async def extract_roadmap_from_synthesizer(
     """Extract structured roadmap candidates from an accepted Synthesizer output.
     Findings are provided as context so initiative names align with the diagnostic.
     Returns raw JSON string — fence stripping and array extraction handled inside."""
-    findings_lines = ["ACCEPTED FINDINGS (for context — use to inform initiative naming and phase assignment):\n"]
+    findings_lines = [
+        "ACCEPTED FINDINGS (use finding_ids exactly as shown for addressing_finding_ids):\n"
+    ]
     for f in findings:
         findings_lines.append(
             f"- [{f.get('finding_id', '')}] {f['finding_title']} | "
             f"Domain: {f.get('domain', '')} | "
             f"Priority: {f.get('priority', '')} | "
-            f"Root Cause: {f.get('root_cause', '')}"
+            f"Root Cause: {f.get('root_cause', '')} | "
+            f"Economic Impact: {f.get('economic_impact', '')}"
         )
 
     user_message = (

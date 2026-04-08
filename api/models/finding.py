@@ -4,18 +4,20 @@ from typing import Optional
 
 class FindingCreate(BaseModel):
     """Fields required to create a new OPD finding."""
-    finding_title:      str
-    domain:             str
-    confidence:         str
-    operational_impact: str
-    economic_impact:    str
-    root_cause:         str
-    recommendation:     str
-    priority:           Optional[str] = "Medium"
-    effort:             Optional[str] = "Medium"
-    opd_section:        Optional[int] = None
-    pattern_id:         Optional[str] = None
+    finding_title:       str
+    domain:              str
+    confidence:          str
+    operational_impact:  str
+    economic_impact:     str
+    root_cause:          str
+    recommendation:      str
+    priority:            Optional[str] = "Medium"
+    effort:              Optional[str] = "Medium"
+    opd_section:         Optional[int] = None
+    pattern_id:          Optional[str] = None
     contributing_ep_ids: list[str] = []
+    evidence_summary:    Optional[str] = None
+    key_quotes:          Optional[str] = None   # JSON array of quote strings
 
 
 class FindingUpdate(BaseModel):
@@ -30,6 +32,8 @@ class FindingUpdate(BaseModel):
     priority:           Optional[str] = None
     effort:             Optional[str] = None
     opd_section:        Optional[int] = None
+    evidence_summary:   Optional[str] = None
+    key_quotes:         Optional[str] = None
 
 
 class FindingResponse(BaseModel):
@@ -48,4 +52,6 @@ class FindingResponse(BaseModel):
     effort:             Optional[str] = None
     opd_section:        Optional[int] = None
     created_date:       str
+    evidence_summary:   Optional[str] = None
+    key_quotes:         Optional[str] = None
     pattern_name:       Optional[str] = None

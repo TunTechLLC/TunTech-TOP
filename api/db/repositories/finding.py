@@ -21,6 +21,8 @@ GET_ALL = """
            f.effort,
            f.opd_section,
            f.created_date,
+           f.evidence_summary,
+           f.key_quotes,
            p.pattern_name
     FROM   OPDFindings f
     LEFT JOIN Patterns p ON f.pattern_id = p.pattern_id
@@ -34,8 +36,9 @@ INSERT_FINDING = """
         finding_title, domain, confidence,
         operational_impact, economic_impact,
         root_cause, recommendation,
-        priority, effort, opd_section, created_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        priority, effort, opd_section, created_date,
+        evidence_summary, key_quotes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 ACCEPT_PATTERN = """
@@ -46,16 +49,18 @@ ACCEPT_PATTERN = """
 
 UPDATE_FINDING = """
     UPDATE OPDFindings
-    SET    finding_title     = COALESCE(?, finding_title),
-           domain            = COALESCE(?, domain),
-           confidence        = COALESCE(?, confidence),
+    SET    finding_title      = COALESCE(?, finding_title),
+           domain             = COALESCE(?, domain),
+           confidence         = COALESCE(?, confidence),
            operational_impact = COALESCE(?, operational_impact),
-           economic_impact   = COALESCE(?, economic_impact),
-           root_cause        = COALESCE(?, root_cause),
-           recommendation    = COALESCE(?, recommendation),
-           priority          = COALESCE(?, priority),
-           effort            = COALESCE(?, effort),
-           opd_section       = COALESCE(?, opd_section)
+           economic_impact    = COALESCE(?, economic_impact),
+           root_cause         = COALESCE(?, root_cause),
+           recommendation     = COALESCE(?, recommendation),
+           priority           = COALESCE(?, priority),
+           effort             = COALESCE(?, effort),
+           opd_section        = COALESCE(?, opd_section),
+           evidence_summary   = COALESCE(?, evidence_summary),
+           key_quotes         = COALESCE(?, key_quotes)
     WHERE  finding_id = ?
 """
 
@@ -107,7 +112,9 @@ class FindingRepository(BaseRepository):
                 data.get('priority', 'Medium'),
                 data.get('effort', 'Medium'),
                 data.get('opd_section'),
-                today
+                today,
+                data.get('evidence_summary'),
+                data.get('key_quotes'),
             ))
         ]
 
@@ -133,5 +140,7 @@ class FindingRepository(BaseRepository):
             data.get('priority'),
             data.get('effort'),
             data.get('opd_section'),
+            data.get('evidence_summary'),
+            data.get('key_quotes'),
             finding_id
         ))

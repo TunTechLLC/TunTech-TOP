@@ -73,6 +73,9 @@ async def parse_synthesizer_roadmap(
             detail="Claude returned invalid JSON — try again"
         )
 
+    # Build set of valid finding IDs for addressing_finding_ids validation
+    valid_finding_ids = {f['finding_id'] for f in findings if f.get('finding_id')}
+
     cleaned = []
     for item in candidates:
         if item.get('domain') not in VALID_DOMAINS:
@@ -83,6 +86,15 @@ async def parse_synthesizer_roadmap(
             item['priority'] = 'Medium'
         if item.get('effort') not in VALID_EFFORTS:
             item['effort'] = 'Medium'
+        if not isinstance(item.get('capability'), str):
+            item['capability'] = ''
+        # Validate addressing_finding_ids — keep only IDs that exist in this engagement
+        raw_fids = item.get('addressing_finding_ids')
+        if isinstance(raw_fids, list):
+            valid_fids = [fid for fid in raw_fids if fid in valid_finding_ids]
+            item['addressing_finding_ids'] = json_lib.dumps(valid_fids)
+        else:
+            item['addressing_finding_ids'] = json_lib.dumps([])
         cleaned.append(item)
 
     logger.info(f"parse-synthesizer roadmap: {len(cleaned)} candidates for {engagement_id}")

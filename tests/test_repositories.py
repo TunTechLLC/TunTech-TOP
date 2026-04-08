@@ -85,7 +85,9 @@ def test_db(monkeypatch, tmp_path):
             priority TEXT,
             effort TEXT,
             opd_section INTEGER,
-            created_date TEXT NOT NULL
+            created_date TEXT NOT NULL,
+            evidence_summary TEXT,
+            key_quotes TEXT
         );
         CREATE TABLE IF NOT EXISTS RoadmapItems (
             item_id TEXT PRIMARY KEY,
@@ -100,7 +102,10 @@ def test_db(monkeypatch, tmp_path):
             owner TEXT,
             target_date TEXT,
             status TEXT,
-            created_date TEXT NOT NULL
+            created_date TEXT NOT NULL,
+            capability TEXT,
+            addressing_finding_ids TEXT,
+            depends_on TEXT
         );
         CREATE TABLE IF NOT EXISTS KnowledgePromotions (
             promotion_id TEXT PRIMARY KEY,

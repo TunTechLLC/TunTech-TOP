@@ -20,6 +20,9 @@ GET_ALL = """
            r.target_date,
            r.status,
            r.created_date,
+           r.capability,
+           r.addressing_finding_ids,
+           r.depends_on,
            f.finding_title
     FROM   RoadmapItems r
     LEFT JOIN OPDFindings f ON r.finding_id = f.finding_id
@@ -40,7 +43,10 @@ GET_BY_PHASE = """
            r.owner,
            r.target_date,
            r.status,
-           r.created_date
+           r.created_date,
+           r.capability,
+           r.addressing_finding_ids,
+           r.depends_on
     FROM   RoadmapItems r
     WHERE  r.engagement_id = ?
     AND    r.phase = ?
@@ -52,22 +58,26 @@ INSERT_ROADMAP_ITEM = """
         item_id, engagement_id, finding_id,
         initiative_name, domain, phase,
         priority, effort, estimated_impact,
-        owner, target_date, status, created_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        owner, target_date, status, created_date,
+        capability, addressing_finding_ids, depends_on
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 UPDATE_ROADMAP_ITEM = """
     UPDATE RoadmapItems
-    SET    initiative_name  = ?,
-           domain           = ?,
-           phase            = ?,
-           priority         = ?,
-           effort           = ?,
-           estimated_impact = ?,
-           owner            = ?,
-           target_date      = ?,
-           status           = ?,
-           finding_id       = ?
+    SET    initiative_name        = ?,
+           domain                 = ?,
+           phase                  = ?,
+           priority               = ?,
+           effort                 = ?,
+           estimated_impact       = ?,
+           owner                  = ?,
+           target_date            = ?,
+           status                 = ?,
+           finding_id             = ?,
+           capability             = ?,
+           addressing_finding_ids = ?,
+           depends_on             = ?
     WHERE  item_id = ?
     AND    engagement_id = ?
 """
@@ -104,7 +114,9 @@ class RoadmapRepository(BaseRepository):
         Expected keys in data:
             initiative_name, domain, phase, priority, effort,
             estimated_impact, finding_id (optional),
-            owner (optional), target_date (optional)
+            owner (optional), target_date (optional),
+            capability (optional), addressing_finding_ids (optional),
+            depends_on (optional)
         """
         item_id = next_roadmap_id()
         today   = date.today().isoformat()
@@ -124,7 +136,10 @@ class RoadmapRepository(BaseRepository):
             data.get('owner', ''),
             data.get('target_date'),
             data.get('status', 'Not Started'),
-            today
+            today,
+            data.get('capability'),
+            data.get('addressing_finding_ids'),
+            data.get('depends_on'),
         ))
 
         return item_id
@@ -143,6 +158,9 @@ class RoadmapRepository(BaseRepository):
             data.get('target_date'),
             data.get('status', 'Proposed'),
             data.get('finding_id') or None,
+            data.get('capability'),
+            data.get('addressing_finding_ids'),
+            data.get('depends_on'),
             item_id,
             engagement_id,
         ))

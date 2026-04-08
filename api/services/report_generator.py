@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import logging
 import tempfile
 from collections import defaultdict
@@ -751,7 +752,7 @@ class ReportGeneratorService:
                     if rationale:
                         self._add_narrative_paragraphs(doc, rationale)
                         doc.add_paragraph()
-                    self._roadmap_phase_table(doc, items, findings_by_id, initiative_details)
+                    self._roadmap_phase_table(doc, items, findings_by_id, initiative_details, roadmap_by_id)
                     doc.add_paragraph()
         else:
             doc.add_paragraph('No roadmap items recorded.')
@@ -1310,6 +1311,31 @@ class ReportGeneratorService:
                     ('Root Cause',         f.get('root_cause') or ''),
                     ('Recommendation',     f.get('recommendation') or ''),
                 ])
+
+                # Evidence summary — italic gray line below the table
+                evidence = f.get('evidence_summary') or ''
+                if evidence:
+                    ev_para     = doc.add_paragraph()
+                    ev_run      = ev_para.add_run(evidence)
+                    ev_run.italic         = True
+                    ev_run.font.size      = Pt(9)
+                    ev_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+                # Key quotes — block-quoted verbatim excerpts
+                raw_quotes = f.get('key_quotes') or ''
+                if raw_quotes:
+                    try:
+                        quotes = json.loads(raw_quotes)
+                    except (json.JSONDecodeError, TypeError):
+                        quotes = []
+                    for quote in quotes:
+                        if not quote:
+                            continue
+                        q_para     = doc.add_paragraph(style='Quote')
+                        q_run      = q_para.add_run(f'"{quote}"')
+                        q_run.italic    = True
+                        q_run.font.size = Pt(9)
+
                 doc.add_paragraph()
 
             if closing:
@@ -1840,11 +1866,16 @@ class ReportGeneratorService:
         _left_align_table(table)
 
     def _roadmap_phase_table(self, doc, items: list, findings_by_id: dict,
-                              initiative_details: dict):
+                              initiative_details: dict, roadmap_by_id: dict | None = None):
         """Sections 8.3/8.4/8.5 phase tables.
         Columns: Initiative | Priority | Effort | Owner | Timeline | Success Metric
-        Economic Impact column omitted — roadmap-to-finding linkage not yet built.
-        Add back when addressing_finding_ids is implemented in Roadmap Enhancements."""
+
+        Initiative cell is multi-line:
+          - Bold initiative name
+          - Capability (italic, 9pt) if present
+          - Economic impact from linked findings (blue, 9pt) if addressing_finding_ids set
+          - Prerequisites (gray, 9pt) if depends_on set
+        """
         table = doc.add_table(rows=1, cols=6)
         table.style = 'Table Grid'
         headers = ['Initiative', 'Priority', 'Effort', 'Owner', 'Timeline', 'Success Metric']
@@ -1854,14 +1885,58 @@ class ReportGeneratorService:
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [1.8, 0.6, 0.6, 0.9, 0.9, 1.7])
+        _set_col_widths(table, [2.2, 0.6, 0.6, 0.9, 0.8, 1.4])
 
         for item in items:
             item_id = item.get('item_id', '')
             details = initiative_details.get(item_id, {})
 
             row = table.add_row()
-            row.cells[0].text = item.get('initiative_name') or ''
+
+            # Initiative cell — multi-line
+            init_cell = row.cells[0]
+            # Clear default empty paragraph, add bold name
+            init_cell.paragraphs[0].clear()
+            name_run = init_cell.paragraphs[0].add_run(item.get('initiative_name') or '')
+            name_run.bold = True
+            name_run.font.size = Pt(9)
+
+            # Capability line
+            capability = item.get('capability') or ''
+            if capability:
+                cap_para = init_cell.add_paragraph()
+                cap_run  = cap_para.add_run(f'Capability: {capability}')
+                cap_run.italic    = True
+                cap_run.font.size = Pt(8)
+                cap_run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+
+            # Economic linkage — resolve addressing_finding_ids to economic_impact strings
+            raw_fids = item.get('addressing_finding_ids') or '[]'
+            try:
+                fids = json.loads(raw_fids)
+            except (json.JSONDecodeError, TypeError):
+                fids = []
+            for fid in fids:
+                f = findings_by_id.get(fid)
+                if f and f.get('economic_impact'):
+                    econ_para = init_cell.add_paragraph()
+                    econ_run  = econ_para.add_run(f'Addresses: {f["economic_impact"]}')
+                    econ_run.font.size = Pt(8)
+                    econ_run.font.color.rgb = RGBColor(0x1F, 0x49, 0x8C)
+
+            # Prerequisites — resolve depends_on item_ids to names
+            raw_deps = item.get('depends_on') or '[]'
+            try:
+                dep_ids = json.loads(raw_deps)
+            except (json.JSONDecodeError, TypeError):
+                dep_ids = []
+            if dep_ids and roadmap_by_id:
+                dep_names = [roadmap_by_id.get(did, did) for did in dep_ids]
+                dep_para = init_cell.add_paragraph()
+                dep_run  = dep_para.add_run(f'Prerequisites: {", ".join(dep_names)}')
+                dep_run.font.size = Pt(8)
+                dep_run.font.color.rgb = RGBColor(0x77, 0x77, 0x77)
+
             row.cells[1].text = item.get('priority') or ''
             row.cells[2].text = item.get('effort') or ''
             row.cells[3].text = item.get('owner') or ''

@@ -17,16 +17,19 @@ const priorityColors = {
 }
 
 const EMPTY_FORM = {
-  initiative_name:  '',
-  domain:           'Delivery Operations',
-  phase:            'Stabilize',
-  priority:         'High',
-  effort:           'Medium',
-  estimated_impact: '',
-  finding_id:       '',
-  owner:            '',
-  target_date:      '',
-  status:           'Proposed',
+  initiative_name:        '',
+  domain:                 'Delivery Operations',
+  phase:                  'Stabilize',
+  priority:               'High',
+  effort:                 'Medium',
+  estimated_impact:       '',
+  finding_id:             '',
+  owner:                  '',
+  target_date:            '',
+  status:                 'Proposed',
+  capability:             '',
+  addressing_finding_ids: '[]',
+  depends_on:             '[]',
 }
 
 export default function RoadmapPanel({ engagementId, onRefresh }) {
@@ -95,16 +98,19 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
   const handleEditOpen = (item) => {
     setEditingId(item.item_id)
     setEditForm({
-      initiative_name:  item.initiative_name  || '',
-      domain:           item.domain           || 'Delivery Operations',
-      phase:            item.phase            || 'Stabilize',
-      priority:         item.priority         || 'High',
-      effort:           item.effort           || 'Medium',
-      estimated_impact: item.estimated_impact || '',
-      finding_id:       item.finding_id       || '',
-      owner:            item.owner            || '',
-      target_date:      item.target_date      || '',
-      status:           item.status           || 'Proposed',
+      initiative_name:        item.initiative_name        || '',
+      domain:                 item.domain                 || 'Delivery Operations',
+      phase:                  item.phase                  || 'Stabilize',
+      priority:               item.priority               || 'High',
+      effort:                 item.effort                 || 'Medium',
+      estimated_impact:       item.estimated_impact       || '',
+      finding_id:             item.finding_id             || '',
+      owner:                  item.owner                  || '',
+      target_date:            item.target_date            || '',
+      status:                 item.status                 || 'Proposed',
+      capability:             item.capability             || '',
+      addressing_finding_ids: item.addressing_finding_ids || '[]',
+      depends_on:             item.depends_on             || '[]',
     })
     setEditError(null)
   }
@@ -179,13 +185,15 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
     try {
       for (const item of approvedList) {
         await api.roadmap.create(engagementId, {
-          initiative_name:  item.initiative_name,
-          domain:           item.domain,
-          phase:            item.phase,
-          priority:         item.priority,
-          effort:           item.effort,
-          estimated_impact: item.estimated_impact || '',
-          owner:            item.owner || '',
+          initiative_name:        item.initiative_name,
+          domain:                 item.domain,
+          phase:                  item.phase,
+          priority:               item.priority,
+          effort:                 item.effort,
+          estimated_impact:       item.estimated_impact || '',
+          owner:                  item.owner || '',
+          capability:             item.capability || '',
+          addressing_finding_ids: item.addressing_finding_ids || '[]',
         })
       }
       setRoadmapCandidates([])
@@ -376,6 +384,34 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
                             />
                           </div>
 
+                          {/* Capability */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Capability</div>
+                            <input
+                              value={c.capability || ''}
+                              onChange={e => handleCandidateChange(idx, 'capability', e.target.value)}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                              placeholder="What the organisation will be able to do once this is complete"
+                            />
+                          </div>
+
+                          {/* Addressing findings — read only */}
+                          {(() => {
+                            try {
+                              const fids = JSON.parse(c.addressing_finding_ids || '[]')
+                              if (fids.length === 0) return null
+                              const titles = fids.map(fid => {
+                                const f = findings.find(f => f.finding_id === fid)
+                                return f ? `[${fid}] ${f.finding_title}` : fid
+                              })
+                              return (
+                                <div className="text-xs text-blue-600 border-l-2 border-blue-200 pl-2">
+                                  Addresses: {titles.join(', ')}
+                                </div>
+                              )
+                            } catch { return null }
+                          })()}
+
                           {/* Rationale — read only */}
                           {c.rationale && (
                             <div className="text-xs text-gray-400 italic border-l-2 border-gray-200 pl-2">
@@ -498,6 +534,49 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
               />
             </div>
 
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Capability</label>
+              <textarea
+                name="capability"
+                value={form.capability}
+                onChange={handleChange}
+                className={inp}
+                rows={2}
+                placeholder="What the organisation will be able to do once this initiative is complete"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Depends on
+                <span className="text-gray-400 font-normal ml-1">— select prerequisites</span>
+              </label>
+              {items.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No existing roadmap items to depend on.</p>
+              ) : (
+                <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                  {items.map(i => {
+                    const deps = (() => { try { return JSON.parse(form.depends_on || '[]') } catch { return [] } })()
+                    return (
+                      <label key={i.item_id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={deps.includes(i.item_id)}
+                          onChange={() => {
+                            const cur = (() => { try { return JSON.parse(form.depends_on || '[]') } catch { return [] } })()
+                            const next = cur.includes(i.item_id) ? cur.filter(id => id !== i.item_id) : [...cur, i.item_id]
+                            setForm(prev => ({ ...prev, depends_on: JSON.stringify(next) }))
+                          }}
+                          className="shrink-0"
+                        />
+                        <span className="text-xs text-gray-700">{i.phase} — {i.initiative_name}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
 
           <div className="flex justify-end gap-2 mt-2">
@@ -600,6 +679,40 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
                             <label className="block text-xs font-medium text-gray-700 mb-1">Estimated impact</label>
                             <input name="estimated_impact" value={editForm.estimated_impact} onChange={handleEditChange} className={inp} />
                           </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Capability</label>
+                            <textarea name="capability" value={editForm.capability || ''} onChange={handleEditChange} className={inp} rows={2} placeholder="What the organisation will be able to do once this initiative is complete" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Depends on
+                              <span className="text-gray-400 font-normal ml-1">— select prerequisites</span>
+                            </label>
+                            {items.filter(i => i.item_id !== item.item_id).length === 0 ? (
+                              <p className="text-xs text-gray-400 italic">No other roadmap items to depend on.</p>
+                            ) : (
+                              <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                                {items.filter(i => i.item_id !== item.item_id).map(i => {
+                                  const deps = (() => { try { return JSON.parse(editForm.depends_on || '[]') } catch { return [] } })()
+                                  return (
+                                    <label key={i.item_id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                      <input
+                                        type="checkbox"
+                                        checked={deps.includes(i.item_id)}
+                                        onChange={() => {
+                                          const cur = (() => { try { return JSON.parse(editForm.depends_on || '[]') } catch { return [] } })()
+                                          const next = cur.includes(i.item_id) ? cur.filter(id => id !== i.item_id) : [...cur, i.item_id]
+                                          setEditForm(prev => ({ ...prev, depends_on: JSON.stringify(next) }))
+                                        }}
+                                        className="shrink-0"
+                                      />
+                                      <span className="text-xs text-gray-700">{i.phase} — {i.initiative_name}</span>
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex justify-end gap-2">
                           <button
@@ -629,12 +742,47 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
                               <span className="text-xs text-gray-400">{item.domain}</span>
                             </div>
                             <p className="font-medium text-gray-900 text-sm">{item.initiative_name}</p>
+                            {item.capability && (
+                              <p className="text-xs text-gray-600 italic mt-1">Capability: {item.capability}</p>
+                            )}
                             {item.estimated_impact && (
                               <p className="text-xs text-gray-500 mt-1">{item.estimated_impact}</p>
                             )}
                             {item.finding_title && (
                               <p className="text-xs text-blue-600 mt-1">Finding: {item.finding_title}</p>
                             )}
+                            {(() => {
+                              try {
+                                const fids = JSON.parse(item.addressing_finding_ids || '[]')
+                                if (fids.length === 0) return null
+                                const linked = fids.map(fid => findings.find(f => f.finding_id === fid)).filter(Boolean)
+                                if (linked.length === 0) return null
+                                return (
+                                  <div className="mt-1 space-y-0.5">
+                                    {linked.map(f => (
+                                      <p key={f.finding_id} className="text-xs text-blue-500">
+                                        Addresses [{f.finding_id}]: {f.economic_impact || f.finding_title}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )
+                              } catch { return null }
+                            })()}
+                            {(() => {
+                              try {
+                                const deps = JSON.parse(item.depends_on || '[]')
+                                if (deps.length === 0) return null
+                                const names = deps.map(id => {
+                                  const d = items.find(i => i.item_id === id)
+                                  return d ? d.initiative_name : id
+                                })
+                                return (
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    Prerequisites: {names.join(', ')}
+                                  </p>
+                                )
+                              } catch { return null }
+                            })()}
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <div className="text-right text-xs text-gray-400 whitespace-nowrap">
