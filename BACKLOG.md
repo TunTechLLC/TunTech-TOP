@@ -3,6 +3,49 @@
 
 ---
 
+## Technical Debt — Address Before Next Major Feature
+
+### Split report_generator.py into orchestrator and section renderers
+
+**Priority: High — do before any further Visual Generator Layer work**
+
+`report_generator.py` now handles cover page, executive briefing, all report sections (1–9), economic tables, three visual embeds, and structured display field logic. Two visuals are already embedded, a third is pending. The file is becoming a maintenance liability — Sessions 1–3 alone added ~130 lines to it.
+
+**Split into:**
+- `report_generator.py` — orchestrator only; manages document assembly, calls section renderers in order, owns `generate_report()`
+- `report_sections.py` — individual section renderers; one function per section; all `_build_*`, `_economic_*`, `_key_findings_*`, `_risk_table`, `_dependency_table`, `_findings_by_domain`, visual embed functions
+
+**Constraints:**
+- No behavior changes — pure structural refactor
+- All existing tests must pass before and after
+- Do this before adding causal chain diagram or any other visual work
+
+**Commit message:** Refactor — split report_generator.py into orchestrator and section renderers
+
+---
+
+### Claude API timeout
+
+Add `timeout` parameter to `AsyncAnthropic` client initialization in `api/services/claude.py`. Use 120 seconds base timeout. Currently a hung Anthropic API call hangs the request indefinitely with no feedback to the frontend.
+
+**One line change.** Do in the next available session.
+
+**Commit message:** Set 120s timeout on AsyncAnthropic client
+
+---
+
+### Schema migrations table
+
+Create a `schema_migrations` table in TOP.db with columns `(version TEXT, applied_at TEXT)`. Backfill one row per existing migration with the date applied (approximate is fine). Add a rule to CLAUDE.md: every future `ALTER TABLE` must have a corresponding entry inserted into `schema_migrations`.
+
+**Why:** Multiple `ALTER TABLE` migrations have been applied manually with no record of which have been applied to a given DB. Rebuilding or moving the DB currently requires reconstructing migration history from git.
+
+**Do in the same session as Claude API timeout.**
+
+**Commit message:** Add schema_migrations table — backfill existing migrations, document rule in CLAUDE.md
+
+---
+
 ## After Checkpoint 4
 
 ### Domain Maturity Scoring
@@ -65,14 +108,20 @@ silently ignored by Claude. Consider dynamic prompt injection in the same sessio
 
 ---
 
-### Visual 3 — Causal Chain Diagram
-Left-to-right flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. Generated as SVG.
+### Visual Generator Layer — Status
 
-**Narrator addition required:** New `causal_chain` JSON field listing finding-to-finding relationships for diagram node construction.
+| Visual | Description | Status |
+|--------|-------------|--------|
+| Visual 1 — Economic Breakdown Chart | Horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before economic summary table. matplotlib (Agg backend), temp PNG deleted after embed. | ✅ Complete |
+| Visual 2 — Roadmap Timeline | Gantt-style horizontal bar chart at start of Section 8. Phase zone shading, bars colored by phase, sourced from narrator initiative_details. | ✅ Complete |
+| Visual 3 — Causal Chain Diagram | Left-to-right SVG flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. | Not built — pending |
 
-**Implementation:** Generated as a temporary SVG, embedded via python-docx add_picture(), then deleted. If generation fails, report generates without the visual and logs a warning.
+**Build Visual 3 after:** `report_generator.py` split (see Technical Debt section below). Do not add another visual to the existing monolithic file.
 
-**Build after:** Visual 1 and Visual 2 are complete. This is next in the visual layer sequence.
+**Visual 3 design:**
+- New `causal_chain` JSON field in narrator output — finding-to-finding relationships for diagram node construction
+- Generated as a temporary SVG, embedded via python-docx add_picture(), then deleted
+- If generation fails, report generates without the visual and logs a warning
 
 **Commit message:** Visual 3 — causal chain diagram in Section 5
 
