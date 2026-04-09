@@ -18,6 +18,10 @@ class FindingCreate(BaseModel):
     contributing_ep_ids: list[str] = []
     evidence_summary:    Optional[str] = None
     key_quotes:          Optional[str] = None   # JSON array of quote strings
+    display_figure:      Optional[str] = None
+    display_label:       Optional[str] = None
+    figure_type:         Optional[str] = None
+    include_in_executive: Optional[int] = 0
 
 
 class FindingUpdate(BaseModel):
@@ -34,6 +38,10 @@ class FindingUpdate(BaseModel):
     opd_section:        Optional[int] = None
     evidence_summary:   Optional[str] = None
     key_quotes:         Optional[str] = None
+    display_figure:     Optional[str] = None
+    display_label:      Optional[str] = None
+    figure_type:        Optional[str] = None
+    include_in_executive: Optional[int] = None
 
 
 class FindingResponse(BaseModel):
@@ -54,4 +62,8 @@ class FindingResponse(BaseModel):
     created_date:       str
     evidence_summary:   Optional[str] = None
     key_quotes:         Optional[str] = None
+    display_figure:     Optional[str] = None
+    display_label:      Optional[str] = None
+    figure_type:        Optional[str] = None
+    include_in_executive: Optional[int] = 0
     pattern_name:       Optional[str] = None

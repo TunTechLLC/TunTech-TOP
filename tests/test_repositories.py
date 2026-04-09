@@ -19,7 +19,8 @@ def test_db(monkeypatch, tmp_path):
             firm_size INTEGER,
             service_model TEXT,
             notes TEXT,
-            created_date TEXT NOT NULL
+            created_date TEXT NOT NULL,
+            confirmed_revenue REAL
         );
         CREATE TABLE IF NOT EXISTS Engagements (
             engagement_id TEXT PRIMARY KEY,
@@ -87,7 +88,11 @@ def test_db(monkeypatch, tmp_path):
             opd_section INTEGER,
             created_date TEXT NOT NULL,
             evidence_summary TEXT,
-            key_quotes TEXT
+            key_quotes TEXT,
+            display_figure TEXT,
+            display_label TEXT,
+            figure_type TEXT,
+            include_in_executive INTEGER DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS RoadmapItems (
             item_id TEXT PRIMARY KEY,

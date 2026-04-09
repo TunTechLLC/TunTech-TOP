@@ -35,6 +35,7 @@ GET_BY_ID = """
            c.firm_name,
            c.firm_size,
            c.service_model,
+           c.confirmed_revenue,
            COUNT(DISTINCT s.signal_id)   AS signal_count,
            COUNT(DISTINCT ep.ep_id)      AS pattern_count,
            COUNT(DISTINCT f.finding_id)  AS finding_count,
@@ -57,8 +58,8 @@ GET_BY_ID = """
 INSERT_CLIENT = """
     INSERT INTO Clients (
         client_id, firm_name, firm_size,
-        service_model, notes, created_date
-    ) VALUES (?, ?, ?, ?, ?, ?)
+        service_model, notes, created_date, confirmed_revenue
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
 """
 
 INSERT_ENGAGEMENT = """
@@ -105,7 +106,8 @@ class EngagementRepository(BaseRepository):
                 data['firm_size'],
                 data['service_model'],
                 data.get('client_notes', ''),
-                today
+                today,
+                data.get('confirmed_revenue'),
             )),
             (INSERT_ENGAGEMENT, (
                 engagement_id,

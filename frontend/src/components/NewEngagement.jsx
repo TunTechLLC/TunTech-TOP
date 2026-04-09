@@ -10,7 +10,7 @@ const SERVICE_MODELS = [
   'Technology Services',
 ]
 
-function Field({ label, name, value, onChange, required, multiline, placeholder }) {
+function Field({ label, name, value, onChange, required, multiline, placeholder, type }) {
   const base = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
   return (
     <div>
@@ -28,7 +28,7 @@ function Field({ label, name, value, onChange, required, multiline, placeholder 
         />
       ) : (
         <input
-          type="text"
+          type={type || "text"}
           name={name}
           value={value}
           onChange={onChange}
@@ -49,6 +49,7 @@ export default function NewEngagement() {
     firm_name:         '',
     firm_size:         '',
     service_model:     SERVICE_MODELS[0],
+    confirmed_revenue: '',
     stated_problem:    '',
     client_hypothesis: '',
     previously_tried:  '',
@@ -72,6 +73,7 @@ export default function NewEngagement() {
       const engagement = await api.engagements.create({
         ...form,
         firm_size: parseInt(form.firm_size, 10),
+        confirmed_revenue: form.confirmed_revenue !== '' ? parseFloat(form.confirmed_revenue) : null,
       })
       navigate(`/engagements/${engagement.engagement_id}`)
     } catch (err) {
@@ -128,6 +130,10 @@ export default function NewEngagement() {
             </select>
           </div>
         </div>
+
+        <Field label="Confirmed annual revenue ($)" name="confirmed_revenue"
+          value={form.confirmed_revenue} onChange={handleChange} type="number"
+          placeholder="e.g. 12000000" />
 
         <Field label="Client notes" name="client_notes" value={form.client_notes}
           onChange={handleChange} multiline

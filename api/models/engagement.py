@@ -12,6 +12,7 @@ class EngagementCreate(BaseModel):
     previously_tried:  Optional[str] = None
     client_notes:      Optional[str] = None
     consultant_notes:  Optional[str] = None
+    confirmed_revenue: Optional[float] = None
 
 
 class EngagementSettingsUpdate(BaseModel):
@@ -45,3 +46,4 @@ class EngagementResponse(BaseModel):
     reports_folder:    Optional[str] = None
     start_date:        Optional[str] = None
     created_date:      Optional[str] = None
+    confirmed_revenue: Optional[float] = None
