@@ -379,6 +379,29 @@ def _dollar_to_float(s: str) -> float | None:
         return None
 
 
+def _parse_display_figure_to_float(display_figure: str | None) -> float | None:
+    """Parse a display_figure string to float for sorting and summing.
+
+    Handles: '$526K', '~$1.1M', '\u26a0 $12M', '$35K\u2013$55K',
+             '$186K \u2014 shared, see note'.
+
+    Rules:
+    - Strip leading warning prefix ('\u26a0 ')
+    - Strip trailing note after em-dash separator (shared figure labels)
+    - Range lower bound and K/M suffix handling delegated to _dollar_to_float
+    - Returns None if parsing fails or input is None/empty. Never raises.
+    """
+    if not display_figure:
+        return None
+    s = display_figure.strip()
+    if s.startswith('\u26a0 '):
+        s = s[2:].strip()
+    m = re.search(r'\s*\u2014', s)
+    if m:
+        s = s[:m.start()].strip()
+    return _dollar_to_float(s)
+
+
 def _parse_economic_figures(text: str):
     """Parse an economic_impact string into (confirmed, derived, inferred) figure strings.
 
@@ -691,23 +714,35 @@ class ReportGeneratorService:
         margin_trend = narrative.get('margin_trend_brief', '')
         if margin_trend:
             kf_rows.append(('Margin Trend', margin_trend))
-        # Revenue at Risk — sourced from Sales-to-Delivery Transition or Sales & Pipeline
-        # confirmed figure; avoids summing across domains (which produces an unverifiable total).
+        # Revenue at Risk — sourced from structured display fields.
+        # Preference order: direct_exposure findings (summed if multiple), then largest
+        # of any include_in_executive finding, then placeholder.
+        _exec_with_fig = [
+            f for f in findings
+            if f.get('include_in_executive') and f.get('display_figure')
+        ]
+        _direct = [f for f in _exec_with_fig if f.get('figure_type') == 'direct_exposure']
+        _rar_label = 'Revenue at Risk'
         revenue_at_risk = None
-        for _domain in ('Sales-to-Delivery Transition', 'Sales & Pipeline'):
-            _rev_f = next(
-                (f for f in findings
-                 if f.get('domain') == _domain and f.get('economic_impact')),
-                None
+        if len(_direct) == 1:
+            revenue_at_risk = _direct[0]['display_figure']
+        elif len(_direct) > 1:
+            _total = sum(
+                v for v in (_parse_display_figure_to_float(f['display_figure']) for f in _direct)
+                if v is not None
             )
-            if _rev_f:
-                _conf, _deriv, _ = _parse_economic_figures(_rev_f.get('economic_impact', ''))
-                _primary = _conf if _conf != '—' else _deriv
-                if _primary != '—':
-                    revenue_at_risk = _primary.split(', ')[0]
-                    break
-        if revenue_at_risk:
-            kf_rows.append(('Revenue at Risk', revenue_at_risk))
+            if _total > 0:
+                _fmt = (f'~${_total / 1_000_000:.1f}M' if _total >= 1_000_000
+                        else f'~${int(round(_total / 1000))}K')
+                revenue_at_risk = f'{_fmt}+'
+        elif _exec_with_fig:
+            _best = max(_exec_with_fig,
+                        key=lambda f: _parse_display_figure_to_float(f['display_figure']) or 0)
+            revenue_at_risk = _best['display_figure']
+            _rar_label = 'Most urgent active exposure'
+        else:
+            revenue_at_risk = '[Set in FindingsPanel]'
+        kf_rows.append((_rar_label, revenue_at_risk))
         high_findings   = [f for f in findings if f.get('priority') == 'High']
         primary_finding = high_findings[0] if high_findings else (findings[0] if findings else None)
         if primary_finding and primary_finding.get('root_cause'):
@@ -1103,52 +1138,43 @@ class ReportGeneratorService:
             _left_align_table(tbl)
 
         # Component C — Three Numbers That Matter
-        # Narrator supplies label + finding_id (ordered by urgency: immediate → structural → existential).
-        # Dollar figure sourced from DB — CONFIRMED or DERIVED. INFERRED entries are skipped.
-        # DERIVED figures include a "Calculated from:" disclosure extracted from the economic_impact
-        # parenthetical so the reader knows the figure is computed, not stated.
-        raw_numbers = eb.get('numbers', [])
-        number_rows = []
-        for item in (raw_numbers[:3] if isinstance(raw_numbers, list) else []):
-            if not isinstance(item, dict):
-                continue
-            fid   = item.get('finding_id', '')
-            label = item.get('label', '').strip()
-            if not label:
-                continue
-            if fid not in findings_by_id:
-                logger.warning(
-                    f"Executive briefing: number finding_id {fid!r} not in findings — skipping"
-                )
-                continue
-            econ_text = findings_by_id[fid].get('economic_impact', '')
-            conf_str, deriv_str, _ = _parse_economic_figures(econ_text)
-            is_derived = False
-            if conf_str != '—':
-                primary = conf_str.split(', ')[0]
-            elif deriv_str != '—':
-                primary = deriv_str.split(', ')[0]
-                is_derived = True
-            else:
-                logger.warning(
-                    f"Executive briefing: finding {fid} has no CONFIRMED or DERIVED figure — skipping"
-                )
-                continue
-            number_rows.append((label, primary))
+        # Sourced from structured display fields — findings with include_in_executive = 1,
+        # display_figure and display_label both set. Sorted by figure value descending.
+        exec_findings = [
+            f for f in findings
+            if f.get('include_in_executive')
+            and f.get('display_figure')
+            and f.get('display_label')
+        ]
+        exec_findings.sort(
+            key=lambda f: (_parse_display_figure_to_float(f['display_figure']) or -1),
+            reverse=True,
+        )
+        number_rows = [
+            (f['display_label'], f['display_figure'])
+            for f in exec_findings[:3]
+        ]
 
+        self._briefing_block_header(doc, 'Three Numbers That Matter')
         if number_rows:
-            self._briefing_block_header(doc, 'Three Numbers That Matter')
             tbl = doc.add_table(rows=0, cols=2)
             tbl.style = 'Table Grid'
             for label, amount in number_rows:
                 row = tbl.add_row()
                 row.cells[0].text = label
-                # Amount cell: bold dollar figure only
                 amt_cell = row.cells[1]
                 amt_run  = amt_cell.paragraphs[0].add_run(amount)
                 amt_run.bold = True
             _set_col_widths(tbl, [4.5, 2.0])
             _left_align_table(tbl)
+        else:
+            ph = doc.add_paragraph(
+                '[Complete Executive Display fields in FindingsPanel before delivery]'
+            )
+            if ph.runs:
+                ph.runs[0].italic = True
+                ph.runs[0].font.color.rgb = RGBColor(0xFF, 0x8C, 0x00)
+                ph.runs[0].font.size = Pt(9)
 
         # Component D — What Must Happen This Week
         pz_source = narrative.get('priority_zero_table_rows', [])
@@ -1250,7 +1276,14 @@ class ReportGeneratorService:
             row.cells[0].text = label
             if row.cells[0].paragraphs[0].runs:
                 row.cells[0].paragraphs[0].runs[0].bold = True
-            row.cells[1].text = str(value)
+            val_str = str(value)
+            if val_str.startswith('['):
+                run = row.cells[1].paragraphs[0].add_run(val_str)
+                run.italic = True
+                run.font.color.rgb = RGBColor(0xFF, 0x8C, 0x00)
+                run.font.size = Pt(9)
+            else:
+                row.cells[1].text = val_str
 
         _set_col_widths(table, [1.6, 4.9])
         _left_align_table(table)
@@ -1824,63 +1857,39 @@ class ReportGeneratorService:
             row.cells[4].text = recovery_map.get(f.get('priority', ''), '—')
 
         # Totals row
-        # Confirmed floor: sum unique confirmed figures (excludes concentration/relationship-risk).
-        # Derived floor: same sum logic applied to seen_derived.
-        # These totals are not additive — a footnote below the table makes this explicit.
-        total_confirmed = '—'
-        total_derived   = '—'
-        total_inferred  = '—'
+        # Sourced from structured display_figure fields: figure_type in (direct_exposure, annual_drag),
+        # include_in_executive = 1, display_figure not null. Deduped by exact figure string match
+        # (direct_exposure takes precedence). Sum displayed in Confirmed column; others show '—'.
+        _qualifying = [
+            f for f in findings
+            if f.get('include_in_executive')
+            and f.get('display_figure')
+            and f.get('figure_type') in ('direct_exposure', 'annual_drag')
+        ]
+        _dedup: dict = {}
+        for _f in _qualifying:
+            _fig = _f['display_figure']
+            if _fig not in _dedup or _f.get('figure_type') == 'direct_exposure':
+                _dedup[_fig] = _f
+        _deduped = list(_dedup.values())
 
-        if seen_confirmed:
-            total_val  = 0.0
-            parseable  = False
-            for fig, fig_title in seen_confirmed.items():
-                _title_low = (fig_title or '').lower()
-                if 'concentration' in _title_low or 'relationship risk' in _title_low:
-                    continue
-                val = _dollar_to_float(fig)
-                if val is not None:
-                    total_val += val
-                    parseable  = True
-            if parseable:
-                if total_val >= 1_000_000:
-                    formatted = f'~${total_val / 1_000_000:.1f}M'
-                else:
-                    formatted = f'~${int(round(total_val / 1000))}K'
-                total_confirmed = f'{formatted}+ (non-overlapping direct exposures)'
-
-        if seen_derived:
-            total_val  = 0.0
-            parseable  = False
-            for fig, fig_title in seen_derived.items():
-                _title_low = (fig_title or '').lower()
-                if 'concentration' in _title_low or 'relationship risk' in _title_low:
-                    continue
-                val = _dollar_to_float(fig)
-                if val is not None:
-                    total_val += val
-                    parseable  = True
-            if parseable:
-                if total_val >= 1_000_000:
-                    formatted = f'~${total_val / 1_000_000:.1f}M'
-                else:
-                    formatted = f'~${int(round(total_val / 1000))}K'
-                total_derived = f'{formatted}+ (non-overlapping derived exposures)'
-
-        # Annual Drag: use aggregate inferred range from Consulting Economics finding if present.
-        # If none exists, leave as '—' — do not fabricate an aggregate.
-        econ_finding = next(
-            (f for f in findings
-             if f.get('domain') == 'Consulting Economics' and f.get('economic_impact')),
-            None
-        )
-        if econ_finding:
-            _, _, inf_str = _parse_economic_figures(econ_finding['economic_impact'])
-            if inf_str != '—':
-                parts       = [p.strip() for p in inf_str.split(', ')]
-                range_parts = [p for p in parts if '–' in p]
-                drag_range  = range_parts[0] if range_parts else parts[0]
-                total_inferred = f'{drag_range} INFERRED annually'
+        if _deduped:
+            _total_val = 0.0
+            _parseable = False
+            for _f in _deduped:
+                _val = _parse_display_figure_to_float(_f['display_figure'])
+                if _val is not None:
+                    _total_val += _val
+                    _parseable  = True
+            if _parseable:
+                _fmt = (f'~${_total_val / 1_000_000:.1f}M' if _total_val >= 1_000_000
+                        else f'~${int(round(_total_val / 1000))}K')
+                total_display = (f'{_fmt}+ confirmed floor '
+                                 f'(direct exposures only — see individual findings)')
+            else:
+                total_display = '[Set in FindingsPanel]'
+        else:
+            total_display = '[Set in FindingsPanel]'
 
         totals_row = table.add_row()
         for cell in totals_row.cells:
@@ -1888,30 +1897,26 @@ class ReportGeneratorService:
         totals_row.cells[0].text = 'Total Identified Exposure'
         if totals_row.cells[0].paragraphs[0].runs:
             totals_row.cells[0].paragraphs[0].runs[0].bold = True
-        totals_row.cells[1].text = total_confirmed
-        totals_row.cells[2].text = total_derived
-        totals_row.cells[3].text = total_inferred
+        if total_display.startswith('['):
+            _run = totals_row.cells[1].paragraphs[0].add_run(total_display)
+            _run.italic = True
+            _run.font.color.rgb = RGBColor(0xFF, 0x8C, 0x00)
+            _run.font.size = Pt(9)
+        else:
+            totals_row.cells[1].text = total_display
+        totals_row.cells[2].text = '—'
+        totals_row.cells[3].text = '—'
         totals_row.cells[4].text = '—'
 
         _left_align_table(table)
 
-        # Footnotes for duplicate confirmed/derived figures
+        # Footnotes for duplicate confirmed/derived figures (per-finding rows only)
         for marker, figure, first_title, label_type in footnotes:
             fn = doc.add_paragraph(
                 f'{marker} {figure} also appears in "{first_title}" — '
                 f'these represent the same underlying cost, not separate exposures. Do not sum.'
             )
             fn.runs[0].italic = True
-
-        # Additive disclaimer — shown whenever a derived total exists so the reader does not
-        # sum the Confirmed and Derived columns as independent exposures.
-        if total_derived != '—':
-            disclaimer = doc.add_paragraph(
-                'Derived total represents arithmetic results of confirmed inputs; '
-                'not additive with the Confirmed total.'
-            )
-            if disclaimer.runs:
-                disclaimer.runs[0].italic = True
 
     def _future_state_table(self, doc, rows: list):
         """Section 7 future state metrics table.
