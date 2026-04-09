@@ -119,6 +119,9 @@ const handleSettingsSave = async () => {
         <div className="flex gap-8 mt-6 pt-4 border-t border-gray-100">
           {[
             { label: 'Firm size',  value: `${engagement.firm_size} people` },
+            { label: 'Annual revenue', value: engagement.confirmed_revenue != null
+                ? `$${Number(engagement.confirmed_revenue).toLocaleString()}`
+                : '—' },
             { label: 'Signals',    value: engagement.signal_count  ?? 0 },
             { label: 'Patterns',   value: engagement.pattern_count ?? 0 },
             { label: 'Findings',   value: engagement.finding_count ?? 0 },
