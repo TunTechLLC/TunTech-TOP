@@ -597,7 +597,7 @@ class ReportGeneratorService:
         }
 
         # Executive Briefing — unnumbered standalone page, before all numbered sections
-        self._build_executive_briefing(doc, findings, narrative)
+        self._build_executive_briefing(doc, findings, narrative, roadmap_by_id)
 
         # 1 — Executive Summary (four components — Change 1)
         doc.add_heading('Executive Summary', level=1)
@@ -605,7 +605,7 @@ class ReportGeneratorService:
         # Component A — 3-4 sentence opening paragraph (narrator)
         opening = narrative.get('executive_summary_opening', '')
         if opening:
-            self._add_narrative_paragraphs(doc, opening)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(opening, roadmap_by_id))
             doc.add_paragraph()
 
         # Component B — Key Findings at a Glance (sourced from structured data only)
@@ -666,7 +666,7 @@ class ReportGeneratorService:
                     'executive_summary_para3'):
             para_text = narrative.get(key, '')
             if para_text:
-                self._add_narrative_paragraphs(doc, para_text)
+                self._add_narrative_paragraphs(doc, _resolve_initiative_codes(para_text, roadmap_by_id))
 
         doc.add_paragraph()
 
@@ -692,7 +692,7 @@ class ReportGeneratorService:
         overview_para = narrative.get('engagement_overview_paragraph', '')
         if overview_para:
             doc.add_paragraph()
-            self._add_narrative_paragraphs(doc, overview_para)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(overview_para, roadmap_by_id))
         doc.add_paragraph()
 
         # 3 — Operational Maturity Overview
@@ -702,14 +702,14 @@ class ReportGeneratorService:
 
         # 4 — Domain Analysis
         doc.add_heading('Domain Analysis', level=1)
-        self._findings_by_domain(doc, findings, narrative)
+        self._findings_by_domain(doc, findings, narrative, roadmap_by_id)
         doc.add_paragraph()
 
         # 5 — Root Cause Analysis (prose only — finding bullets removed)
         doc.add_heading('Root Cause Analysis', level=1)
         root_cause = narrative.get('root_cause_narrative', '')
         if root_cause:
-            self._add_narrative_paragraphs(doc, root_cause)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(root_cause, roadmap_by_id))
         else:
             doc.add_paragraph('No root cause narrative generated.')
         doc.add_paragraph()
@@ -741,7 +741,7 @@ class ReportGeneratorService:
         doc.add_paragraph()
         econ_narrative = narrative.get('economic_impact_narrative', '')
         if econ_narrative:
-            self._add_narrative_paragraphs(doc, econ_narrative)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(econ_narrative, roadmap_by_id))
         doc.add_paragraph()
 
         # 7 — Future State
@@ -752,7 +752,7 @@ class ReportGeneratorService:
             doc.add_paragraph()
         future_narrative = narrative.get('future_state_narrative', '')
         if future_narrative:
-            self._add_narrative_paragraphs(doc, future_narrative)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(future_narrative, roadmap_by_id))
         doc.add_paragraph()
 
         # 8 — Transformation Roadmap
@@ -803,7 +803,7 @@ class ReportGeneratorService:
                     doc.add_heading(phase, level=2)
                     rationale = narrative.get('roadmap_rationale', {}).get(phase, '')
                     if rationale:
-                        self._add_narrative_paragraphs(doc, rationale)
+                        self._add_narrative_paragraphs(doc, _resolve_initiative_codes(rationale, roadmap_by_id))
                         doc.add_paragraph()
                     self._roadmap_phase_table(doc, items, findings_by_id, initiative_details, roadmap_by_id)
                     doc.add_paragraph()
@@ -937,7 +937,8 @@ class ReportGeneratorService:
     # Executive Briefing — standalone CEO teaser page
     # ------------------------------------------------------------------
 
-    def _build_executive_briefing(self, doc, findings: list, narrative: dict):
+    def _build_executive_briefing(self, doc, findings: list, narrative: dict,
+                                  roadmap_by_id: dict | None = None):
         """One-page standalone briefing shown to the CEO before the full report.
 
         Content sourcing:
@@ -967,7 +968,7 @@ class ReportGeneratorService:
         # Skips silently if key absent (backward compat with cached narrator outputs)
         snapshot = eb.get('executive_snapshot', '')
         if snapshot:
-            self._add_narrative_paragraphs(doc, snapshot)
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(snapshot, roadmap_by_id))
             rule = doc.add_paragraph()
             pPr = rule._p.get_or_add_pPr()
             pBdr = OxmlElement('w:pBdr')
@@ -1320,7 +1321,8 @@ class ReportGeneratorService:
         )
         callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    def _findings_by_domain(self, doc, findings: list, narrative: dict):
+    def _findings_by_domain(self, doc, findings: list, narrative: dict,
+                            roadmap_by_id: dict | None = None):
         """Findings grouped by domain.
         Each domain opens with a narrator paragraph, then finding tables, then a closing paragraph."""
         if not findings:
@@ -1350,7 +1352,7 @@ class ReportGeneratorService:
             closing = domain_data.get('closing', '') if isinstance(domain_data, dict) else ''
 
             if opening:
-                doc.add_paragraph(opening)
+                doc.add_paragraph(_resolve_initiative_codes(opening, roadmap_by_id))
                 doc.add_paragraph()
 
             for f in by_domain[domain]:
@@ -1392,7 +1394,7 @@ class ReportGeneratorService:
                 doc.add_paragraph()
 
             if closing:
-                doc.add_paragraph(closing)
+                doc.add_paragraph(_resolve_initiative_codes(closing, roadmap_by_id))
                 doc.add_paragraph()
 
     # ------------------------------------------------------------------

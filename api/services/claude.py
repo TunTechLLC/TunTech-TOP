@@ -954,6 +954,21 @@ A missing name is always better than a name that creates HR exposure in a distri
 
 ---
 
+SYSTEM REFERENCE CODES — NEVER USE IN PROSE:
+R-codes (R060, R061, R062, etc.) are internal system identifiers for roadmap items.
+They are meaningless to the client and must never appear in generated prose.
+Always reference initiatives by their plain initiative name.
+
+Correct:   "the governance policy initiative must precede the methodology development work"
+Incorrect: "the governance policy (R063) must precede the methodology development (R072)"
+
+This applies to every prose field: executive_snapshot, executive_summary_opening,
+executive_summary_para1/2/3, root_cause_narrative, economic_impact_narrative,
+future_state_narrative, roadmap_rationale, domain_analysis opening/closing paragraphs,
+and all initiative_details prose fields.
+
+---
+
 WRITING RULES:
 1. Write as a senior consultant. Direct, confident, grounded in evidence. Not corporate filler.
 2. Lead with the most important insight. Not with background or context-setting.
