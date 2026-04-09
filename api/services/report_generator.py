@@ -479,6 +479,84 @@ def _parse_economic_figures(text: str):
     return confirmed, derived, inferred
 
 
+# Domain → figure_type mapping for display figure pre-population
+_DOMAIN_TO_FIGURE_TYPE = {
+    'Consulting Economics':         'annual_drag',
+    'Finance and Commercial':       'annual_drag',
+    'Sales & Pipeline':             'concentration_risk',
+    'Sales-to-Delivery Transition': 'direct_exposure',
+    'Delivery Operations':          'direct_exposure',
+    'Project Governance / PMO':     'direct_exposure',
+    'Resource Management':          'replacement_cost',
+    'Customer Experience':          'direct_exposure',
+    'AI Readiness':                 'opportunity',
+    'Human Resources':              'replacement_cost',
+}
+
+
+def _format_display_figure(raw: str) -> str:
+    """Convert a raw extracted dollar string to compact display format.
+    "$526,000" -> "$526K", "$1,200,000" -> "$1.2M", "$526K" -> "$526K" (pass-through).
+    """
+    val = _dollar_to_float(raw)
+    if val is None:
+        return raw
+    if val >= 1_000_000:
+        n = val / 1_000_000
+        s = f"{n:.1f}"
+        if s.endswith('.0'):
+            s = s[:-2]
+        return f"${s}M"
+    if val >= 1_000:
+        return f"${val / 1_000:.0f}K"
+    return f"${val:.0f}"
+
+
+def _prepopulate_display_figure(
+    economic_impact_text: str,
+    domain: str,
+    confirmed_revenue: float | None,
+    finding_title: str | None = None,
+) -> tuple[str | None, str | None, str | None]:
+    """Extract a suggested display_figure, display_label, and figure_type
+    from economic_impact text.
+
+    Returns (display_figure, display_label, figure_type) or (None, None, None)
+    if no extractable figure exists.
+
+    Guardrail: if the parsed numeric value exceeds confirmed_revenue (when provided),
+    prepend a warning prefix to display_figure so the frontend can show a red warning.
+    If confirmed_revenue is None, skip the guardrail silently.
+    """
+    if not economic_impact_text:
+        return None, None, None
+
+    confirmed_str, derived_str, inferred_str = _parse_economic_figures(economic_impact_text)
+
+    # Highest-confidence non-empty figure: CONFIRMED > DERIVED > INFERRED
+    if confirmed_str != '\u2014':
+        raw = confirmed_str.split(', ')[0]
+    elif derived_str != '\u2014':
+        raw = derived_str.split(', ')[0]
+    elif inferred_str != '\u2014':
+        raw = inferred_str.split(', ')[0]
+    else:
+        return None, None, None
+
+    display_figure = _format_display_figure(raw)
+
+    # Guardrail: flag if figure exceeds confirmed annual revenue
+    if confirmed_revenue is not None:
+        numeric = _dollar_to_float(raw)
+        if numeric is not None and numeric > confirmed_revenue:
+            display_figure = f'\u26a0 {display_figure}'
+
+    figure_type   = _DOMAIN_TO_FIGURE_TYPE.get(domain, 'direct_exposure')
+    display_label = ' '.join(finding_title.split()[:6]) if finding_title else None
+
+    return display_figure, display_label, figure_type
+
+
 class ReportGeneratorService:
     """Generates the OPD Transformation Roadmap Word document.
 

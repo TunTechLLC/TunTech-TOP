@@ -65,5 +65,8 @@ class FindingResponse(BaseModel):
     display_figure:     Optional[str] = None
     display_label:      Optional[str] = None
     figure_type:        Optional[str] = None
-    include_in_executive: Optional[int] = 0
-    pattern_name:       Optional[str] = None
+    include_in_executive:  Optional[int] = 0
+    pattern_name:          Optional[str] = None
+    suggested_figure:      Optional[str] = None
+    suggested_label:       Optional[str] = None
+    suggested_figure_type: Optional[str] = None

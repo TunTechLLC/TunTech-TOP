@@ -1,3 +1,4 @@
+import asyncio
 import json as json_lib
 import logging
 from fastapi import APIRouter, HTTPException, Depends
@@ -5,8 +6,11 @@ from api.db.repositories.finding import FindingRepository
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.pattern import PatternRepository
 from api.db.repositories.signal import SignalRepository
+from api.db.repositories.engagement import EngagementRepository
 from api.models.finding import FindingCreate, FindingUpdate, FindingResponse
 from api.utils.domains import VALID_DOMAINS, VALID_FINDING_CONFIDENCES, VALID_PRIORITIES, VALID_EFFORTS
+from api.services.report_generator import _prepopulate_display_figure
+from api.services.claude import suggest_display_label
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,10 @@ def get_pattern_repo() -> PatternRepository:
 
 def get_signal_repo() -> SignalRepository:
     return SignalRepository()
+
+
+def get_engagement_repo() -> EngagementRepository:
+    return EngagementRepository()
 
 
 def _compute_evidence_summary(contributing_ep_ids: list, accepted_patterns: list,
@@ -85,12 +93,61 @@ def _derive_confidence(contributing_ep_ids: list, accepted_patterns: list) -> st
 
 
 @router.get("/{engagement_id}/findings")
-def list_findings(
+async def list_findings(
     engagement_id: str,
-    repo: FindingRepository = Depends(get_finding_repo)
+    repo:     FindingRepository    = Depends(get_finding_repo),
+    eng_repo: EngagementRepository = Depends(get_engagement_repo),
 ):
-    """Return all findings for an engagement in priority order."""
-    return repo.get_all(engagement_id)
+    """Return all findings for an engagement in priority order.
+    For findings where display_figure is NULL, compute figure/type suggestions
+    synchronously then fire parallel Claude calls to generate contextual labels.
+    Suggestions are never written to the database."""
+    rows          = repo.get_all(engagement_id)
+    engagement    = eng_repo.get_by_id(engagement_id)
+    confirmed_rev = (engagement or {}).get('confirmed_revenue')
+
+    # Phase 1: synchronous figure/type pre-population
+    enriched     = []
+    label_indices = []   # positions in enriched that need a Claude label call
+    for f in rows:
+        row = dict(f)
+        if row.get('display_figure') is None:
+            clean_fig = row.get('suggested_figure')  # may not exist yet
+            fig, _, ftype = _prepopulate_display_figure(
+                row.get('economic_impact') or '',
+                row.get('domain') or '',
+                confirmed_rev,
+                None,   # title-based label skipped — Claude generates it below
+            )
+            row['suggested_figure']      = fig
+            row['suggested_label']       = None   # filled in Phase 2
+            row['suggested_figure_type'] = ftype
+            if fig is not None:
+                label_indices.append(len(enriched))
+        else:
+            row['suggested_figure']      = None
+            row['suggested_label']       = None
+            row['suggested_figure_type'] = None
+        enriched.append(row)
+
+    # Phase 2: parallel Claude calls for labels
+    if label_indices:
+        tasks = []
+        for i in label_indices:
+            row = enriched[i]
+            # Strip warning prefix before sending to Claude
+            raw_fig = row['suggested_figure']
+            clean   = raw_fig[2:] if raw_fig and raw_fig.startswith('\u26a0 ') else raw_fig
+            tasks.append(suggest_display_label(
+                row.get('finding_title') or '',
+                row.get('economic_impact') or '',
+                clean or '',
+            ))
+        labels = await asyncio.gather(*tasks)
+        for i, label in zip(label_indices, labels):
+            enriched[i]['suggested_label'] = label
+
+    return enriched
 
 
 @router.post("/{engagement_id}/findings",

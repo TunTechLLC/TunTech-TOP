@@ -14,6 +14,14 @@ const priorityColors = {
   Low:    'bg-gray-50 border-gray-200',
 }
 
+const FIGURE_TYPES = [
+  { value: 'direct_exposure',    label: 'Direct Exposure' },
+  { value: 'annual_drag',        label: 'Annual Drag' },
+  { value: 'concentration_risk', label: 'Concentration Risk' },
+  { value: 'opportunity',        label: 'Opportunity' },
+  { value: 'replacement_cost',   label: 'Replacement Cost' },
+]
+
 const EMPTY_FORM = {
   finding_title:       '',
   domain:              'Delivery Operations',
@@ -44,6 +52,37 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
   const [parsing, setParsing]               = useState(false)
   const [parseError, setParseError]         = useState(null)
   const [loadingFindings, setLoadingFindings] = useState(false)
+  const [displayEdits, setDisplayEdits]       = useState({})
+  const [savingDisplay, setSavingDisplay]     = useState({})
+  const [saveDisplayError, setSaveDisplayError] = useState({})
+
+  const initDisplayState = (f) => {
+    const hasWarning = typeof f.suggested_figure === 'string' && f.suggested_figure.startsWith('\u26a0 ')
+    if (f.display_figure != null) {
+      return {
+        display_figure:      f.display_figure,
+        display_label:       f.display_label  || '',
+        figure_type:         f.figure_type    || 'direct_exposure',
+        include_in_executive: !!f.include_in_executive,
+        isDirty:             true,
+        hasWarning:          false,
+      }
+    }
+    if (f.suggested_figure != null) {
+      return {
+        display_figure:      hasWarning ? f.suggested_figure.slice(2) : f.suggested_figure,
+        display_label:       f.suggested_label       || '',
+        figure_type:         f.suggested_figure_type || 'direct_exposure',
+        include_in_executive: false,
+        isDirty:             false,
+        hasWarning,
+      }
+    }
+    return {
+      display_figure: '', display_label: '', figure_type: 'direct_exposure',
+      include_in_executive: false, isDirty: false, hasWarning: false,
+    }
+  }
 
   const fetchData = () => {
     Promise.all([
@@ -51,7 +90,14 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       api.patterns.list(engagementId),
       api.agents.list(engagementId),
     ])
-      .then(([f, p, a]) => { setFindings(f); setPatterns(p); setAgentRuns(a) })
+      .then(([f, p, a]) => {
+        setFindings(f)
+        setPatterns(p)
+        setAgentRuns(a)
+        const edits = {}
+        f.forEach(finding => { edits[finding.finding_id] = initDisplayState(finding) })
+        setDisplayEdits(edits)
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -146,6 +192,35 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       setParseError(err.message)
     } finally {
       setLoadingFindings(false)
+    }
+  }
+
+  const handleDisplayChange = (findingId, field, value) => {
+    setDisplayEdits(prev => ({
+      ...prev,
+      [findingId]: { ...prev[findingId], [field]: value, isDirty: true },
+    }))
+  }
+
+  const handleSaveDisplay = async (findingId) => {
+    const edit = displayEdits[findingId]
+    if (!edit) return
+    setSavingDisplay(prev => ({ ...prev, [findingId]: true }))
+    setSaveDisplayError(prev => ({ ...prev, [findingId]: null }))
+    try {
+      await api.findings.update(engagementId, findingId, {
+        display_figure:       edit.display_figure       || null,
+        display_label:        edit.display_label        || null,
+        figure_type:          edit.figure_type          || null,
+        include_in_executive: edit.include_in_executive ? 1 : 0,
+      })
+      // Refresh findings so stored values reflect the save
+      fetchData()
+      onRefresh?.()
+    } catch (err) {
+      setSaveDisplayError(prev => ({ ...prev, [findingId]: err.message }))
+    } finally {
+      setSavingDisplay(prev => ({ ...prev, [findingId]: false }))
     }
   }
 
@@ -710,6 +785,105 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                       )
                     } catch { return null }
                   })()}
+
+                  {/* Executive Display */}
+                  {(() => {
+                    const edit = displayEdits[f.finding_id] || {}
+                    const isSuggestion = !edit.isDirty
+                    const inputCls = isSuggestion
+                      ? 'w-full border border-gray-200 rounded px-2 py-1 text-xs text-gray-400 italic focus:outline-none focus:border-blue-400'
+                      : 'w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-blue-400'
+                    const warnInputCls = isSuggestion
+                      ? 'w-full border border-red-400 rounded px-2 py-1 text-xs text-gray-400 italic focus:outline-none focus:border-red-500'
+                      : 'w-full border border-red-400 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-red-500'
+                    return (
+                      <div className="border-t border-gray-100 pt-3">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                          Executive Display
+                        </div>
+                        <div className="space-y-2">
+
+                          {/* Figure */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Figure</div>
+                            <input
+                              value={edit.display_figure || ''}
+                              onChange={e => handleDisplayChange(f.finding_id, 'display_figure', e.target.value)}
+                              className={edit.hasWarning ? warnInputCls : inputCls}
+                              placeholder="e.g. $526K"
+                            />
+                            {isSuggestion && edit.display_figure && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                suggested — verify before saving
+                              </div>
+                            )}
+                            {edit.hasWarning && (
+                              <div className="text-xs text-red-600 mt-0.5">
+                                ⚠ Exceeds confirmed client revenue — verify before accepting
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Label */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Label</div>
+                            <input
+                              value={edit.display_label || ''}
+                              onChange={e => handleDisplayChange(f.finding_id, 'display_label', e.target.value)}
+                              className={inputCls}
+                              placeholder="e.g. Annual gross profit shortfall"
+                            />
+                            {isSuggestion && edit.display_label && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                suggested — verify before saving
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Type */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Type</div>
+                            <select
+                              value={edit.figure_type || 'direct_exposure'}
+                              onChange={e => handleDisplayChange(f.finding_id, 'figure_type', e.target.value)}
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                            >
+                              {FIGURE_TYPES.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Checkbox */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!edit.include_in_executive}
+                              onChange={e => handleDisplayChange(f.finding_id, 'include_in_executive', e.target.checked)}
+                              className="shrink-0"
+                            />
+                            <span className="text-xs text-gray-600">Include in executive summary</span>
+                          </label>
+
+                          {/* Save */}
+                          {saveDisplayError[f.finding_id] && (
+                            <div className="text-xs text-red-600">{saveDisplayError[f.finding_id]}</div>
+                          )}
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => handleSaveDisplay(f.finding_id)}
+                              disabled={!!savingDisplay[f.finding_id]}
+                              className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {savingDisplay[f.finding_id] ? 'Saving...' : 'Save display settings'}
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                 </div>
               )}
             </div>

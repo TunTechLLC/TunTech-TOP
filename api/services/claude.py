@@ -1313,3 +1313,39 @@ async def extract_roadmap_from_synthesizer(
         clean = clean[start:end + 1]
     logger.info(f"Roadmap extraction complete — {len(clean)} chars")
     return clean
+
+
+async def suggest_display_label(
+    finding_title: str,
+    economic_impact_text: str,
+    figure: str,
+) -> str | None:
+    """Call Claude to generate a 4-6 word plain English display label suitable
+    for a CEO executive briefing number.
+    Returns the label string or None if the call fails for any reason.
+    Never raises — callers treat None as 'show blank with placeholder text'."""
+    user_message = (
+        "You are writing a label for a number that will appear in the executive "
+        "briefing of a consulting diagnostic report. The label must be 4-6 words, "
+        "plain English, suitable for a CEO to read at a glance.\n\n"
+        f"Finding title: {finding_title}\n"
+        f"Primary figure: {figure}\n"
+        f"Economic context: {economic_impact_text[:200]}\n\n"
+        "Return only the label. No explanation. No punctuation at the end.\n"
+        "Examples of good labels:\n"
+        "'Annual gross profit shortfall'\n"
+        "'At-risk portfolio revenue'\n"
+        "'Single-client churn exposure'\n"
+        "'Annual bench cost drag'"
+    )
+    try:
+        message = await async_client.messages.create(
+            model=MODEL,
+            max_tokens=20,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        label = extract_text(message).strip().strip("'\"")
+        return label if label else None
+    except Exception:
+        logger.warning("suggest_display_label: Claude call failed — returning None", exc_info=True)
+        return None
