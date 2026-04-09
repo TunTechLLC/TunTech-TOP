@@ -723,6 +723,8 @@ executive_briefing — structured object for the one-page CEO teaser:
     plain language. Sentence 2: most urgent active risk with a dollar figure if one is
     confirmed. Sentence 3: what must happen this week and who owns it. No headers, no
     sub-bullets, no qualifications. Readable in under 30 seconds.
+    Do not use CONFIRMED, DERIVED, or INFERRED labels anywhere in this field. State
+    figures directly without qualification labels.
 
   problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
     finding_id: must be an ID that appears in the ACCEPTED FINDINGS list — e.g. F001.
@@ -750,6 +752,7 @@ executive_briefing — structured object for the one-page CEO teaser:
       Right: "Change control is bypassed at the leadership level"
     impact_brief: 20 words maximum, single sentence. What is this costing the firm today?
       Name a figure, percentage, or specific named consequence. Do not generalize.
+      Do not use CONFIRMED, DERIVED, or INFERRED labels. State figures directly.
     Select the 3 most important findings — High priority first.
 
   numbers: exactly 3 entries (or fewer if fewer than 3 confirmed or derived figures exist).
@@ -757,8 +760,11 @@ executive_briefing — structured object for the one-page CEO teaser:
     Order by urgency: (1) most immediate at-risk figure, (2) most structural annual drag,
     (3) most existential risk. The ordering conveys the story — immediate → chronic → fatal.
     finding_id: the finding the confirmed figure comes from. Must be a real finding ID.
-    label: 4 words maximum. Plain English — what does this number represent?
+    label: 6 words maximum. Plain English — what does this number represent?
+      No calculation formulas. No source citations. No CONFIRMED/DERIVED/INFERRED labels.
+      Bad: "Calculated from: 52,571 implied billable hours × $10/hr gap"
       Bad: "Economic Impact from F003"
+      Good: "Annual rate gap cost"
       Good: "Annual delivery overrun cost"
 
 executive_summary_opening — 3-4 sentences:

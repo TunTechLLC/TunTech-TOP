@@ -636,6 +636,10 @@ class ReportGeneratorService:
             rc  = primary_finding['root_cause']
             dot = rc.find('. ')
             cause_line = (rc[:dot] if dot > 0 else rc).strip()
+            # Truncate to 10 words for the at-a-glance box — full explanation in Section 5
+            words = cause_line.split()
+            if len(words) > 10:
+                cause_line = ' '.join(words[:10]) + '\u2026'
             if cause_line:
                 kf_rows.append(('Primary Cause', cause_line))
         pz_rows = narrative.get('priority_zero_table_rows', [])
@@ -1052,34 +1056,19 @@ class ReportGeneratorService:
                     f"Executive briefing: finding {fid} has no CONFIRMED or DERIVED figure — skipping"
                 )
                 continue
-            # For DERIVED figures, extract the parenthetical calculation text after "DERIVED:"
-            # to show a "Calculated from:" disclosure in the cell.
-            calc_disclosure = None
-            if is_derived:
-                deriv_match = re.search(
-                    r'\bDERIVED\s*:\s*([^)]{5,120})', econ_text, re.IGNORECASE
-                )
-                if deriv_match:
-                    calc_disclosure = 'Calculated from: ' + deriv_match.group(1).strip().rstrip(',; ')
-            number_rows.append((label, primary, calc_disclosure))
+            number_rows.append((label, primary))
 
         if number_rows:
             self._briefing_block_header(doc, 'Three Numbers That Matter')
             tbl = doc.add_table(rows=0, cols=2)
             tbl.style = 'Table Grid'
-            for label, amount, calc_disclosure in number_rows:
+            for label, amount in number_rows:
                 row = tbl.add_row()
                 row.cells[0].text = label
-                # Amount cell: bold dollar figure, plus italic disclosure for DERIVED figures
-                amt_cell  = row.cells[1]
-                amt_para  = amt_cell.paragraphs[0]
-                amt_run   = amt_para.add_run(amount)
+                # Amount cell: bold dollar figure only
+                amt_cell = row.cells[1]
+                amt_run  = amt_cell.paragraphs[0].add_run(amount)
                 amt_run.bold = True
-                if calc_disclosure:
-                    disc_para = amt_cell.add_paragraph()
-                    disc_run  = disc_para.add_run(calc_disclosure)
-                    disc_run.italic = True
-                    disc_run.font.size = Pt(8)
             _set_col_widths(tbl, [4.5, 2.0])
             _left_align_table(tbl)
 
@@ -1964,33 +1953,6 @@ class ReportGeneratorService:
                 cap_run.italic    = True
                 cap_run.font.size = Pt(8)
                 cap_run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
-
-            # Economic linkage — resolve addressing_finding_ids to economic_impact strings
-            raw_fids = item.get('addressing_finding_ids') or '[]'
-            try:
-                fids = json.loads(raw_fids)
-            except (json.JSONDecodeError, TypeError):
-                fids = []
-            for fid in fids:
-                f = findings_by_id.get(fid)
-                if f and f.get('economic_impact'):
-                    econ_para = init_cell.add_paragraph()
-                    econ_run  = econ_para.add_run(f'Addresses: {f["economic_impact"]}')
-                    econ_run.font.size = Pt(8)
-                    econ_run.font.color.rgb = RGBColor(0x1F, 0x49, 0x8C)
-
-            # Prerequisites — resolve depends_on item_ids to names
-            raw_deps = item.get('depends_on') or '[]'
-            try:
-                dep_ids = json.loads(raw_deps)
-            except (json.JSONDecodeError, TypeError):
-                dep_ids = []
-            if dep_ids and roadmap_by_id:
-                dep_names = [roadmap_by_id.get(did, did) for did in dep_ids]
-                dep_para = init_cell.add_paragraph()
-                dep_run  = dep_para.add_run(f'Prerequisites: {", ".join(dep_names)}')
-                dep_run.font.size = Pt(8)
-                dep_run.font.color.rgb = RGBColor(0x77, 0x77, 0x77)
 
             row.cells[1].text = item.get('priority') or ''
             row.cells[2].text = item.get('effort') or ''
