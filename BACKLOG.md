@@ -300,6 +300,13 @@ Everything else — repositories, routers, services — is database-agnostic and
 not engagement-specific. Cosmetic issue only.
 **Phase 3 fix:** Move to `/api/agents/registry`. Update `api.js` and `AgentPanel.jsx`.
 
+### Multi-user remote version
+Multi-user remote version requires: 
+auth/session management, engagement-level access controls, structured interview intake 
+for non-consultant interviewers, finding source attribution for remote reviewers, 
+PostgreSQL migration, hosted infrastructure. Prerequisite: solo version validated across 
+minimum 3 engagements.
+
 ### AWS Hosting
 - `_get_connection()` uses RDS connection string via `TOP_DB_PATH` env var
 - File processing reads from S3 — `document_processor.py` gets S3 client

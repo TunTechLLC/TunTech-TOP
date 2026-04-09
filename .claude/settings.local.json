@@ -11,7 +11,9 @@
       "Bash(pytest tests/ -v)",
       "Bash(git push:*)",
       "Bash(grep:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(xargs head:*)",
+      "Bash(iconv -f UTF-16 -t UTF-8 /c/dev/tuntech/top/requirements.txt)"
     ]
   }
 }
