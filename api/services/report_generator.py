@@ -25,6 +25,15 @@ logger = logging.getLogger(__name__)
 
 PRIORITY_ORDER = {'High': 0, 'Medium': 1, 'Low': 2}
 
+
+def _resolve_initiative_codes(text: str, roadmap_by_id: dict | None) -> str:
+    """Replace R-code references (e.g. R060, R065) with plain initiative names.
+    Shared by the dependency table and key risks table.
+    roadmap_by_id: item_id → initiative_name mapping built in _build()."""
+    if not roadmap_by_id or not text:
+        return text
+    return re.sub(r'\bR\d+\b', lambda m: roadmap_by_id.get(m.group(0), m.group(0)), text)
+
 _TEMPLATE = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'roadmap_template.docx')
 
 
@@ -327,6 +336,30 @@ _DERIVED_RE   = re.compile(r'\bDERIVED(?:-\w+)?',   re.IGNORECASE)
 _INFERRED_RE  = re.compile(r'\bINFERRED(?:-\w+)?',  re.IGNORECASE)
 
 
+def _is_label_context(clause: str, pos: int, matched_text: str) -> bool:
+    """Return True only when a CONFIRMED/DERIVED/INFERRED label at `pos` is being
+    used as an economic label rather than as an adjective modifier.
+
+    Two valid label contexts:
+    1. All-uppercase form (CONFIRMED, DERIVED, INFERRED, CONFIRMED-QUALIFIED) —
+       the canonical form produced by the extraction prompts.
+    2. Mixed/lowercase preceded by a delimiter (open paren, colon, dash, comma).
+
+    Adjective uses like '$9.2M confirmed revenue' or '$185 confirmed target' are
+    always lowercase with only whitespace before them — they fail both tests and
+    are excluded. This prevents annual-revenue reference figures from being summed
+    as if they were direct exposure claims.
+    """
+    if matched_text.isupper():      # canonical label form — accept regardless of position
+        return True
+    if pos == 0:                    # label at start of clause — treat as label
+        return True
+    pre = clause[max(0, pos - 5):pos].rstrip()
+    if not pre:
+        return True
+    return bool(re.search(r'[\(\:\,\-\u2014\u2013]$', pre))
+
+
 def _dollar_to_float(s: str) -> float | None:
     """Convert a dollar string to a float for summation in the totals row.
     Handles K/M suffixes, ~ prefix, commas, and ranges (takes lower bound).
@@ -373,9 +406,12 @@ def _parse_economic_figures(text: str):
         if not clause:
             continue
 
-        conf_positions = [m.start() for m in _CONFIRMED_RE.finditer(clause)]
-        deriv_positions = [m.start() for m in _DERIVED_RE.finditer(clause)]
-        inf_positions  = [m.start() for m in _INFERRED_RE.finditer(clause)]
+        conf_positions = [m.start() for m in _CONFIRMED_RE.finditer(clause)
+                          if _is_label_context(clause, m.start(), m.group(0))]
+        deriv_positions = [m.start() for m in _DERIVED_RE.finditer(clause)
+                           if _is_label_context(clause, m.start(), m.group(0))]
+        inf_positions  = [m.start() for m in _INFERRED_RE.finditer(clause)
+                          if _is_label_context(clause, m.start(), m.group(0))]
 
         if not conf_positions and not deriv_positions and not inf_positions:
             continue  # No labels in this clause
@@ -407,6 +443,23 @@ def _parse_economic_figures(text: str):
             # Require label within 80 chars to avoid false positives
             if closest > 80:
                 continue
+
+            # Formula-input guard: if amt appears inside the parenthetical that
+            # contains the winning label (e.g. "(DERIVED: 15% × $9.2M)"), it is
+            # a calculation input cited in the formula, not the result being labelled.
+            # Skip it so the actual result (the dollar amount before the paren) wins.
+            if d_conf <= d_deriv and d_conf <= d_inf:
+                _win_pos = amt_end + d_conf
+            elif d_deriv <= d_inf:
+                _win_pos = amt_end + d_deriv
+            else:
+                _win_pos = amt_end + d_inf
+
+            _paren_open  = clause.rfind('(', 0, _win_pos)
+            _paren_close = clause.find(')',  _win_pos)
+            if (_paren_open != -1 and _paren_close != -1
+                    and amt in clause[_paren_open:_paren_close]):
+                continue  # amt is a formula input, not the result
 
             # Assign to the closest label; CONFIRMED > DERIVED > INFERRED on tie
             if d_conf <= d_deriv and d_conf <= d_inf:
@@ -770,7 +823,7 @@ class ReportGeneratorService:
         doc.add_heading('Key Risks', level=2)
         risk_rows = narrative.get('risk_table_rows', [])
         if risk_rows and isinstance(risk_rows, list):
-            self._risk_table(doc, risk_rows)
+            self._risk_table(doc, risk_rows, roadmap_by_id)
         else:
             doc.add_paragraph('No risks identified in this engagement diagnostic.')
         doc.add_paragraph()
@@ -1959,24 +2012,19 @@ class ReportGeneratorService:
             _shade_cell(cell, 'D9D9D9')
         _set_col_widths(table, [3.2, 3.3])
 
-        def _resolve_rcodes(text: str) -> str:
-            if not roadmap_by_id or not text:
-                return text
-            def _sub(m):
-                return roadmap_by_id.get(m.group(0), m.group(0))
-            return re.sub(r'\bR\d+\b', _sub, text)
-
         for r in rows:
             if not isinstance(r, dict):
                 continue
             row = table.add_row()
-            row.cells[0].text = _resolve_rcodes(r.get('initiative') or '')
-            row.cells[1].text = _resolve_rcodes(r.get('depends_on') or '')
+            row.cells[0].text = _resolve_initiative_codes(r.get('initiative') or '', roadmap_by_id)
+            row.cells[1].text = _resolve_initiative_codes(r.get('depends_on') or '', roadmap_by_id)
         _left_align_table(table)
 
-    def _risk_table(self, doc, rows: list):
+    def _risk_table(self, doc, rows: list, roadmap_by_id: dict | None = None):
         """Section 8.7 Key Risks table.
-        Columns: Risk | Likelihood | Mitigation"""
+        Columns: Risk | Likelihood | Mitigation
+        roadmap_by_id: passed from _build() to resolve R-code references in
+        mitigation text (e.g. 'R060' → initiative name)."""
         table = doc.add_table(rows=1, cols=3)
         table.style = 'Table Grid'
         for i, h in enumerate(['Risk', 'Likelihood', 'Mitigation']):
@@ -1991,9 +2039,9 @@ class ReportGeneratorService:
             if not isinstance(r, dict):
                 continue
             row = table.add_row()
-            row.cells[0].text = r.get('risk') or ''
+            row.cells[0].text = _resolve_initiative_codes(r.get('risk') or '', roadmap_by_id)
             row.cells[1].text = r.get('likelihood') or ''
-            row.cells[2].text = r.get('mitigation') or ''
+            row.cells[2].text = _resolve_initiative_codes(r.get('mitigation') or '', roadmap_by_id)
         _left_align_table(table)
 
     def _next_steps_table(self, doc, rows: list):
