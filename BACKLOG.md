@@ -226,18 +226,6 @@ independently testable and committable.
 
 ---
 
-### Schema migrations table
-
-Create a `schema_migrations` table in TOP.db with columns `(version TEXT, applied_at TEXT)`. Backfill one row per existing migration with the date applied (approximate is fine). Add a rule to CLAUDE.md: every future `ALTER TABLE` must have a corresponding entry inserted into `schema_migrations`.
-
-**Why:** Multiple `ALTER TABLE` migrations have been applied manually with no record of which have been applied to a given DB. Rebuilding or moving the DB currently requires reconstructing migration history from git.
-
-**Do in the same session as Claude API timeout.**
-
-**Commit message:** Add schema_migrations table — backfill existing migrations, document rule in CLAUDE.md
-
----
-
 ### Domain Maturity Scoring
 **Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
 no maturity score. Clients respond to scorecards in a way they don't respond to tables.
