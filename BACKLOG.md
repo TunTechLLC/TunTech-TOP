@@ -226,16 +226,6 @@ independently testable and committable.
 
 ---
 
-### Claude API timeout
-
-Add `timeout` parameter to `AsyncAnthropic` client initialization in `api/services/claude.py`. Use 120 seconds base timeout. Currently a hung Anthropic API call hangs the request indefinitely with no feedback to the frontend.
-
-**One line change. Do this in the next available session regardless of other queue position — a hung call during a client engagement has no recovery path.**
-
-**Commit message:** Set 120s timeout on AsyncAnthropic client
-
----
-
 ### Schema migrations table
 
 Create a `schema_migrations` table in TOP.db with columns `(version TEXT, applied_at TEXT)`. Backfill one row per existing migration with the date applied (approximate is fine). Add a rule to CLAUDE.md: every future `ALTER TABLE` must have a corresponding entry inserted into `schema_migrations`.
