@@ -92,8 +92,10 @@ input file count.
 ## Database
 
 **TOP.db** at path from TOP_DB_PATH env var.
-14 tables. ID format: prefix + 3-digit zero-padded number (C001, E001, S001, EP001, etc.)
+14 tables + `schema_migrations` tracking table. ID format: prefix + 3-digit zero-padded number (C001, E001, S001, EP001, etc.)
 ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH directly.
+
+**Migration rule: every `ALTER TABLE` must be followed by an `INSERT INTO schema_migrations (version, applied_at) VALUES ('descriptive_name', 'YYYY-MM-DD')`.** Use a short snake_case version name describing what was added (e.g. `findings_display_fields`). This is the only record of which migrations have been applied to a given database.
 
 **Dry run data:**
 - E001 — Meridian Consulting Group (33 signals, 32 patterns — modified by testing)
