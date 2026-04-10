@@ -3,6 +3,92 @@
 
 ---
 
+## Document Cleanup — Complete Before First Client Engagement
+
+### Remove Pattern Codes from Client-Facing Evidence Summary
+
+**Problem:** The evidence summary line rendered 
+after each finding table in Section 6 currently 
+shows internal pattern codes (e.g. "Supported by 
+P38, P39, P41, P43 across Consulting Economics; 
+5 signals (5 confirmed, 0 inferred)"). Clients 
+have no context for what P38 means. The pattern 
+codes are internal TOP metadata that should not 
+appear in a client deliverable.
+
+**Fix:** In report_generator.py, find where the 
+evidence summary line is rendered after each 
+finding table. Replace the pattern ID list with 
+plain English while preserving the meaningful 
+information:
+
+Current format:
+"Supported by P38, P39, P41, P43 across 
+Consulting Economics; 5 signals 
+(5 confirmed, 0 inferred)"
+
+New format:
+"Supported by 5 directly observed signals 
+across Consulting Economics"
+
+Or if mixed confidence:
+"Supported by 5 signals across Consulting 
+Economics (3 directly observed, 2 reported)"
+
+Rules:
+- Remove all pattern codes entirely
+- Keep the signal count
+- Keep the domain name
+- Keep the confidence breakdown using 
+  client-facing language:
+  High → "directly observed"
+  Medium → "reported"
+  Hypothesis → "preliminary"
+- If all signals are High confidence, 
+  use the simplified format with 
+  "directly observed signals" only
+
+This is a report_generator.py change only. 
+No prompt changes. No database changes.
+
+**Priority:** High — group with Future State Table fixes as a single Document Cleanup session
+
+### Future State Table — Two Fixes
+
+**Priority: High — group with Remove 
+Pattern Codes as a single Document 
+Cleanup session. All fixes are 
+report_generator.py or 
+REPORT_NARRATOR_PROMPT only. 
+No schema changes. No frontend changes.**
+
+Fix 1 — Strip CONFIRMED/INFERRED labels 
+from the Metric column
+The Metric column currently shows values 
+like "Gross Margin (CONFIRMED (current); 
+INFERRED (target))". Strip all 
+parenthetical evidentiary labels from 
+the Metric column only before rendering. 
+Current State, Benchmark, and Target 
+columns are unaffected.
+report_generator.py change only.
+
+Fix 2 — NPS benchmark should use 
+confirmed prior period baseline not 
+estimated industry average
+Update REPORT_NARRATOR_PROMPT instruction 
+for the future_state table benchmark 
+field: "For metrics where a prior period 
+confirmed value exists in the engagement 
+data, always use that as the benchmark 
+rather than an estimated industry 
+average. The prior period confirmed 
+value is more credible and more 
+motivating for the client than an 
+industry estimate."
+
+---
+
 ## Technical Debt — Address Before Next Major Feature
 
 ### Split report_generator.py into orchestrator and section renderers
@@ -23,12 +109,128 @@
 **Commit message:** Refactor — split report_generator.py into orchestrator and section renderers
 
 ---
+### Economic Breakdown Chart — Use Structured 
+Display Fields Instead of Text Parser
+
+**Problem:** The economic breakdown chart in 
+Section 8 still uses _parse_economic_figures() 
+to extract bar values from finding economic_impact 
+text. This produces the same false positives that 
+were fixed in the Three Numbers block and totals 
+row — confirmed by $9.2M appearing as the bar 
+value for the Structural Margin Compression finding 
+when the correct figure is $368K–$828K.
+
+**Fix:** Update the chart generation function in 
+report_generator.py to source bar values from 
+display_figure and display_label where 
+include_in_executive = 1, using the same 
+_parse_display_figure_to_float() utility already 
+implemented for the other three locations.
+
+Only findings with display_figure set and 
+include_in_executive = 1 should appear as bars. 
+If no findings have these fields set, omit the 
+chart entirely rather than falling back to 
+text parsing.
+
+**Priority:** High — do before first paid 
+client engagement. The $9.2M false positive 
+on the chart would be immediately visible 
+and credibility-damaging in a client meeting.
+
+Also fix the per-finding rows in the Economic 
+Impact table. The parser is still producing 
+false positives on confirmed exposure extraction 
+for some findings (confirmed: $9.2M appearing 
+for Structural Margin Compression finding).
+
+Two options:
+Option A — Extend the structured display fields 
+approach to the table rows as well. Each finding's 
+Confirmed Exposure, Derived Exposure, and Annual 
+Drag columns are sourced from structured fields 
+rather than parsed text.
+
+Option B — Improve the parser false positive 
+detection to catch cases where a revenue figure 
+is referenced in a calculation context rather 
+than as the finding's own exposure.
+
+Option A is the correct long-term solution 
+and is consistent with the architectural 
+direction already established. Requires 
+additional structured fields on OPDFindings 
+for derived_figure and annual_drag_figure, 
+following the same pattern as display_figure.
+
+**Implementation scope — three sessions 
+following Session 1-2-3 pattern:**
+
+Session A — Schema and models:
+- Add confirmed_figure REAL, 
+  derived_figure REAL, and 
+  annual_drag_figure REAL to OPDFindings
+- All nullable — existing records 
+  unaffected
+- Update repository GET_ALL, INSERT, 
+  UPDATE queries
+- Update FindingCreate, FindingUpdate, 
+  FindingResponse models
+- Update findings router to accept 
+  and store new fields
+
+Session B — FindingsPanel UI and 
+pre-population:
+- Add confirmed_figure, derived_figure, 
+  annual_drag_figure fields to the 
+  Executive Display section in 
+  FindingsPanel
+- Same pre-population and suggestion 
+  pattern as display_figure — parser 
+  suggests, consultant reviews and 
+  corrects before saving
+- Same guardrail: if suggested figure 
+  exceeds confirmed_revenue, show 
+  red ⚠ warning
+- Same lazy pre-population: only runs 
+  when fields are null and finding 
+  card is opened
+
+Session C — Report generator:
+- Update per-finding Economic Impact 
+  table rows to source Confirmed 
+  Exposure, Derived Exposure, and 
+  Annual Drag columns from structured 
+  fields instead of parser
+- Update economic breakdown chart to 
+  source bar values from display_figure 
+  where include_in_executive = 1, 
+  using _parse_display_figure_to_float() 
+  already implemented
+- If no findings have 
+  include_in_executive = 1 with 
+  display_figure set, omit chart 
+  rather than falling back to 
+  text parsing
+- Placeholder behavior: if structured 
+  fields not set, show "[Set in 
+  FindingsPanel before delivery]" 
+  in orange italic
+
+Do not attempt all three sessions in 
+one prompt. Each session is 
+independently testable and committable.
+
+**Sequencing note:** Sessions A and B do not touch report_generator.py and may be built before the report_generator.py split. Session C modifies report_generator.py and must follow the split.
+
+---
 
 ### Claude API timeout
 
 Add `timeout` parameter to `AsyncAnthropic` client initialization in `api/services/claude.py`. Use 120 seconds base timeout. Currently a hung Anthropic API call hangs the request indefinitely with no feedback to the frontend.
 
-**One line change.** Do in the next available session.
+**One line change. Do this in the next available session regardless of other queue position — a hung call during a client engagement has no recovery path.**
 
 **Commit message:** Set 120s timeout on AsyncAnthropic client
 
@@ -45,8 +247,6 @@ Create a `schema_migrations` table in TOP.db with columns `(version TEXT, applie
 **Commit message:** Add schema_migrations table — backfill existing migrations, document rule in CLAUDE.md
 
 ---
-
-## After Checkpoint 4
 
 ### Domain Maturity Scoring
 **Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
@@ -112,11 +312,11 @@ silently ignored by Claude. Consider dynamic prompt injection in the same sessio
 
 | Visual | Description | Status |
 |--------|-------------|--------|
-| Visual 1 — Economic Breakdown Chart | Horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before economic summary table. matplotlib (Agg backend), temp PNG deleted after embed. | ✅ Complete |
+| Visual 1 — Economic Breakdown Chart | Horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before economic summary table. matplotlib (Agg backend), temp PNG deleted after embed. | ✅ Complete — pending fix to use structured display fields (see Economic Breakdown Chart backlog item) |
 | Visual 2 — Roadmap Timeline | Gantt-style horizontal bar chart at start of Section 8. Phase zone shading, bars colored by phase, sourced from narrator initiative_details. | ✅ Complete |
 | Visual 3 — Causal Chain Diagram | Left-to-right SVG flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. | Not built — pending |
 
-**Build Visual 3 after:** `report_generator.py` split (see Technical Debt section below). Do not add another visual to the existing monolithic file.
+**Build Visual 3 after:** `report_generator.py` split (see Technical Debt section above). Do not add another visual to the existing monolithic file.
 
 **Visual 3 design:**
 - New `causal_chain` JSON field in narrator output — finding-to-finding relationships for diagram node construction
@@ -155,6 +355,8 @@ Need to be able to edit engagement information after initial entry — should no
 DB Browser to update firm name, stated problem, hypothesis, etc. Items such as stated problem,
 hypothesis, etc. should show on the screen after the initial save. It can be in
 a collapsed section like settings is so it doesn't take up a lot of the screen.
+
+**Priority: High — needed before first paid client engagement.** Engagement data will need correction mid-engagement (revised hypothesis, corrected firm name, etc.) and DB Browser is not a viable workaround in a live setting.
 
 ---
 
@@ -243,7 +445,7 @@ Assumptions: Overrun % range 10%–25% if not explicitly measured
 Range Logic: Low = 10% scenario, High = 25% scenario
 ```
 
-**Build after:** Findings Enhancements — finding economic data must be clean first.
+**Build after:** Economic Breakdown Chart structured fields work (Sessions A–C) — finding economic data must be clean and in structured fields before standardizing the formulas that produce it.
 
 ---
 
@@ -305,6 +507,45 @@ ProcessedFiles migration, `signals.py` router update, `SignalPanel.jsx` form add
 `generate_report_narrative()` input assembly update
 
 ---
+### Three Systemic Drivers Section
+
+**Problem:** The document presents findings across 
+9 domains and 16 roadmap items but never explicitly 
+names the 2-3 upstream structural conditions that 
+most findings trace back to. A CEO reading the 
+document absorbs detail but may not walk away with 
+a crisp mental model of what is actually wrong at 
+the structural level.
+
+**Design:** A new section between Executive Summary 
+and How to Read This Document. Half a page maximum. 
+Each driver gets a bold 3-5 word name and one 
+sentence explanation. No finding cross-references 
+in this section — the domain analysis carries that 
+detail.
+
+**Implementation:**
+- New Narrator JSON field: systemic_drivers array 
+  with driver_name (3-5 words) and 
+  driver_explanation (one sentence) per driver
+- New REPORT_NARRATOR_PROMPT instruction: 
+  "Identify 2-3 systemic drivers — the upstream 
+  structural conditions that are the root cause 
+  of the majority of findings. A driver is not 
+  a finding; it is the condition that produces 
+  multiple findings. Every accepted finding should 
+  be traceable to at least one driver."
+- New section in report_generator.py between 
+  Executive Summary and How to Read This Document
+- Section map already dynamic — section numbers 
+  update automatically
+
+**Priority:** Low — build after causal chain 
+diagram. May be redundant once the causal chain 
+diagram visually shows the same relationships.
+
+**Build after:** Causal chain diagram is complete.
+---
 
 ## Checkpoint 5 — Dry Run 5 (Full Feature Validation)
 
@@ -318,7 +559,7 @@ domain maturity scoring.
   key quotes are attributable in the report
 
 **Pass criteria:**
-- Every finding has an evidence summary (P-codes) and 2–3 key quotes in the report
+- Every finding has a plain English evidence summary (no P-codes) and 2–3 key quotes in the report
 - Every roadmap item has a capability statement in the report
 - Economic impact context appears under roadmap items and as a phase-level narrative
 - At least one roadmap item has dependencies set — prerequisites appear in report
