@@ -92,7 +92,7 @@ input file count.
 ## Database
 
 **TOP.db** at path from TOP_DB_PATH env var.
-14 tables + `schema_migrations` tracking table. ID format: prefix + 3-digit zero-padded number (C001, E001, S001, EP001, etc.)
+12 tables + `schema_migrations` tracking table (13 total). ID format: prefix + 3-digit zero-padded number (C001, E001, S001, EP001, etc.)
 ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH directly.
 
 **Migration rule: every `ALTER TABLE` must be followed by an `INSERT INTO schema_migrations (version, applied_at) VALUES ('descriptive_name', 'YYYY-MM-DD')`.** Use a short snake_case version name describing what was added (e.g. `findings_display_fields`). This is the only record of which migrations have been applied to a given database.
@@ -186,7 +186,6 @@ captured at file processing time.
 | Engagement header counts don't refresh after write operations | EngagementDetail.jsx | Before Checkpoint 4 |
 | No reprocess button — must use DB Browser to clear ProcessedFiles | signals.py + SignalPanel.jsx | Before Checkpoint 4 |
 | Candidate JSON files accumulate in candidates folder | signals.py load-candidates | Before Checkpoint 4 — archive to processed/ subfolder |
-| DELIVERY_DOCUMENT_EXTRACTION_PROMPT not yet written — falls back to SIGNAL_EXTRACTION_PROMPT | document_processor.py:182 | Before Checkpoint 4 |
 | Agent registry URL is under /api/engagements but is not engagement-specific | agents.py | Phase 3 cosmetic fix — do not move without updating api.js |
 | process-files endpoint runs synchronously — long transcripts could timeout | signals.py | Phase 3 — background tasks |
 
@@ -197,7 +196,6 @@ captured at file processing time.
 See BACKLOG.md for full specs and build order. Summary of items before Checkpoint 4:
 
 - Word report template formatting cleanup (in progress)
-- DELIVERY_DOCUMENT_EXTRACTION_PROMPT
 - Reprocess button (frontend + backend)
 - Candidate file archival after loading
 - Engagement header count refresh
