@@ -226,6 +226,89 @@ independently testable and committable.
 
 ---
 
+### Signal Library — Implementation
+
+**Priority: High — foundational to diagnostic
+quality across all future engagements**
+
+**Problem:** TOP currently free-generates signal
+names from transcripts with no predefined catalog.
+Signals like "Presence of PMO function" or
+"Revenue per Consultant" only appear if an
+interviewee mentions them. Signal names are
+inconsistent across engagements making
+cross-engagement comparison meaningless.
+Absence of a signal — which is itself diagnostic —
+is never recorded.
+
+**Reference document:** `Signals/TOP_Signal_Library.md`
+in the repo. Contains 80 signals across
+all 10 domains with full definitions, maturity
+bands or threshold ranges, none_indicators,
+and pattern linkage. This is the authoritative
+content source for implementation.
+
+**Schema surface (three changes):**
+
+1. New SignalLibrary table — seed from
+   TOP_Signal_Library.md
+2. New SignalCoverage table — not-observed
+   gaps only, no status column
+3. ALTER TABLE OPDSignals ADD COLUMN
+   library_signal_id TEXT (nullable FK
+   to SignalLibrary)
+
+Full DDL is in TOP_Signal_Library.md
+Schema Reference section.
+
+**Two signal types requiring different
+extraction handling:**
+
+Numeric signals — Claude reads an observed
+value and maps it to a threshold band.
+Report: observed value + band label + source.
+
+Maturity signals — Claude reads qualitative
+evidence and maps to None/Informal/Defined/
+Managed/Optimized.
+CRITICAL: Only assign None if none_indicators
+are present. If topic not discussed, output
+not_observed. Never infer None from silence.
+
+**Extraction prompt changes:**
+
+Document prompts: domain-filtered signal slice
+only (see Domain Filter Map in library file).
+Interview prompts: full library — interviewees
+span all domains.
+
+Output format: found signals in standard
+candidate format + not_observed array of
+signal_ids for SignalCoverage rows.
+
+**Implementation scope — significant.
+Do not attempt in one session:**
+
+Session 1: SignalLibrary table + seeding
+script from TOP_Signal_Library.md +
+SignalCoverage table + library_signal_id
+column on OPDSignals.
+
+Session 2: Update extraction prompts with
+domain-filtered library injection +
+not_observed output format.
+
+Session 3: Router changes to write
+SignalCoverage rows from not_observed
+output + SignalPanel UI updates to show
+coverage gaps.
+
+**Build after:** Document Cleanup session
+and Economic Impact Table structured
+fields are complete.
+
+---
+
 ### Domain Maturity Scoring
 **Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
 no maturity score. Clients respond to scorecards in a way they don't respond to tables.
