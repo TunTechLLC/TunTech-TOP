@@ -24,7 +24,7 @@ maintainability and clarity, not scale or polish.
 
 ## Current Phase
 
-**Phase 2 — Post-Checkpoint 3 backlog work in progress**
+**Phase 2 — Post-Checkpoint 4 backlog work in progress**
 Read PROGRESS.md for completed steps. Read BACKLOG.md for what to build next and in what order.
 
 ---

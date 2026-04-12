@@ -228,8 +228,7 @@ independently testable and committable.
 
 ### Signal Library — Implementation
 
-**Priority: High — foundational to diagnostic
-quality across all future engagements**
+**Priority: High — foundational to diagnostic quality across all future engagements**
 
 **Problem:** TOP currently free-generates signal
 names from transcripts with no predefined catalog.
@@ -250,8 +249,12 @@ content source for implementation.
 
 **Schema surface (three changes):**
 
-1. New SignalLibrary table — seed from
-   TOP_Signal_Library.md
+1. New SignalLibrary table — columns include
+   signal_id, signal_name, domain, signal_type,
+   definition, priority_tier (INTEGER DEFAULT 2),
+   threshold_bands (JSON), maturity_levels (JSON),
+   none_indicators, contributing_patterns,
+   created_date. Seed from TOP_Signal_Library.md.
 2. New SignalCoverage table — not-observed
    gaps only, no status column
 3. ALTER TABLE OPDSignals ADD COLUMN

@@ -14,6 +14,7 @@ CREATE TABLE SignalLibrary (
     domain           TEXT NOT NULL,
     signal_type      TEXT NOT NULL,     -- 'numeric' | 'maturity'
     definition       TEXT NOT NULL,     -- what this measures and why it matters diagnostically
+    priority_tier    INTEGER NOT NULL DEFAULT 2,  -- 1 = primary diagnostic set, 2 = full coverage
     -- Numeric signals only:
     threshold_bands  TEXT,              -- JSON: [{min, max, label, description}] null=open bound
     -- Maturity signals only:
@@ -45,6 +46,41 @@ ALTER TABLE OPDSignals ADD COLUMN library_signal_id TEXT;
 
 ---
 
+## Priority Tier Reference
+
+**Tier 1 — Primary Diagnostic Set (24 signals)**
+These signals drive the majority of diagnostic power and economic insight. They are reliably
+extractable from interview transcripts and light document review, feed the most critical
+patterns, and connect directly to revenue, margin, and delivery performance.
+
+Tier 1 signals are checked on every relevant file type and form the core diagnostic layer
+of TOP. When extraction capacity is limited, these signals are always prioritized.
+
+These signals are intentionally constrained to minimize overlap and maximize clarity of
+diagnostic output.
+
+**Tier 2 — Full Coverage Set (52 signals)**
+These signals provide diagnostic depth and coverage gap tracking. They are important for
+completeness and cross-engagement analysis but are secondary to Tier 1 for pattern detection
+and economic modeling. Tier 2 signals are checked when the domain is rich enough to warrant
+full library coverage.
+
+### Tier 1 Signals by Domain
+| Domain | Tier 1 Signals |
+|--------|---------------|
+| Sales & Pipeline | SL-01, SL-05, SL-06 |
+| Sales-to-Delivery Transition | SL-12, SL-13 |
+| Delivery Operations | SL-17, SL-18, SL-19, SL-20, SL-23 |
+| Resource Management | SL-25, SL-27, SL-28 |
+| Project Governance / PMO | SL-32, SL-36 |
+| Consulting Economics | SL-38, SL-39, SL-40, SL-41 |
+| Customer Experience | SL-46 |
+| AI Readiness | SL-52 |
+| Human Resources | SL-58 |
+| Finance and Commercial | SL-66 |
+
+---
+
 ## Extraction Prompt Instructions
 
 ### For numeric signals
@@ -66,6 +102,13 @@ When a library signal is checked against a source file and no evidence is found:
 - Include its signal_id in the not_observed array
 - The router writes a SignalCoverage row for each not_observed signal_id
 
+### Priority tier usage in extraction
+- For all file types: always check all Tier 1 signals in the applicable domain slice
+- For interview files (full library): check all Tier 1 + all Tier 2 signals
+- For document files (domain-filtered): check all Tier 1 in applicable domains;
+  check Tier 2 signals in applicable domains when source material is rich enough
+  to warrant full coverage
+
 ---
 
 ## Domain Filter Map (for document-type extraction prompts)
@@ -85,12 +128,13 @@ When a library signal is checked against a source file and no evidence is found:
 
 *Signals in this domain measure the health and predictability of the revenue pipeline.
 Weak pipeline signals are the leading indicator of revenue instability that appears in
-Consulting Economics signals 1–2 quarters later.*
+Consulting Economics signals 1-2 quarters later.*
 
 ---
 
 ### SL-01 — Pipeline Coverage Ratio
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Total weighted pipeline value divided by quarterly revenue target. Measures
   whether the firm has enough opportunity volume to reliably make its revenue number.
 - **Threshold Bands:**
@@ -104,6 +148,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-02 — Forecast Accuracy
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Ratio of actual revenue closed in a period to the forecast made at period
   start. Low accuracy signals either poor deal qualification or premature commitment to pipeline.
 - **Threshold Bands:**
@@ -117,6 +162,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-03 — Average Deal Size
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Mean contract value across closed deals in the trailing 12 months, in
   thousands of dollars. Flat or declining trend relative to prior periods signals pricing or
   scope discipline issues.
@@ -131,6 +177,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-04 — Sales Cycle Length
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average days from first substantive client meeting to signed contract.
   Long cycles tie up sales capacity and signal unclear value proposition or weak qualification.
 - **Threshold Bands:**
@@ -144,19 +191,21 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-05 — Proposal Win Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Percentage of submitted proposals that result in a signed contract.
   Below target indicates misaligned targeting, weak differentiation, or poor proposal quality.
 - **Threshold Bands:**
   - `{min: null, max: 20, label: "Critical", description: "Proposal investment is generating poor returns. Targeting and qualification need review."}`
   - `{min: 20, max: 35, label: "Below Target", description: "Below mid-market consulting benchmark. Proposal quality or targeting discipline needed."}`
   - `{min: 35, max: 55, label: "Healthy", description: "Healthy for competitive consulting sales. Indicates reasonable qualification."}`
-  - `{min: 55, max: null, label: "Strong", description: "High win rate. Indicates disciplined qualification — only proposing winnable work."}`
+  - `{min: 55, max: null, label: "Strong", description: "High win rate. Indicates disciplined qualification -- only proposing winnable work."}`
 - **Contributing Patterns:** P04, P05
 
 ---
 
 ### SL-06 — Revenue Concentration (Top Client %)
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Percentage of total annual revenue from the single largest client.
   High concentration creates existential risk from one relationship failure.
 - **Threshold Bands:**
@@ -170,6 +219,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-07 — Repeat Business Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of revenue from clients with more than one engagement in the
   trailing 24 months. High repeat rate indicates delivery quality and relationship strength.
 - **Threshold Bands:**
@@ -183,6 +233,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-08 — Discount Frequency
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of deals closed below the standard rate card in the trailing
   12 months. High discount frequency indicates weak pricing governance.
 - **Threshold Bands:**
@@ -196,19 +247,21 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-09 — Pipeline Stage Conversion Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of opportunities advancing from qualification to proposal stage.
   Low conversion at a specific stage identifies the primary constraint in the sales process.
 - **Threshold Bands:**
   - `{min: null, max: 30, label: "Low", description: "Most qualified opportunities do not progress. Qualification criteria may be too loose or value proposition unclear."}`
   - `{min: 30, max: 50, label: "Below Target", description: "Below benchmark for mid-market consulting. Review qualification and proposal triggers."}`
   - `{min: 50, max: 70, label: "Healthy", description: "Acceptable conversion. Indicates reasonable qualification discipline."}`
-  - `{min: 70, max: null, label: "Strong", description: "High conversion. Indicates disciplined qualification — only advancing winnable opportunities."}`
+  - `{min: 70, max: null, label: "Strong", description: "High conversion. Indicates disciplined qualification -- only advancing winnable opportunities."}`
 - **Contributing Patterns:** P01, P02, P04
 
 ---
 
 ### SL-10 — Account Expansion Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Year-over-year revenue change within existing client accounts, excluding
   new logo revenue. Flat or declining account revenue signals absence of structured account
   development.
@@ -223,6 +276,7 @@ Consulting Economics signals 1–2 quarters later.*
 
 ### SL-11 — Pre-Sales Cost as % of Deal Value
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Total internal hours invested in pre-sales activity (discovery, proposal
   development, solutioning) divided by the deal value, expressed as a percentage. High ratios
   indicate proposal investment is not proportionate to deal size.
@@ -238,13 +292,14 @@ Consulting Economics signals 1–2 quarters later.*
 ## Domain 2: Sales-to-Delivery Transition
 
 *Signals in this domain measure the quality of the handoff between commercial commitments
-and delivery execution. Failures here are the primary structural cause of fixed-fee overruns —
+and delivery execution. Failures here are the primary structural cause of fixed-fee overruns --
 they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ---
 
 ### SL-12 — Delivery Participation in Pre-Sales
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** Whether and how delivery leadership reviews and validates fixed-fee SOWs
   before execution. The absence of delivery sign-off authority is the primary structural cause
   of fixed-fee overruns.
@@ -264,6 +319,7 @@ they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ### SL-13 — SOW Completeness
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** Whether SOWs consistently include defined deliverables, client obligation
   language, change order thresholds, completion criteria, and liability provisions.
 - **Maturity Levels:**
@@ -281,6 +337,7 @@ they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ### SL-14 — Formal Handoff Process
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether a structured transition meeting between sales and delivery occurs
   before kickoff to transfer context, scope clarity, client relationship history, and staffing
   plan.
@@ -299,6 +356,7 @@ they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ### SL-15 — Change Order Rate in First 30 Days
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average number of change orders initiated within the first 30 days of a
   project across active engagements. High early change order volume indicates pre-sales scoping
   failures.
@@ -313,6 +371,7 @@ they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ### SL-16 — Kickoff Readiness
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether a standard kickoff readiness checklist (client contacts, environment
   access, resource assignments, timeline, success criteria alignment) is completed before
   project start.
@@ -331,13 +390,14 @@ they are upstream of PM execution and cannot be resolved by PM coaching alone.*
 
 ## Domain 3: Delivery Operations
 
-*High variance in delivery signals — rather than uniformly poor performance — typically
+*High variance in delivery signals -- rather than uniformly poor performance -- typically
 indicates PM capability differences rather than systemic model failures.*
 
 ---
 
 ### SL-17 — On-Time Delivery Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Percentage of active projects tracking to original or approved revised
   timeline at last portfolio review.
 - **Threshold Bands:**
@@ -351,6 +411,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-18 — On-Budget Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Percentage of active fixed-fee projects tracking at or below confirmed
   budget at last review.
 - **Threshold Bands:**
@@ -364,6 +425,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-19 — Average Estimation Error
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Mean variance between initial project estimate and actual hours or cost at
   completion, expressed as a percentage. Positive = over-budget.
 - **Threshold Bands:**
@@ -377,6 +439,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-20 — Change Order Discipline Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Percentage of confirmed out-of-scope additions that result in a signed
   change order before work proceeds. Denominator includes all scope additions identified
   during delivery.
@@ -391,6 +454,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-21 — Risk Register Usage
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether active projects maintain current risk registers updated at a
   defined cadence.
 - **Maturity Levels:**
@@ -408,6 +472,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-22 — Delivery Methodology Consistency
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether all projects follow a consistent delivery framework with defined
   phase gates, artifacts, and review checkpoints.
 - **Maturity Levels:**
@@ -424,7 +489,8 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-23 — Rework Rate
 - **Type:** Numeric
-- **Definition:** Percentage of total delivery hours attributed to rework — correcting
+- **Priority Tier:** 1
+- **Definition:** Percentage of total delivery hours attributed to rework -- correcting
   deliverables that did not meet requirements or client expectations on first submission.
 - **Threshold Bands:**
   - `{min: null, max: 5, label: "Strong", description: "Low rework. Quality processes and client alignment are working."}`
@@ -437,6 +503,7 @@ indicates PM capability differences rather than systemic model failures.*
 
 ### SL-24 — Unplanned Work Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of total delivery hours in a period attributed to work not
   included in the project plan at the start of that period.
 - **Threshold Bands:**
@@ -450,13 +517,14 @@ indicates PM capability differences rather than systemic model failures.*
 
 ## Domain 4: Resource Management
 
-*The simultaneous presence of high bench cost and PM shortage — a bench-vacancy paradox —
+*The simultaneous presence of high bench cost and PM shortage -- a bench-vacancy paradox --
 is a signature signal of role-composition mismatch rather than overall headcount inadequacy.*
 
 ---
 
 ### SL-25 — Billable Utilization Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Billable hours as a percentage of total available hours across all
   billable consultants. Excludes planned PTO and holidays.
 - **Threshold Bands:**
@@ -470,6 +538,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-26 — Utilization Variance
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Standard deviation of billable utilization rates across individual
   consultants. High variance indicates unequal distribution of billable work.
 - **Threshold Bands:**
@@ -483,6 +552,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-27 — Over-Allocation Frequency
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Number of consultants assigned beyond 100% of their confirmed capacity
   at any point in the trailing 90 days.
 - **Threshold Bands:**
@@ -496,6 +566,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-28 — Consultant Voluntary Turnover Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Annual percentage of billable consultants who leave voluntarily, calculated
   on a trailing 12-month basis.
 - **Threshold Bands:**
@@ -509,6 +580,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-29 — Time to Staff New Project
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average days from project award (signed contract) to full team assignment
   confirmed.
 - **Threshold Bands:**
@@ -522,6 +594,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-30 — Delivery Capacity Forecasting
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm can produce a forward view of PM and consultant demand
   against confirmed pipeline, enabling planned responses to capacity gaps before they become
   crises.
@@ -540,6 +613,7 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ### SL-31 — Skill-Based Staffing Practice
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether assignments are made based on confirmed skill match to project
   requirements, rather than primarily on availability.
 - **Maturity Levels:**
@@ -557,13 +631,14 @@ is a signature signal of role-composition mismatch rather than overall headcount
 
 ## Domain 5: Project Governance / PMO
 
-*The absence of formal governance structures — PMO, dashboard, defined escalation paths —
+*The absence of formal governance structures -- PMO, dashboard, defined escalation paths --
 is itself a maturity signal regardless of current delivery performance.*
 
 ---
 
 ### SL-32 — PMO Maturity
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** The presence, authority, and effectiveness of a formal project management
   office or equivalent governance function with authority over delivery standards, PM
   accountability, and portfolio reporting.
@@ -582,6 +657,7 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ### SL-33 — Portfolio Reporting Quality
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether all active projects produce status reports in a standard format
   on a defined cadence, enabling portfolio-level comparison and early warning detection.
 - **Maturity Levels:**
@@ -599,6 +675,7 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ### SL-34 — Issue Escalation Time
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average days between a project issue being identified internally and
   formal escalation to leadership for at-risk (Amber or Red) projects.
 - **Threshold Bands:**
@@ -612,6 +689,7 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ### SL-35 — Governance Cadence
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** The frequency and regularity of portfolio-level governance reviews attended
   by delivery leadership, covering project health, risk, and resource.
 - **Maturity Levels:**
@@ -629,6 +707,7 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ### SL-36 — Operational KPI Coverage
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** Whether the firm tracks and reviews a defined set of operational KPIs
   (utilization, on-time delivery, NPS, margin) at a defined cadence.
 - **Maturity Levels:**
@@ -646,7 +725,8 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ### SL-37 — Decision Authority Clarity
 - **Type:** Maturity
-- **Definition:** Whether decision rights are formally defined and delegated — particularly
+- **Priority Tier:** 2
+- **Definition:** Whether decision rights are formally defined and delegated -- particularly
   whether delivery leaders can enforce PM standards, staffing, and change orders without
   CEO approval for each action.
 - **Maturity Levels:**
@@ -664,13 +744,14 @@ is itself a maturity signal regardless of current delivery performance.*
 
 ## Domain 6: Consulting Economics
 
-*Economic signals are the downstream output of failures in all other domains — pricing,
+*Economic signals are the downstream output of failures in all other domains -- pricing,
 delivery, resource, and governance failures all eventually appear in the economics data.*
 
 ---
 
 ### SL-38 — Revenue per Billable Consultant
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Annual revenue divided by total billable headcount. Measures productivity
   of the delivery organization. Trend direction is as important as the current value.
 - **Threshold Bands:**
@@ -684,6 +765,7 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-39 — Gross Margin (Firm Level)
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Revenue minus direct delivery costs (labor, contractor, delivery tools)
   as a percentage of revenue, measured at the firm level. Trend direction over 2+ years
   is a critical diagnostic context.
@@ -698,11 +780,12 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-40 — Gross Margin Trend
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Change in gross margin percentage over the trailing 3-year period, in
   percentage points. Trend direction is often more diagnostic than the current level.
 - **Threshold Bands:**
   - `{min: null, max: -5, label: "Deteriorating", description: "Margin is compressing materially. Structural drivers must be identified and addressed."}`
-  - `{min: -5, max: -2, label: "Declining", description: "Moderate compression. Monitor cause — could be investment-driven or structural."}`
+  - `{min: -5, max: -2, label: "Declining", description: "Moderate compression. Monitor cause -- could be investment-driven or structural."}`
   - `{min: -2, max: 2, label: "Stable", description: "Margin is holding. Confirm this reflects discipline, not masking deterioration in mix."}`
   - `{min: 2, max: null, label: "Improving", description: "Margin expansion. Pricing discipline, utilization improvement, or favorable mix shift."}`
 - **Contributing Patterns:** P38, P43, P35
@@ -711,6 +794,7 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-41 — Billable Rate Realization
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Average realized bill rate as a percentage of the standard rate card
   target, across all closed deals in the trailing 12 months.
 - **Threshold Bands:**
@@ -724,6 +808,7 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-42 — EBITDA Margin
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Earnings before interest, taxes, depreciation, and amortization as a
   percentage of revenue. The primary measure of firm profitability and reinvestment capacity.
 - **Threshold Bands:**
@@ -737,6 +822,7 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-43 — Non-Billable Overhead Ratio
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Non-billable hours (internal meetings, business development, administration,
   training) as a percentage of total consultant hours.
 - **Threshold Bands:**
@@ -750,6 +836,7 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-44 — Revenue Predictability
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of next-quarter revenue that is contracted or highly probable
   (>80% confidence) at the start of the quarter.
 - **Threshold Bands:**
@@ -763,26 +850,28 @@ delivery, resource, and governance failures all eventually appear in the economi
 
 ### SL-45 — Consulting Leverage Ratio
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Ratio of junior to senior billable consultants. Low leverage indicates
   over-reliance on senior staff for delivery, compressing margins.
 - **Threshold Bands:**
   - `{min: null, max: 1.0, label: "Inverted", description: "More senior than junior consultants. Delivery cost is high relative to revenue potential. Margin compression likely."}`
   - `{min: 1.0, max: 2.0, label: "Below Target", description: "Moderate leverage. Senior-heavy delivery model constrains margin and scale."}`
   - `{min: 2.0, max: 3.5, label: "Healthy", description: "Healthy leverage for mid-market project delivery."}`
-  - `{min: 3.5, max: null, label: "High Leverage", description: "High leverage. Monitor delivery quality — senior oversight per junior consultant may be thin."}`
+  - `{min: 3.5, max: null, label: "High Leverage", description: "High leverage. Monitor delivery quality -- senior oversight per junior consultant may be thin."}`
 - **Contributing Patterns:** P41, P42
 
 ---
 
 ## Domain 7: Customer Experience
 
-*Customer experience signals are lagging indicators — by the time NPS declines or escalations
+*Customer experience signals are lagging indicators -- by the time NPS declines or escalations
 occur, the operational failures that caused them are typically 1-2 quarters old.*
 
 ---
 
 ### SL-46 — Net Promoter Score
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Standard NPS survey score across the active client base. Measured on a
   recurring basis (minimum annually). Trend direction between periods is diagnostic.
 - **Threshold Bands:**
@@ -796,6 +885,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 ### SL-47 — Client Escalation Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Number of client-initiated escalations above the PM level per quarter
   per 10 active projects. Any CTO or executive-level client escalation is a high-severity
   indicator regardless of rate.
@@ -810,6 +900,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 ### SL-48 — Project Renewal Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of completed projects where the client commissioned follow-on
   work within 12 months.
 - **Threshold Bands:**
@@ -823,8 +914,9 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 ### SL-49 — Client Communication Cadence
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether clients receive proactive, structured status communications from
-  PMs on a defined cadence — beyond reactive responses to client inquiries.
+  PMs on a defined cadence -- beyond reactive responses to client inquiries.
 - **Maturity Levels:**
   - `{level: 0, label: "None", description: "Clients receive no structured proactive communication. Updates occur only when clients ask."}`
   - `{level: 1, label: "Informal", description: "Some PMs communicate proactively at their own discretion. No standard format or cadence."}`
@@ -832,7 +924,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
   - `{level: 3, label: "Managed", description: "All projects maintain a weekly client status communication. Standard format used consistently."}`
   - `{level: 4, label: "Optimized", description: "Proactive communication is automated or systematized. Clients have portal access to real-time project status."}`
 - **None Indicators:** Multiple clients report discovering project problems through their
-  own tracking rather than Northstar communication. Client satisfaction data shows
+  own tracking rather than proactive communication. Client satisfaction data shows
   communication as the lowest-rated category. PM confirms updates are sent only when asked.
 - **Contributing Patterns:** P45, P44
 
@@ -840,8 +932,9 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 ### SL-50 — Time to Resolve Client Issue
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average days from a client raising an issue to formal resolution
-  acknowledgment from Northstar leadership. Excludes the technical resolution time —
+  acknowledgment from leadership. Excludes the technical resolution time --
   measures the relationship response speed.
 - **Threshold Bands:**
   - `{min: null, max: 2, label: "Fast", description: "Client issues receive prompt acknowledgment. Relationship responsiveness is strong."}`
@@ -854,6 +947,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 ### SL-51 — Stakeholder Alignment
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether key client stakeholders (executive sponsor, day-to-day contact,
   technical lead) are aligned on project scope, timeline, and success criteria at kickoff
   and maintained through delivery.
@@ -874,13 +968,14 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
 
 *AI Readiness signals measure both the compliance exposure from ungoverned AI tool adoption
 and the competitive positioning opportunity from governed AI delivery capability. Both
-dimensions are active — the risk exists today on signed contracts; the opportunity is
+dimensions are active -- the risk exists today on signed contracts; the opportunity is
 being captured by competitors in active deal evaluations.*
 
 ---
 
 ### SL-52 — AI Usage Policy
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** Whether a formal, published AI acceptable use policy governs which tools
   can be used on client engagements, under what conditions, and with what data handling
   restrictions.
@@ -899,6 +994,7 @@ being captured by competitors in active deal evaluations.*
 
 ### SL-53 — AI Tool Use in Delivery
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** The degree to which AI tools are actively used in billable delivery work,
   and whether that usage is governed, consistent, and producing measurable productivity gains.
 - **Maturity Levels:**
@@ -915,6 +1011,7 @@ being captured by competitors in active deal evaluations.*
 
 ### SL-54 — SOW AI Provisions
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the standard SOW template includes language governing AI tool
   use, data handling for AI-processed content, and client disclosure requirements.
 - **Maturity Levels:**
@@ -932,6 +1029,7 @@ being captured by competitors in active deal evaluations.*
 
 ### SL-55 — AI Competitive Positioning
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm has a defined, client-facing AI capability narrative
   and whether AI methodology is incorporated into competitive proposals.
 - **Maturity Levels:**
@@ -949,8 +1047,9 @@ being captured by competitors in active deal evaluations.*
 
 ### SL-56 — AI Business Model Readiness
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm's billing model and pricing framework account for the
-  economic impact of AI-accelerated delivery — specifically whether time-and-materials
+  economic impact of AI-accelerated delivery -- specifically whether time-and-materials
   billing is being applied to AI-compressed work without a compensating value-based or
   outcome-based pricing adjustment.
 - **Maturity Levels:**
@@ -967,6 +1066,7 @@ being captured by competitors in active deal evaluations.*
 
 ### SL-57 — Client Data Handling for AI
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether data classification rules govern which client data categories
   can be processed by which AI tools, preventing unintended exposure of confidential
   or regulated client data to public AI models.
@@ -985,7 +1085,7 @@ being captured by competitors in active deal evaluations.*
 
 ## Domain 9: Human Resources
 
-*HR signals are often late-surfacing — by the time turnover increases or performance
+*HR signals are often late-surfacing -- by the time turnover increases or performance
 management failures become visible, the cultural or structural conditions that caused
 them have been present for 12-18 months.*
 
@@ -993,6 +1093,7 @@ them have been present for 12-18 months.*
 
 ### SL-58 — Voluntary Turnover Rate
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Annual percentage of all employees (not just consultants) who leave
   voluntarily, trailing 12 months. Consultant and PM-specific rates are more diagnostic
   when available.
@@ -1007,6 +1108,7 @@ them have been present for 12-18 months.*
 
 ### SL-59 — Career Development Framework
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether defined career paths, promotion criteria, and individual
   development planning exist for consulting staff.
 - **Maturity Levels:**
@@ -1024,6 +1126,7 @@ them have been present for 12-18 months.*
 
 ### SL-60 — Performance Management Maturity
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether a structured performance management process (goal setting,
   regular feedback, documented reviews, formal improvement plans) exists for consulting staff.
 - **Maturity Levels:**
@@ -1041,6 +1144,7 @@ them have been present for 12-18 months.*
 
 ### SL-61 — Manager Development Investment
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether people managers receive structured training and development for
   their management responsibilities, distinct from their technical consulting skills.
 - **Maturity Levels:**
@@ -1058,6 +1162,7 @@ them have been present for 12-18 months.*
 
 ### SL-62 — HR Infrastructure Maturity
 - **Type:** Maturity
+- **Priority Tier:** 1
 - **Definition:** Whether formal HR policies, compliance practices, and HR operational
   capacity exist proportionate to the firm's headcount.
 - **Maturity Levels:**
@@ -1075,6 +1180,7 @@ them have been present for 12-18 months.*
 
 ### SL-63 — Hiring Process Maturity
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether a structured, consistent hiring process (defined criteria,
   standardized interview stages, calibration, scoring) exists and is used for all roles.
 - **Maturity Levels:**
@@ -1092,6 +1198,7 @@ them have been present for 12-18 months.*
 
 ### SL-64 — Compensation Competitiveness
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm benchmarks its compensation against market data and
   whether compensation decisions are informed by that benchmarking rather than made
   based on budget alone.
@@ -1110,6 +1217,7 @@ them have been present for 12-18 months.*
 
 ### SL-65 — Succession Planning
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm has identified and is developing internal successors
   for key delivery and leadership roles, reducing single-point-of-failure dependency.
 - **Maturity Levels:**
@@ -1135,6 +1243,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-66 — Monthly Financial Close Cycle
 - **Type:** Numeric
+- **Priority Tier:** 1
 - **Definition:** Business days required to close the monthly financial books from the
   last day of the month. Slow close creates a decision lag that prevents timely intervention
   on deteriorating projects.
@@ -1149,8 +1258,9 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-67 — Deal-Level Rate Tracking
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm can produce a report showing realized bill rate, discount
-  amount, and gross margin at the individual deal level — enabling attribution of rate
+  amount, and gross margin at the individual deal level -- enabling attribution of rate
   leakage to specific clients, salespeople, or deal types.
 - **Maturity Levels:**
   - `{level: 0, label: "None", description: "Only firm-level average rate is available. Deal-level rate data does not exist."}`
@@ -1167,6 +1277,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-68 — Project-Level Margin Reporting
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm can produce project-level gross margin reports on a
   defined cadence, enabling proactive intervention on deteriorating engagements before
   the financial outcome is locked.
@@ -1185,6 +1296,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-69 — Cash Flow Forecasting
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm maintains a forward-looking cash flow forecast enabling
   proactive management of working capital, hiring investment, and operating expenses.
 - **Maturity Levels:**
@@ -1202,6 +1314,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-70 — Collections Discipline
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether a formal accounts receivable collections process exists with
   defined escalation thresholds, follow-up cadence, and accountability for overdue invoices.
 - **Maturity Levels:**
@@ -1218,6 +1331,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-71 — Days Sales Outstanding (DSO)
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Average days between invoice date and payment receipt, across all clients
   in the trailing 90 days. High DSO creates working capital drag even when revenue is strong.
 - **Threshold Bands:**
@@ -1231,6 +1345,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-72 — Contract Governance Maturity
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether client contracts are reviewed against standard commercial
   protections before execution, including liability caps, IP provisions, and dispute
   resolution terms.
@@ -1249,6 +1364,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-73 — Financial System Maturity
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm's accounting and financial reporting systems are
   proportionate to its headcount, revenue complexity, and reporting needs.
 - **Maturity Levels:**
@@ -1266,6 +1382,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-74 — Budget and Planning Process
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm conducts formal annual budgeting and quarterly
   reforecasting against a defined financial plan.
 - **Maturity Levels:**
@@ -1283,6 +1400,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-75 — Fixed-Fee vs T&M Mix
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of annual revenue from fixed-fee contracts (as opposed to
   time-and-materials). High fixed-fee concentration increases margin exposure to scoping
   and estimation failures.
@@ -1297,6 +1415,7 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-76 — Accounts Receivable Aging Distribution
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of total outstanding accounts receivable that is more than
   60 days past invoice date. Average DSO can mask a small number of severely aged
   receivables that represent concentrated cash flow and client relationship risk.
@@ -1311,9 +1430,10 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-77 — Unbilled Revenue (WIP) Tracking
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether work delivered but not yet invoiced (work-in-progress) is
   tracked and reported as a balance sheet item on a defined cadence. Untracked WIP is
-  a hidden cash flow risk — the firm has performed the work but has not yet converted
+  a hidden cash flow risk -- the firm has performed the work but has not yet converted
   it to receivable or cash.
 - **Maturity Levels:**
   - `{level: 0, label: "None", description: "WIP is not tracked. Unbilled revenue is invisible until invoices are generated. Cash flow surprises are common."}`
@@ -1330,13 +1450,14 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-78 — Invoice Accuracy Rate
 - **Type:** Numeric
+- **Priority Tier:** 2
 - **Definition:** Percentage of invoices issued in the trailing 90 days that were disputed
   by the client or required revision before payment. Invoice disputes extend DSO, damage
   client relationships, and are a downstream symptom of SOW gaps or time tracking failures.
 - **Threshold Bands:**
   - `{min: null, max: 3, label: "Strong", description: "Invoice accuracy is high. SOW clarity and time tracking are producing clean billing."}`
   - `{min: 3, max: 8, label: "Acceptable", description: "Minor dispute rate. Review recurring dispute causes for process improvement opportunities."}`
-  - `{min: 8, max: 15, label: "Elevated", description: "Frequent disputes are extending DSO and consuming finance and PM time. Root cause is upstream — SOW clarity or time tracking."}`
+  - `{min: 8, max: 15, label: "Elevated", description: "Frequent disputes are extending DSO and consuming finance and PM time. Root cause is upstream -- SOW clarity or time tracking."}`
   - `{min: 15, max: null, label: "Critical", description: "Invoice disputes are a defining characteristic of the billing relationship. Client trust and cash flow are both at risk."}`
 - **Contributing Patterns:** P57, P59, P07
 
@@ -1344,9 +1465,10 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-79 — Budget vs Actual Variance Reporting
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm actively reviews budget-to-actual variance on a defined
   cadence and whether that variance analysis drives management decisions. Distinct from
-  having a budget — many firms produce an annual budget in January and never reference
+  having a budget -- many firms produce an annual budget in January and never reference
   it again.
 - **Maturity Levels:**
   - `{level: 0, label: "None", description: "No budget exists or budget is not compared to actuals. Financial decisions are made without reference to a plan."}`
@@ -1363,8 +1485,9 @@ without upgrading it lose the ability to detect deterioration in real time.*
 
 ### SL-80 — Revenue Recognition Practices
 - **Type:** Maturity
+- **Priority Tier:** 2
 - **Definition:** Whether the firm applies a consistent, appropriate revenue recognition
-  methodology for its contract types — particularly whether percentage-of-completion or
+  methodology for its contract types -- particularly whether percentage-of-completion or
   milestone-based recognition on fixed-fee work accurately reflects delivery reality
   rather than inflating reported revenue ahead of project economics.
 - **Maturity Levels:**
@@ -1442,4 +1565,3 @@ without upgrading it lose the ability to detect deterioration in real time.*
 | P58 No Cash Flow Visibility | SL-69, SL-71, SL-77, SL-79 |
 | P59 Weak Contract Governance | SL-72, SL-54 |
 | P60 Immature Financial Infrastructure | SL-73, SL-66, SL-68, SL-74, SL-77, SL-79, SL-80 |
-
