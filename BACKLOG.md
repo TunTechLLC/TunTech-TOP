@@ -91,6 +91,27 @@ industry estimate."
 
 ## Technical Debt — Address Before Next Major Feature
 
+### Build Sequence — Verified 2026-04-13
+
+Full code investigation confirmed this order. Work top to bottom within this section.
+
+| # | Item | Sessions |
+|---|------|----------|
+| 1 | Document Cleanup (pattern codes + future state table) | 1 |
+| 2 | Split `report_generator.py` | 1 |
+| 3 | Economic Structured Fields — Sessions A+B | 2 |
+| 4 | Economic Structured Fields — Session C | 1 |
+| 5 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 6 | Editable Engagement Info | 1 |
+| 7 | Domain Maturity Scoring | 1 |
+| 8 | Visual 3 — Causal Chain | 1 |
+
+Economic A+B come **after** the split — add to the clean post-split structure.
+Economic C requires the split to be done first.
+DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
+
+---
+
 ### Split report_generator.py into orchestrator and section renderers
 
 **Priority: High — do before any further Visual Generator Layer work**
@@ -295,11 +316,18 @@ Do not attempt in one session:**
 Session 1: SignalLibrary table + seeding
 script from TOP_Signal_Library.md +
 SignalCoverage table + library_signal_id
-column on OPDSignals.
+column on OPDSignals. Also add
+DEFAULT_DOMAIN constant to domains.py
+and constants.js; replace 7 hardcoded
+fallback strings (see DEFAULT_DOMAIN item).
 
 Session 2: Update extraction prompts with
 domain-filtered library injection +
-not_observed output format.
+not_observed output format. Also fix
+domain list injection — all 6 prompts in
+document_processor.py have hardcoded domain
+lists instead of injecting from VALID_DOMAINS.
+Fix this here, not in a separate session.
 
 Session 3: Router changes to write
 SignalCoverage rows from not_observed
@@ -341,6 +369,14 @@ no maturity score. Clients respond to scorecards in a way they don't respond to 
 ---
 
 ### DEFAULT_DOMAIN Constant — Centralize Hardcoded Domain Fallback
+
+**Do not build as a standalone session. Split across Signal Library Sessions 1 and 2:**
+- **Session 1:** Add `DEFAULT_DOMAIN = 'Delivery Operations'` to `api/utils/domains.py` and
+  `src/constants.js`. Replace the 7 hardcoded fallback strings in backend and frontend files.
+- **Session 2:** Fix domain list injection in all extraction prompts — the domain lists in all
+  6 prompts in `document_processor.py` are hardcoded literal strings, not injected from
+  `VALID_DOMAINS`. Signal Library Session 2 rewrites all extraction prompts anyway — fix
+  the injection at that point. Touching these prompts twice is wrong.
 
 **Problem:** The string `'Delivery Operations'` is hardcoded as a fallback default in 3 backend
 files and 4 frontend components. If the default ever changes it must be updated in 7 places.
