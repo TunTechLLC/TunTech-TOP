@@ -10,11 +10,55 @@ from api.db.repositories.engagement import EngagementRepository
 from api.models.finding import FindingCreate, FindingUpdate, FindingResponse
 from api.utils.domains import VALID_DOMAINS, VALID_FINDING_CONFIDENCES, VALID_PRIORITIES, VALID_EFFORTS
 from api.services.report_generator import _prepopulate_display_figure
+from api.services.report_sections import (
+    _parse_economic_figures, _format_display_figure, _parse_display_figure_to_float,
+)
 from api.services.claude import suggest_display_label
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+_ANNUAL_DRAG_DOMAINS = frozenset({
+    'Consulting Economics', 'Finance and Commercial',
+    'Resource Management', 'Human Resources',
+})
+
+
+def _suggest_economic_figures(economic_impact: str, domain: str,
+                               confirmed_rev: float | None) -> dict:
+    """Suggest confirmed_figure, derived_figure, annual_drag_figure from
+    economic_impact text. Returns dict with three suggested_* keys.
+    Values are None when no parseable figure exists or field not applicable.
+    Prepends ⚠ prefix if suggested value exceeds confirmed_rev."""
+    conf_str, deriv_str, _ = _parse_economic_figures(economic_impact)
+
+    def _build(raw_str: str):
+        if raw_str == '\u2014':
+            return None
+        raw = raw_str.split(', ')[0]
+        fmt = _format_display_figure(raw)
+        if confirmed_rev is not None:
+            val = _parse_display_figure_to_float(fmt)
+            if val is not None and val > confirmed_rev:
+                fmt = f'\u26a0 {fmt}'
+        return fmt
+
+    suggested_confirmed = _build(conf_str)
+    suggested_derived   = _build(deriv_str)
+
+    if domain in _ANNUAL_DRAG_DOMAINS:
+        drag_str = deriv_str if deriv_str != '\u2014' else conf_str
+        suggested_annual_drag = _build(drag_str)
+    else:
+        suggested_annual_drag = None
+
+    return {
+        'suggested_confirmed_figure':   suggested_confirmed,
+        'suggested_derived_figure':     suggested_derived,
+        'suggested_annual_drag_figure': suggested_annual_drag,
+    }
 
 
 def get_finding_repo() -> FindingRepository:
@@ -128,6 +172,20 @@ async def list_findings(
             row['suggested_figure']      = None
             row['suggested_label']       = None
             row['suggested_figure_type'] = None
+
+        # Economic figure suggestions — one parse per row, mask stored fields
+        suggestions = _suggest_economic_figures(
+            row.get('economic_impact') or '',
+            row.get('domain') or '',
+            confirmed_rev,
+        )
+        row['suggested_confirmed_figure']   = (suggestions['suggested_confirmed_figure']
+                                                if row.get('confirmed_figure')   is None else None)
+        row['suggested_derived_figure']     = (suggestions['suggested_derived_figure']
+                                                if row.get('derived_figure')     is None else None)
+        row['suggested_annual_drag_figure'] = (suggestions['suggested_annual_drag_figure']
+                                                if row.get('annual_drag_figure') is None else None)
+
         enriched.append(row)
 
     # Phase 2: parallel Claude calls for labels

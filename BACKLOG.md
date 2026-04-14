@@ -11,12 +11,11 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Economic Structured Fields — Session B | 1 |
-| 2 | Economic Structured Fields — Session C | 1 |
-| 3 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
-| 4 | Editable Engagement Info | 1 |
-| 5 | Domain Maturity Scoring | 1 |
-| 6 | Visual 3 — Causal Chain | 1 |
+| 1 | Economic Structured Fields — Session C | 1 |
+| 2 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 3 | Editable Engagement Info | 1 |
+| 4 | Domain Maturity Scoring | 1 |
+| 5 | Visual 3 — Causal Chain | 1 |
 
 DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
 
@@ -77,24 +76,7 @@ additional structured fields on OPDFindings
 for derived_figure and annual_drag_figure, 
 following the same pattern as display_figure.
 
-**Implementation scope — two remaining sessions:**
-
-Session B — FindingsPanel UI and 
-pre-population:
-- Add confirmed_figure, derived_figure, 
-  annual_drag_figure fields to the 
-  Executive Display section in 
-  FindingsPanel
-- Same pre-population and suggestion 
-  pattern as display_figure — parser 
-  suggests, consultant reviews and 
-  corrects before saving
-- Same guardrail: if suggested figure 
-  exceeds confirmed_revenue, show 
-  red ⚠ warning
-- Same lazy pre-population: only runs 
-  when fields are null and finding 
-  card is opened
+**Implementation scope — one remaining session:**
 
 Session C — Report generator:
 - Update per-finding Economic Impact 
@@ -121,7 +103,7 @@ Do not attempt all three sessions in
 one prompt. Each session is 
 independently testable and committable.
 
-**Sequencing note:** Session B does not touch report_generator.py. Session C modifies report_sections.py and must follow the split (already done).
+**Sequencing note:** Session C modifies report_sections.py and must follow the split (already done).
 
 ---
 

@@ -2,6 +2,30 @@ import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS } from '../constants'
 
+function parseDollarToFloat(s) {
+  if (!s) return null
+  s = s.trim()
+  if (s.startsWith('\u26a0 ')) s = s.slice(2).trim()
+  s = s.replace(/[~$,\s]/g, '')
+  s = s.split(/[–\-]/)[0]
+  let multiplier = 1
+  if (/[Kk]$/.test(s)) { multiplier = 1_000;           s = s.slice(0, -1) }
+  else if (/[Mm]$/.test(s)) { multiplier = 1_000_000;  s = s.slice(0, -1) }
+  else if (/[Bb]$/.test(s)) { multiplier = 1_000_000_000; s = s.slice(0, -1) }
+  const val = parseFloat(s)
+  return isNaN(val) ? null : val * multiplier
+}
+
+function formatFloat(val) {
+  if (val == null) return ''
+  if (val >= 1_000_000) {
+    const n = val / 1_000_000
+    return `$${n % 1 === 0 ? n.toFixed(0) : n.toFixed(1)}M`
+  }
+  if (val >= 1_000) return `$${Math.round(val / 1_000)}K`
+  return `$${Math.round(val)}`
+}
+
 const confidenceColors = {
   High:   'bg-red-100 text-red-800',
   Medium: 'bg-yellow-100 text-yellow-800',
@@ -58,29 +82,71 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
 
   const initDisplayState = (f) => {
     const hasWarning = typeof f.suggested_figure === 'string' && f.suggested_figure.startsWith('\u26a0 ')
+
+    const stripWarn = (s) => (typeof s === 'string' && s.startsWith('\u26a0 ')) ? s.slice(2) : s
+    const isWarn    = (s) => typeof s === 'string' && s.startsWith('\u26a0 ')
+
+    // Confirmed Exposure
+    const confVal = f.confirmed_figure != null
+      ? formatFloat(f.confirmed_figure)
+      : (stripWarn(f.suggested_confirmed_figure) || '')
+    // Derived Exposure
+    const derivVal = f.derived_figure != null
+      ? formatFloat(f.derived_figure)
+      : (stripWarn(f.suggested_derived_figure) || '')
+    // Annual Drag
+    const dragVal = f.annual_drag_figure != null
+      ? formatFloat(f.annual_drag_figure)
+      : (stripWarn(f.suggested_annual_drag_figure) || '')
+
     if (f.display_figure != null) {
       return {
-        display_figure:      f.display_figure,
-        display_label:       f.display_label  || '',
-        figure_type:         f.figure_type    || 'direct_exposure',
+        display_figure:       f.display_figure,
+        display_label:        f.display_label  || '',
+        figure_type:          f.figure_type    || 'direct_exposure',
         include_in_executive: !!f.include_in_executive,
-        isDirty:             true,
-        hasWarning:          false,
+        isDirty:              true,
+        hasWarning:           false,
+        confirmed_figure:     confVal,
+        derived_figure:       derivVal,
+        annual_drag_figure:   dragVal,
+        confirmedSuggested:   f.confirmed_figure == null && !!stripWarn(f.suggested_confirmed_figure),
+        derivedSuggested:     f.derived_figure   == null && !!stripWarn(f.suggested_derived_figure),
+        annualDragSuggested:  f.annual_drag_figure == null && !!stripWarn(f.suggested_annual_drag_figure),
+        confirmedWarning:     f.confirmed_figure   == null && isWarn(f.suggested_confirmed_figure),
+        derivedWarning:       f.derived_figure     == null && isWarn(f.suggested_derived_figure),
+        annualDragWarning:    f.annual_drag_figure  == null && isWarn(f.suggested_annual_drag_figure),
       }
     }
     if (f.suggested_figure != null) {
       return {
-        display_figure:      hasWarning ? f.suggested_figure.slice(2) : f.suggested_figure,
-        display_label:       f.suggested_label       || '',
-        figure_type:         f.suggested_figure_type || 'direct_exposure',
+        display_figure:       hasWarning ? f.suggested_figure.slice(2) : f.suggested_figure,
+        display_label:        f.suggested_label       || '',
+        figure_type:          f.suggested_figure_type || 'direct_exposure',
         include_in_executive: false,
-        isDirty:             false,
+        isDirty:              false,
         hasWarning,
+        confirmed_figure:     confVal,
+        derived_figure:       derivVal,
+        annual_drag_figure:   dragVal,
+        confirmedSuggested:   f.confirmed_figure == null && !!stripWarn(f.suggested_confirmed_figure),
+        derivedSuggested:     f.derived_figure   == null && !!stripWarn(f.suggested_derived_figure),
+        annualDragSuggested:  f.annual_drag_figure == null && !!stripWarn(f.suggested_annual_drag_figure),
+        confirmedWarning:     f.confirmed_figure   == null && isWarn(f.suggested_confirmed_figure),
+        derivedWarning:       f.derived_figure     == null && isWarn(f.suggested_derived_figure),
+        annualDragWarning:    f.annual_drag_figure  == null && isWarn(f.suggested_annual_drag_figure),
       }
     }
     return {
       display_figure: '', display_label: '', figure_type: 'direct_exposure',
       include_in_executive: false, isDirty: false, hasWarning: false,
+      confirmed_figure: confVal, derived_figure: derivVal, annual_drag_figure: dragVal,
+      confirmedSuggested:  f.confirmed_figure   == null && !!stripWarn(f.suggested_confirmed_figure),
+      derivedSuggested:    f.derived_figure     == null && !!stripWarn(f.suggested_derived_figure),
+      annualDragSuggested: f.annual_drag_figure  == null && !!stripWarn(f.suggested_annual_drag_figure),
+      confirmedWarning:    f.confirmed_figure   == null && isWarn(f.suggested_confirmed_figure),
+      derivedWarning:      f.derived_figure     == null && isWarn(f.suggested_derived_figure),
+      annualDragWarning:   f.annual_drag_figure  == null && isWarn(f.suggested_annual_drag_figure),
     }
   }
 
@@ -213,6 +279,9 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
         display_label:        edit.display_label        || null,
         figure_type:          edit.figure_type          || null,
         include_in_executive: edit.include_in_executive ? 1 : 0,
+        confirmed_figure:     parseDollarToFloat(edit.confirmed_figure),
+        derived_figure:       parseDollarToFloat(edit.derived_figure),
+        annual_drag_figure:   parseDollarToFloat(edit.annual_drag_figure),
       })
       // Refresh findings so stored values reflect the save
       fetchData()
@@ -864,6 +933,63 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                             />
                             <span className="text-xs text-gray-600">Include in executive summary</span>
                           </label>
+
+                          {/* Confirmed Exposure */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Confirmed Exposure</div>
+                            <input
+                              value={edit.confirmed_figure || ''}
+                              onChange={e => handleDisplayChange(f.finding_id, 'confirmed_figure', e.target.value)}
+                              className={edit.confirmedWarning
+                                ? 'w-full border border-red-400 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-red-500'
+                                : 'w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-blue-400'}
+                              placeholder="e.g. $85K"
+                            />
+                            {edit.confirmedSuggested && edit.confirmed_figure && (
+                              <div className="text-xs text-gray-400 mt-0.5">suggested — verify before saving</div>
+                            )}
+                            {edit.confirmedWarning && (
+                              <div className="text-xs text-red-600 mt-0.5">⚠ Exceeds confirmed client revenue — verify before accepting</div>
+                            )}
+                          </div>
+
+                          {/* Derived Exposure */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Derived Exposure</div>
+                            <input
+                              value={edit.derived_figure || ''}
+                              onChange={e => handleDisplayChange(f.finding_id, 'derived_figure', e.target.value)}
+                              className={edit.derivedWarning
+                                ? 'w-full border border-red-400 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-red-500'
+                                : 'w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-blue-400'}
+                              placeholder="e.g. $368K"
+                            />
+                            {edit.derivedSuggested && edit.derived_figure && (
+                              <div className="text-xs text-gray-400 mt-0.5">suggested — verify before saving</div>
+                            )}
+                            {edit.derivedWarning && (
+                              <div className="text-xs text-red-600 mt-0.5">⚠ Exceeds confirmed client revenue — verify before accepting</div>
+                            )}
+                          </div>
+
+                          {/* Annual Drag */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-0.5">Annual Drag</div>
+                            <input
+                              value={edit.annual_drag_figure || ''}
+                              onChange={e => handleDisplayChange(f.finding_id, 'annual_drag_figure', e.target.value)}
+                              className={edit.annualDragWarning
+                                ? 'w-full border border-red-400 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-red-500'
+                                : 'w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-blue-400'}
+                              placeholder="e.g. $220K"
+                            />
+                            {edit.annualDragSuggested && edit.annual_drag_figure && (
+                              <div className="text-xs text-gray-400 mt-0.5">suggested — verify before saving</div>
+                            )}
+                            {edit.annualDragWarning && (
+                              <div className="text-xs text-red-600 mt-0.5">⚠ Exceeds confirmed client revenue — verify before accepting</div>
+                            )}
+                          </div>
 
                           {/* Save */}
                           {saveDisplayError[f.finding_id] && (
