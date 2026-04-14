@@ -27,6 +27,9 @@ GET_ALL = """
            f.display_label,
            f.figure_type,
            f.include_in_executive,
+           f.confirmed_figure,
+           f.derived_figure,
+           f.annual_drag_figure,
            p.pattern_name
     FROM   OPDFindings f
     LEFT JOIN Patterns p ON f.pattern_id = p.pattern_id
@@ -42,8 +45,9 @@ INSERT_FINDING = """
         root_cause, recommendation,
         priority, effort, opd_section, created_date,
         evidence_summary, key_quotes,
-        display_figure, display_label, figure_type, include_in_executive
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        display_figure, display_label, figure_type, include_in_executive,
+        confirmed_figure, derived_figure, annual_drag_figure
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 ACCEPT_PATTERN = """
@@ -69,7 +73,10 @@ UPDATE_FINDING = """
            display_figure     = COALESCE(?, display_figure),
            display_label      = COALESCE(?, display_label),
            figure_type        = COALESCE(?, figure_type),
-           include_in_executive = COALESCE(?, include_in_executive)
+           include_in_executive = COALESCE(?, include_in_executive),
+           confirmed_figure     = COALESCE(?, confirmed_figure),
+           derived_figure       = COALESCE(?, derived_figure),
+           annual_drag_figure   = COALESCE(?, annual_drag_figure)
     WHERE  finding_id = ?
 """
 
@@ -128,6 +135,9 @@ class FindingRepository(BaseRepository):
                 data.get('display_label'),
                 data.get('figure_type'),
                 data.get('include_in_executive', 0),
+                data.get('confirmed_figure'),
+                data.get('derived_figure'),
+                data.get('annual_drag_figure'),
             ))
         ]
 
@@ -159,5 +169,8 @@ class FindingRepository(BaseRepository):
             data.get('display_label'),
             data.get('figure_type'),
             data.get('include_in_executive'),
+            data.get('confirmed_figure'),
+            data.get('derived_figure'),
+            data.get('annual_drag_figure'),
             finding_id
         ))

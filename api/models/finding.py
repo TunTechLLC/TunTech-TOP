@@ -22,6 +22,9 @@ class FindingCreate(BaseModel):
     display_label:       Optional[str] = None
     figure_type:         Optional[str] = None
     include_in_executive: Optional[int] = 0
+    confirmed_figure:     Optional[float] = None
+    derived_figure:       Optional[float] = None
+    annual_drag_figure:   Optional[float] = None
 
 
 class FindingUpdate(BaseModel):
@@ -42,6 +45,9 @@ class FindingUpdate(BaseModel):
     display_label:      Optional[str] = None
     figure_type:        Optional[str] = None
     include_in_executive: Optional[int] = None
+    confirmed_figure:     Optional[float] = None
+    derived_figure:       Optional[float] = None
+    annual_drag_figure:   Optional[float] = None
 
 
 class FindingResponse(BaseModel):
@@ -66,6 +72,9 @@ class FindingResponse(BaseModel):
     display_label:      Optional[str] = None
     figure_type:        Optional[str] = None
     include_in_executive:  Optional[int] = 0
+    confirmed_figure:      Optional[float] = None
+    derived_figure:        Optional[float] = None
+    annual_drag_figure:    Optional[float] = None
     pattern_name:          Optional[str] = None
     suggested_figure:      Optional[str] = None
     suggested_label:       Optional[str] = None

@@ -92,7 +92,10 @@ def test_db(monkeypatch, tmp_path):
             display_figure TEXT,
             display_label TEXT,
             figure_type TEXT,
-            include_in_executive INTEGER DEFAULT 0
+            include_in_executive INTEGER DEFAULT 0,
+            confirmed_figure REAL,
+            derived_figure REAL,
+            annual_drag_figure REAL
         );
         CREATE TABLE IF NOT EXISTS RoadmapItems (
             item_id TEXT PRIMARY KEY,

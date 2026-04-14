@@ -11,7 +11,7 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Economic Structured Fields — Sessions A+B | 2 |
+| 1 | Economic Structured Fields — Session B | 1 |
 | 2 | Economic Structured Fields — Session C | 1 |
 | 3 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
 | 4 | Editable Engagement Info | 1 |
@@ -77,21 +77,7 @@ additional structured fields on OPDFindings
 for derived_figure and annual_drag_figure, 
 following the same pattern as display_figure.
 
-**Implementation scope — three sessions 
-following Session 1-2-3 pattern:**
-
-Session A — Schema and models:
-- Add confirmed_figure REAL, 
-  derived_figure REAL, and 
-  annual_drag_figure REAL to OPDFindings
-- All nullable — existing records 
-  unaffected
-- Update repository GET_ALL, INSERT, 
-  UPDATE queries
-- Update FindingCreate, FindingUpdate, 
-  FindingResponse models
-- Update findings router to accept 
-  and store new fields
+**Implementation scope — two remaining sessions:**
 
 Session B — FindingsPanel UI and 
 pre-population:
@@ -135,7 +121,7 @@ Do not attempt all three sessions in
 one prompt. Each session is 
 independently testable and committable.
 
-**Sequencing note:** Sessions A and B do not touch report_generator.py and may be built before the report_generator.py split. Session C modifies report_generator.py and must follow the split.
+**Sequencing note:** Session B does not touch report_generator.py. Session C modifies report_sections.py and must follow the split (already done).
 
 ---
 
