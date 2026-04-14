@@ -11,99 +11,12 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Economic Structured Fields — Session C | 1 |
-| 2 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
-| 3 | Editable Engagement Info | 1 |
-| 4 | Domain Maturity Scoring | 1 |
-| 5 | Visual 3 — Causal Chain | 1 |
+| 1 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 2 | Editable Engagement Info | 1 |
+| 3 | Domain Maturity Scoring | 1 |
+| 4 | Visual 3 — Causal Chain | 1 |
 
 DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
-
----
-
-### Economic Breakdown Chart — Use Structured 
-Display Fields Instead of Text Parser
-
-**Problem:** The economic breakdown chart in 
-Section 8 still uses _parse_economic_figures() 
-to extract bar values from finding economic_impact 
-text. This produces the same false positives that 
-were fixed in the Three Numbers block and totals 
-row — confirmed by $9.2M appearing as the bar 
-value for the Structural Margin Compression finding 
-when the correct figure is $368K–$828K.
-
-**Fix:** Update the chart generation function in 
-report_generator.py to source bar values from 
-display_figure and display_label where 
-include_in_executive = 1, using the same 
-_parse_display_figure_to_float() utility already 
-implemented for the other three locations.
-
-Only findings with display_figure set and 
-include_in_executive = 1 should appear as bars. 
-If no findings have these fields set, omit the 
-chart entirely rather than falling back to 
-text parsing.
-
-**Priority:** High — do before first paid 
-client engagement. The $9.2M false positive 
-on the chart would be immediately visible 
-and credibility-damaging in a client meeting.
-
-Also fix the per-finding rows in the Economic 
-Impact table. The parser is still producing 
-false positives on confirmed exposure extraction 
-for some findings (confirmed: $9.2M appearing 
-for Structural Margin Compression finding).
-
-Two options:
-Option A — Extend the structured display fields 
-approach to the table rows as well. Each finding's 
-Confirmed Exposure, Derived Exposure, and Annual 
-Drag columns are sourced from structured fields 
-rather than parsed text.
-
-Option B — Improve the parser false positive 
-detection to catch cases where a revenue figure 
-is referenced in a calculation context rather 
-than as the finding's own exposure.
-
-Option A is the correct long-term solution 
-and is consistent with the architectural 
-direction already established. Requires 
-additional structured fields on OPDFindings 
-for derived_figure and annual_drag_figure, 
-following the same pattern as display_figure.
-
-**Implementation scope — one remaining session:**
-
-Session C — Report generator:
-- Update per-finding Economic Impact 
-  table rows to source Confirmed 
-  Exposure, Derived Exposure, and 
-  Annual Drag columns from structured 
-  fields instead of parser
-- Update economic breakdown chart to 
-  source bar values from display_figure 
-  where include_in_executive = 1, 
-  using _parse_display_figure_to_float() 
-  already implemented
-- If no findings have 
-  include_in_executive = 1 with 
-  display_figure set, omit chart 
-  rather than falling back to 
-  text parsing
-- Placeholder behavior: if structured 
-  fields not set, show "[Set in 
-  FindingsPanel before delivery]" 
-  in orange italic
-
-Do not attempt all three sessions in 
-one prompt. Each session is 
-independently testable and committable.
-
-**Sequencing note:** Session C modifies report_sections.py and must follow the split (already done).
 
 ---
 

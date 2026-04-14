@@ -496,6 +496,19 @@ def _format_display_figure(raw: str) -> str:
     return f"${val:.0f}"
 
 
+def _float_to_dollar(v: float) -> str:
+    """Format a float as a compact dollar string. 368000 → '$368K', 1200000 → '$1.2M'."""
+    if v >= 1_000_000:
+        n = v / 1_000_000
+        s = f"{n:.1f}"
+        if s.endswith('.0'):
+            s = s[:-2]
+        return f"${s}M"
+    if v >= 1_000:
+        return f"${v / 1_000:.0f}K"
+    return f"${v:.0f}"
+
+
 def _prepopulate_display_figure(
     economic_impact_text: str,
     domain: str,
@@ -1034,29 +1047,19 @@ class ReportSectionsMixin:
         _COLOR_DERIVED = '#4472C4'
 
         try:
-            seen_figures: dict = {}
             chart_data: list = []
             for f in sorted(findings,
                             key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
-                conf_str, deriv_str, _ = _parse_economic_figures(f.get('economic_impact', ''))
-                if conf_str != '—':
-                    primary    = conf_str.split(', ')[0]
-                    bar_color  = _COLOR_DIRECT
-                    bar_type   = 'Direct'
-                elif deriv_str != '—':
-                    primary    = deriv_str.split(', ')[0]
-                    bar_color  = _COLOR_DERIVED
-                    bar_type   = 'Derived'
-                else:
+                if not f.get('include_in_executive') or not f.get('display_figure'):
                     continue
-                if primary in seen_figures:
-                    continue
-                seen_figures[primary] = True
-                val = _dollar_to_float(primary)
+                val = _parse_display_figure_to_float(f['display_figure'])
                 if val is None:
                     continue
+                ftype     = f.get('figure_type') or ''
+                bar_color = _COLOR_DIRECT if ftype == 'direct_exposure' else _COLOR_DERIVED
+                bar_type  = 'Direct' if ftype == 'direct_exposure' else 'Annual Drag'
                 raw_title = f.get('finding_title') or ''
-                label = raw_title[:40] + ('...' if len(raw_title) > 40 else '')
+                label     = raw_title[:40] + ('...' if len(raw_title) > 40 else '')
                 chart_data.append((label, val, bar_color, bar_type))
 
             if not chart_data:
@@ -1105,9 +1108,9 @@ class ReportSectionsMixin:
                 from matplotlib.patches import Patch
                 legend_elements = []
                 if 'Direct' in type_set:
-                    legend_elements.append(Patch(facecolor=_COLOR_DIRECT,  label='Direct (confirmed)'))
-                if 'Derived' in type_set:
-                    legend_elements.append(Patch(facecolor=_COLOR_DERIVED, label='Derived (calculated)'))
+                    legend_elements.append(Patch(facecolor=_COLOR_DIRECT,  label='Direct Exposure'))
+                if 'Annual Drag' in type_set:
+                    legend_elements.append(Patch(facecolor=_COLOR_DERIVED, label='Annual Drag'))
                 ax.legend(handles=legend_elements, loc='lower right', fontsize=8)
 
             plt.tight_layout()
@@ -1290,10 +1293,12 @@ class ReportSectionsMixin:
         _markers         = ['*', '**', '\u2020', '\u2020\u2020', '\u2021']
 
         for f in rows_with_impact:
-            confirmed, derived, inferred = _parse_economic_figures(f.get('economic_impact', ''))
-            primary_confirmed = confirmed.split(', ')[0] if confirmed != '—' else '—'
-            primary_derived   = derived.split(', ')[0]   if derived   != '—' else '—'
-            primary_inferred  = inferred.split(', ')[0]  if inferred  != '—' else '—'
+            cf = f.get('confirmed_figure')
+            df = f.get('derived_figure')
+            af = f.get('annual_drag_figure')
+            primary_confirmed = _float_to_dollar(cf) if cf is not None else '—'
+            primary_derived   = _float_to_dollar(df) if df is not None else '—'
+            primary_inferred  = _float_to_dollar(af) if af is not None else '—'
 
             display_confirmed = primary_confirmed
             if primary_confirmed != '—':
