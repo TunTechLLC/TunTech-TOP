@@ -64,6 +64,31 @@ def _left_align_table(table):
                 para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
+def _client_facing_evidence(evidence: str) -> str:
+    """Transform stored evidence summary to client-facing language.
+
+    Stored: "Supported by P38, P39 across Consulting Economics; 5 signals (3 confirmed, 2 inferred)"
+    Client: "Supported by 5 signals across Consulting Economics (3 directly observed, 2 reported)"
+    If all signals are High (inferred == 0):
+           "Supported by 5 directly observed signals across Consulting Economics"
+    Falls back to the original string if the format is not recognised.
+    """
+    m = re.match(
+        r'^Supported by .+ across (.+); (\d+) signals? \((\d+) confirmed, (\d+) inferred\)$',
+        evidence,
+    )
+    if not m:
+        return evidence
+    domain          = m.group(1)
+    total           = int(m.group(2))
+    confirmed_count = int(m.group(3))
+    inferred_count  = int(m.group(4))
+    sig_word = 'signal' if total == 1 else 'signals'
+    if inferred_count == 0:
+        return f"Supported by {total} directly observed {sig_word} across {domain}"
+    return f"Supported by {total} {sig_word} across {domain} ({confirmed_count} directly observed, {inferred_count} reported)"
+
+
 # -------------------------------------------------------------------
 # Domain audience mapping — Change 5
 # -------------------------------------------------------------------
@@ -1468,7 +1493,7 @@ class ReportGeneratorService:
                 ])
 
                 # Evidence summary — italic gray line below the table
-                evidence = f.get('evidence_summary') or ''
+                evidence = _client_facing_evidence(f.get('evidence_summary') or '')
                 if evidence:
                     ev_para     = doc.add_paragraph()
                     ev_run      = ev_para.add_run(evidence)
@@ -1935,10 +1960,7 @@ class ReportGeneratorService:
             if not isinstance(r, dict):
                 continue
             row = table.add_row()
-            metric = r.get('metric') or ''
-            sourced = r.get('sourced_from', '')
-            label = f' ({sourced})' if sourced else ''
-            row.cells[0].text = metric + label
+            row.cells[0].text = r.get('metric') or ''
             row.cells[1].text = r.get('current_state') or ''
             row.cells[2].text = r.get('benchmark') or ''
             row.cells[3].text = r.get('target') or ''

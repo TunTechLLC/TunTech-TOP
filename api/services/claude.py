@@ -662,7 +662,7 @@ JSON SCHEMA — return exactly these keys:
     {
       "metric": "<metric name>",
       "current_state": "<current value or description>",
-      "benchmark": "<industry benchmark or stated target>",
+      "benchmark": "<prior period confirmed value from engagement data if available; industry benchmark only if no prior period data exists>",
       "target": "<target post-roadmap>",
       "sourced_from": "<CONFIRMED, DERIVED, or INFERRED>"
     }
@@ -856,6 +856,9 @@ future_state_table_rows — metrics table for Section 7.
   If neither current nor target is confirmed, omit the row entirely.
   Typical metrics (include only if data is available): Billable Utilization, Gross Margin,
   On-Time Delivery Rate, EBITDA, CEO Time on Delivery Issues, Pipeline Generation Method.
+  For the benchmark column, prefer a prior period confirmed value from the engagement data
+  over an estimated industry average — it is more credible and more motivating for the client.
+  Use an industry benchmark only when no prior period confirmed value exists.
 
 priority_zero_table_rows — one row per Priority Zero item from the Synthesizer.
   action: the specific Priority Zero item.

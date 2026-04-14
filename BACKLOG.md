@@ -3,92 +3,6 @@
 
 ---
 
-## Document Cleanup — Complete Before First Client Engagement
-
-### Remove Pattern Codes from Client-Facing Evidence Summary
-
-**Problem:** The evidence summary line rendered 
-after each finding table in Section 6 currently 
-shows internal pattern codes (e.g. "Supported by 
-P38, P39, P41, P43 across Consulting Economics; 
-5 signals (5 confirmed, 0 inferred)"). Clients 
-have no context for what P38 means. The pattern 
-codes are internal TOP metadata that should not 
-appear in a client deliverable.
-
-**Fix:** In report_generator.py, find where the 
-evidence summary line is rendered after each 
-finding table. Replace the pattern ID list with 
-plain English while preserving the meaningful 
-information:
-
-Current format:
-"Supported by P38, P39, P41, P43 across 
-Consulting Economics; 5 signals 
-(5 confirmed, 0 inferred)"
-
-New format:
-"Supported by 5 directly observed signals 
-across Consulting Economics"
-
-Or if mixed confidence:
-"Supported by 5 signals across Consulting 
-Economics (3 directly observed, 2 reported)"
-
-Rules:
-- Remove all pattern codes entirely
-- Keep the signal count
-- Keep the domain name
-- Keep the confidence breakdown using 
-  client-facing language:
-  High → "directly observed"
-  Medium → "reported"
-  Hypothesis → "preliminary"
-- If all signals are High confidence, 
-  use the simplified format with 
-  "directly observed signals" only
-
-This is a report_generator.py change only. 
-No prompt changes. No database changes.
-
-**Priority:** High — group with Future State Table fixes as a single Document Cleanup session
-
-### Future State Table — Two Fixes
-
-**Priority: High — group with Remove 
-Pattern Codes as a single Document 
-Cleanup session. All fixes are 
-report_generator.py or 
-REPORT_NARRATOR_PROMPT only. 
-No schema changes. No frontend changes.**
-
-Fix 1 — Strip CONFIRMED/INFERRED labels 
-from the Metric column
-The Metric column currently shows values 
-like "Gross Margin (CONFIRMED (current); 
-INFERRED (target))". Strip all 
-parenthetical evidentiary labels from 
-the Metric column only before rendering. 
-Current State, Benchmark, and Target 
-columns are unaffected.
-report_generator.py change only.
-
-Fix 2 — NPS benchmark should use 
-confirmed prior period baseline not 
-estimated industry average
-Update REPORT_NARRATOR_PROMPT instruction 
-for the future_state table benchmark 
-field: "For metrics where a prior period 
-confirmed value exists in the engagement 
-data, always use that as the benchmark 
-rather than an estimated industry 
-average. The prior period confirmed 
-value is more credible and more 
-motivating for the client than an 
-industry estimate."
-
----
-
 ## Technical Debt — Address Before Next Major Feature
 
 ### Build Sequence — Verified 2026-04-13
@@ -97,14 +11,13 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Document Cleanup (pattern codes + future state table) | 1 |
-| 2 | Split `report_generator.py` | 1 |
-| 3 | Economic Structured Fields — Sessions A+B | 2 |
-| 4 | Economic Structured Fields — Session C | 1 |
-| 5 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
-| 6 | Editable Engagement Info | 1 |
-| 7 | Domain Maturity Scoring | 1 |
-| 8 | Visual 3 — Causal Chain | 1 |
+| 1 | Split `report_generator.py` | 1 |
+| 2 | Economic Structured Fields — Sessions A+B | 2 |
+| 3 | Economic Structured Fields — Session C | 1 |
+| 4 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 5 | Editable Engagement Info | 1 |
+| 6 | Domain Maturity Scoring | 1 |
+| 7 | Visual 3 — Causal Chain | 1 |
 
 Economic A+B come **after** the split — add to the clean post-split structure.
 Economic C requires the split to be done first.
@@ -365,6 +278,154 @@ no maturity score. Clients respond to scorecards in a way they don't respond to 
 **File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
 
 **Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
+
+---
+### Executive Briefing Sharpness + Execution 
+Path Section
+
+**Problem:** Two related issues identified 
+from external feedback:
+
+1. The Executive Briefing reads like analysis 
+   rather than landing like a punch. Sentences 
+   are long and dense. Key insights are buried 
+   inside paragraphs rather than standing alone. 
+   A CEO reading this page in 5 minutes should 
+   feel the weight of the problem immediately.
+
+2. The document has no clear answer to 
+   "then what?" — after reading the roadmap, 
+   the client does not know how implementation 
+   gets done or what role the consultant plays 
+   going forward. This is a conversion gap, 
+   not just a document gap.
+
+**Fix 1 — Executive Briefing prose style**
+
+Update REPORT_NARRATOR_PROMPT instruction 
+for the executive_briefing opening paragraph:
+
+"Write the opening paragraph in short 
+declarative sentences. Each sentence is 
+one idea. No sentence should exceed 20 words. 
+Do not embed the key insight inside a clause — 
+pull it out as its own sentence. The reader 
+should feel the weight of the problem after 
+three sentences, not after three paragraphs.
+
+Wrong style:
+'Northstar's margin problem is not a PM 
+execution problem — it is a pricing and 
+governance problem: gross margin has compressed 
+from 40% to 31% over four years because the 
+CEO retains unilateral authority over pricing, 
+SOW execution, and change order acceptance 
+with no governance gates, and that authority 
+has been used in ways that lock in losses 
+before delivery begins.'
+
+Right style:
+'Northstar's margin problem is not a PM 
+execution problem. It is a pricing and 
+governance problem. Gross margin has fallen 
+from 40% to 31% in four years. The cause is 
+not delivery failure — it is a decision 
+structure that locks in losses before delivery 
+begins.'"
+
+This is a REPORT_NARRATOR_PROMPT change only.
+No report_generator.py changes needed.
+
+**Fix 2 — How This Gets Implemented section**
+
+Add a new subsection to Section 11 
+(What Happens Next) titled 
+"How This Gets Implemented."
+
+The Narrator generates this section from 
+engagement data. It should produce three 
+short paragraphs covering:
+
+Path 1 — Internal Execution
+If the firm has sufficient internal capacity 
+and leadership bandwidth, the roadmap can 
+be executed internally. The Priority Zero 
+actions require leadership decisions only. 
+The Stabilize phase requires process design 
+and governance changes that internal leaders 
+can own with clear accountability.
+
+Path 2 — Guided Execution (recommended 
+for most firms at this stage)
+A structured advisory engagement where the 
+consultant provides weekly or biweekly 
+leadership alignment, roadmap sequencing, 
+and accountability review. The client executes. 
+The consultant ensures the work gets done 
+correctly and in the right order. This is 
+the recommended model for firms without 
+a dedicated transformation function.
+
+Path 3 — Partner-Supported Execution
+For firms that lack both internal capacity 
+and a structured advisory relationship, 
+specific initiatives can be staffed through 
+fractional resources — fractional PMO, 
+contractor PMs, finance operations support. 
+The consultant architects the solution and 
+directs the resources.
+
+The Narrator should select which path to 
+recommend based on firm size and the 
+capacity signals observed in the engagement 
+data. Firms under 60 people with no dedicated 
+operations function should default to 
+recommending Path 2.
+
+**Implementation:**
+- New Narrator JSON field: 
+  execution_path_recommendation — 
+  one of "internal" | "guided" | "partner"
+- New REPORT_NARRATOR_PROMPT instruction 
+  to generate the execution path narrative
+- New subsection in report_generator.py 
+  within Section 11, rendered after the 
+  existing What Happens Next content
+
+**Trigger for recommendation logic 
+in Narrator prompt:**
+"Based on the firm's headcount, the 
+presence or absence of a dedicated 
+operations or transformation function, 
+and the leadership bandwidth signals 
+observed in this engagement, recommend 
+one of three execution paths: internal, 
+guided, or partner-supported. Most firms 
+under 75 people without a dedicated 
+transformation function should be 
+recommended the guided execution path."
+
+**Priority:** High — do before first 
+paid client engagement. This directly 
+addresses the conversion gap identified 
+by an experienced IT consulting practitioner. 
+The "then what?" question will be asked 
+in every client meeting.
+
+**Scope:**
+- REPORT_NARRATOR_PROMPT — two changes 
+  (executive briefing style, execution 
+  path recommendation)
+- report_generator.py — one new subsection 
+  in Section 11
+- No schema changes
+- No frontend changes
+
+**Do in a single focused session.**
+**Commit message:** "Narrator — sharper 
+Executive Briefing prose style + 
+How This Gets Implemented section 
+in What Happens Next"
 
 ---
 
