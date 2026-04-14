@@ -11,38 +11,17 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Split `report_generator.py` | 1 |
-| 2 | Economic Structured Fields — Sessions A+B | 2 |
-| 3 | Economic Structured Fields — Session C | 1 |
-| 4 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
-| 5 | Editable Engagement Info | 1 |
-| 6 | Domain Maturity Scoring | 1 |
-| 7 | Visual 3 — Causal Chain | 1 |
+| 1 | Economic Structured Fields — Sessions A+B | 2 |
+| 2 | Economic Structured Fields — Session C | 1 |
+| 3 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 4 | Editable Engagement Info | 1 |
+| 5 | Domain Maturity Scoring | 1 |
+| 6 | Visual 3 — Causal Chain | 1 |
 
-Economic A+B come **after** the split — add to the clean post-split structure.
-Economic C requires the split to be done first.
 DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
 
 ---
 
-### Split report_generator.py into orchestrator and section renderers
-
-**Priority: High — do before any further Visual Generator Layer work**
-
-`report_generator.py` now handles cover page, executive briefing, all report sections (1–9), economic tables, three visual embeds, and structured display field logic. Two visuals are already embedded, a third is pending. The file is becoming a maintenance liability — Sessions 1–3 alone added ~130 lines to it.
-
-**Split into:**
-- `report_generator.py` — orchestrator only; manages document assembly, calls section renderers in order, owns `generate_report()`
-- `report_sections.py` — individual section renderers; one function per section; all `_build_*`, `_economic_*`, `_key_findings_*`, `_risk_table`, `_dependency_table`, `_findings_by_domain`, visual embed functions
-
-**Constraints:**
-- No behavior changes — pure structural refactor
-- All existing tests must pass before and after
-- Do this before adding causal chain diagram or any other visual work
-
-**Commit message:** Refactor — split report_generator.py into orchestrator and section renderers
-
----
 ### Economic Breakdown Chart — Use Structured 
 Display Fields Instead of Text Parser
 
