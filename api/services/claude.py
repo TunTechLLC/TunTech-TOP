@@ -6,7 +6,7 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"), timeout=120.0)
+async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"), timeout=120.0, max_retries=0)
 
 from config import MODEL, MAX_TOKENS
 
@@ -1225,6 +1225,7 @@ async def generate_report_narrative(
         max_tokens=NARRATOR_MAX_TOKENS,
         system=REPORT_NARRATOR_PROMPT,
         messages=[{"role": "user", "content": user_message}],
+        timeout=600.0,
     )
     raw = extract_text(message)
     logger.info(f"Narrator response received — {len(raw)} chars")
