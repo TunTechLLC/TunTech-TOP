@@ -11,87 +11,19 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Signal Library — Sessions 2–3 | 2 |
-| 2 | Editable Engagement Info | 1 |
-| 3 | Executive Briefing Sharpness + Execution Path Section | 1 |
-| 4 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
-| 5 | Narrator Quality Improvements — Session 2 (Improvements 7–11, 14) | 1 |
-| 6 | Quick Wins Section | 1 |
-| 7 | Domain Maturity Scoring | 1 |
-| 8 | Visual 3 — Causal Chain | 1 |
-| 9 | Three Systemic Drivers Section | 1 |
-| 10 | Auto-Suggest Knowledge | 1 |
-| 11 | Standardize Economic Output | 1 |
-| 12 | Structured File Metadata Capture | 1 |
-| 13 | PowerPoint Export | 1 |
+| 1 | Executive Briefing Sharpness + Execution Path Section | 1 |
+| 2 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
+| 3 | Narrator Quality Improvements — Session 2 (Improvements 7–11, 14) | 1 |
+| 4 | Quick Wins Section | 1 |
+| 5 | Domain Maturity Scoring | 1 |
+| 6 | Visual 3 — Causal Chain | 1 |
+| 7 | Three Systemic Drivers Section | 1 |
+| 8 | Auto-Suggest Knowledge | 1 |
+| 9 | Standardize Economic Output | 1 |
+| 10 | Structured File Metadata Capture | 1 |
+| 11 | Editable Engagement Info | 1 |
+| 12 | PowerPoint Export | 1 |
 | — | Checkpoint 5 — Dry Run 5 | milestone |
-
----
-
-### Signal Library — Implementation
-
-**Priority: High — foundational to diagnostic quality across all future engagements**
-
-**Problem:** TOP currently free-generates signal
-names from transcripts with no predefined catalog.
-Signals like "Presence of PMO function" or
-"Revenue per Consultant" only appear if an
-interviewee mentions them. Signal names are
-inconsistent across engagements making
-cross-engagement comparison meaningless.
-Absence of a signal — which is itself diagnostic —
-is never recorded.
-
-**Reference document:** `Signals/TOP_Signal_Library.md`
-in the repo. Contains 80 signals across
-all 10 domains with full definitions, maturity
-bands or threshold ranges, none_indicators,
-and pattern linkage. This is the authoritative
-content source for implementation.
-
-**Session 1 complete** — SignalLibrary table (80 signals seeded), SignalCoverage table,
-library_signal_id on Signals, SignalLibraryRepository, SignalCoverageRepository,
-DEFAULT_DOMAIN constant, all 7 hardcoded fallbacks replaced.
-
-**Two signal types requiring different
-extraction handling:**
-
-Numeric signals — Claude reads an observed
-value and maps it to a threshold band.
-Report: observed value + band label + source.
-
-Maturity signals — Claude reads qualitative
-evidence and maps to None/Informal/Defined/
-Managed/Optimized.
-CRITICAL: Only assign None if none_indicators
-are present. If topic not discussed, output
-not_observed. Never infer None from silence.
-
-**Extraction prompt changes:**
-
-Document prompts: domain-filtered signal slice
-only (see Domain Filter Map in library file).
-Interview prompts: full library — interviewees
-span all domains.
-
-Output format: found signals in standard
-candidate format + not_observed array of
-signal_ids for SignalCoverage rows.
-
-**Remaining sessions:**
-
-Session 2: Update extraction prompts with
-domain-filtered library injection +
-not_observed output format. Also fix
-domain list injection — all 6 prompts in
-document_processor.py have hardcoded domain
-lists instead of injecting from VALID_DOMAINS.
-Fix this here, not in a separate session.
-
-Session 3: Router changes to write
-SignalCoverage rows from not_observed
-output + SignalPanel UI updates to show
-coverage gaps.
 
 ---
 

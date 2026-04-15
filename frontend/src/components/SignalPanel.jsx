@@ -46,14 +46,17 @@ export default function SignalPanel({ engagementId, onRefresh }) {
   const [processedFiles, setProcessedFiles]       = useState([])
   const [showProcessed, setShowProcessed]         = useState(false)
   const [reprocessing, setReprocessing]           = useState(null)
+  const [coverage, setCoverage]                   = useState([])
+  const [showCoverage, setShowCoverage]           = useState(false)
 
   const fetchData = () => {
     Promise.all([
       api.signals.list(engagementId),
       api.signals.summary(engagementId),
       api.signals.listProcessedFiles(engagementId),
+      api.signals.getCoverage(engagementId),
     ])
-      .then(([sigs, sum, pf]) => { setSignals(sigs); setSummary(sum); setProcessedFiles(pf) })
+      .then(([sigs, sum, pf, cov]) => { setSignals(sigs); setSummary(sum); setProcessedFiles(pf); setCoverage(cov) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -190,7 +193,12 @@ export default function SignalPanel({ engagementId, onRefresh }) {
   }
 
   const approvedCount = Object.values(approved).filter(Boolean).length
-  const sel = "w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500"
+  const coverageByDomain = coverage.reduce((acc, g) => {
+    if (!acc[g.domain]) acc[g.domain] = []
+    acc[g.domain].push(g)
+    return acc
+  }, {})
+  const sel ="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500"
   const inp = "w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
 
   return (
@@ -588,6 +596,35 @@ export default function SignalPanel({ engagementId, onRefresh }) {
           </div>
         ))}
       </div>
+
+      {coverage.length > 0 && (
+        <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowCoverage(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs font-medium text-gray-600 transition-colors"
+          >
+            <span>Coverage gaps ({coverage.length})</span>
+            <span className="text-gray-400">{showCoverage ? '▲' : '▼'}</span>
+          </button>
+          {showCoverage && (
+            <div className="divide-y divide-gray-100">
+              {Object.entries(coverageByDomain).map(([domain, gaps]) => (
+                <div key={domain} className="px-4 py-3">
+                  <div className="text-xs font-semibold text-gray-500 mb-2">{domain}</div>
+                  <div className="space-y-1">
+                    {gaps.map(g => (
+                      <div key={g.coverage_id} className="flex items-center justify-between text-xs text-gray-600">
+                        <span>{g.signal_name}</span>
+                        <span className="text-gray-400 font-mono ml-4">{g.signal_id}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   )

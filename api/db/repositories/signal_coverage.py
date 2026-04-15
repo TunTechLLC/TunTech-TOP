@@ -26,6 +26,10 @@ INSERT_COVERAGE = """
     VALUES (?, ?, ?, ?, ?)
 """
 
+DELETE_FOR_ENGAGEMENT = """
+    DELETE FROM SignalCoverage WHERE engagement_id = ?
+"""
+
 
 class SignalCoverageRepository(BaseRepository):
     """Tracks which library signals have been observed in an engagement.
@@ -59,25 +63,30 @@ class SignalCoverageRepository(BaseRepository):
         return coverage_id
 
     def bulk_create(self, rows: list) -> int:
-        """Insert multiple coverage records in a single batch operation.
-        Returns the number of rows inserted.
+        """Insert multiple coverage records. Returns the number of rows inserted.
 
         Each item in rows must be a dict with keys: engagement_id, signal_id, source_file.
 
-        Sequential loop — never list comprehension. next_coverage_id() uses MAX+1
-        logic; list comprehension evaluates all calls before any row is written,
-        producing duplicate IDs."""
+        One _write() per row — each commit advances MAX before the next
+        next_coverage_id() call. Pre-building a params list then calling
+        _write_many() would generate duplicate IDs on an empty table because
+        all MAX+1 reads happen before any row is committed."""
         today = date.today().isoformat()
-
-        params = []
+        count = 0
         for row in rows:
-            params.append((
+            self._write(INSERT_COVERAGE, (
                 next_coverage_id(),
                 row['engagement_id'],
                 row['signal_id'],
                 row['source_file'],
                 today,
             ))
+            count += 1
+        logger.info(f"Bulk created {count} coverage records")
+        return count
 
-        logger.info(f"Bulk creating {len(params)} coverage records")
-        return self._write_many(INSERT_COVERAGE, params)
+    def delete_for_engagement(self, engagement_id: str) -> int:
+        """Delete all coverage records for an engagement.
+        Called before bulk_create on each load so coverage always reflects
+        the latest processing run, not an accumulation of historical runs."""
+        return self._write(DELETE_FOR_ENGAGEMENT, (engagement_id,))

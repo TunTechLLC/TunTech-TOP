@@ -15,7 +15,43 @@ logger = logging.getLogger(__name__)
 VALID_FILE_TYPES = {'interview', 'financial', 'portfolio', 'sow', 'status', 'resource', 'delivery', 'other'}
 SUPPORTED_EXTENSIONS = {'.txt', '.docx', '.xlsx', '.pdf', '.pptx'}
 
-FINANCIAL_EXTRACTION_PROMPT = """You are analyzing a financial document from a consulting firm diagnostic engagement.
+# Domain list injected into every extraction prompt — sourced from VALID_DOMAINS, not hardcoded
+_DOMAIN_LIST = ', '.join(f'"{d}"' for d in sorted(VALID_DOMAINS))
+
+# Which domains to check per document file type (Tier 1 library slice)
+DOMAIN_FILTER_MAP = {
+    'financial': ['Consulting Economics', 'Finance and Commercial'],
+    'resource':  ['Resource Management', 'Consulting Economics'],
+    'delivery':  ['Delivery Operations', 'Project Governance / PMO',
+                  'Sales-to-Delivery Transition', 'Resource Management'],
+    'portfolio': ['Delivery Operations', 'Resource Management',
+                  'Project Governance / PMO', 'Sales-to-Delivery Transition'],
+    'sow':       ['Sales-to-Delivery Transition', 'Finance and Commercial'],
+    'status':    ['Delivery Operations', 'Project Governance / PMO'],
+    'other':     sorted(VALID_DOMAINS),
+    'interview': sorted(VALID_DOMAINS),
+}
+
+# Shared library instruction and output format appended to every extraction prompt
+_LIBRARY_INSTRUCTION = """SIGNAL LIBRARY:
+The user message includes a SIGNAL LIBRARY block listing Tier 1 signals to check against this source.
+- For each listed signal where you find evidence: include it in "found" with all required fields plus "library_signal_id": "<SL-XX>"
+- For each listed signal you actively checked but found no evidence for: add its signal_id to "not_observed"
+- You may include freely-extracted signals not in the library in "found" — omit library_signal_id for these
+- Report not_observed ONLY for signals that appear in the SIGNAL LIBRARY block above
+
+"""
+
+_OUTPUT_FORMAT_OBJECT = """CRITICAL OUTPUT FORMAT:
+Your response must be a JSON object beginning with { and ending with }
+Do not include any text, explanation, or markdown before or after the JSON object
+Do not use code fences or backticks of any kind
+Your response must follow this structure exactly:
+{"found": [...signal objects...], "not_observed": ["SL-XX", ...]}
+The "found" array contains extracted signal objects following all rules above.
+The "not_observed" array contains signal_ids from the SIGNAL LIBRARY block that you actively checked and could not find evidence for."""
+
+FINANCIAL_EXTRACTION_PROMPT = f"""You are analyzing a financial document from a consulting firm diagnostic engagement.
 
 Extract signals that are directly supported by data in the document. Focus on economics, margin, utilization, revenue, pricing, and financial health indicators.
 
@@ -24,9 +60,9 @@ When you see numerical data, infer the signal from the numbers themselves.
 A gross margin percentage in a row labeled 'Gross Margin' is directly readable —
 use the row label as the signal name and apply the confidence rules below.
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string
 - normalized_band: string
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
@@ -37,17 +73,14 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document that supports this signal
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-38"). Omit for freely-extracted signals.
 
 Only extract signals with direct document evidence.
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
-PORTFOLIO_EXTRACTION_PROMPT = """You are analyzing a project portfolio or status report from a consulting firm diagnostic engagement.
+PORTFOLIO_EXTRACTION_PROMPT = f"""You are analyzing a project portfolio or status report from a consulting firm diagnostic engagement.
 
 Extract signals related to delivery performance, project health, governance, and resource utilization.
 
@@ -59,9 +92,9 @@ Look specifically for:
 - Issues and risks listed in the report
 - Projects described as 'at risk', 'delayed', or 'escalated'
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string
 - normalized_band: string
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
@@ -72,16 +105,13 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-17"). Omit for freely-extracted signals.
 
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
-SOW_EXTRACTION_PROMPT = """You are analyzing a Statement of Work or contract from a consulting firm diagnostic engagement.
+SOW_EXTRACTION_PROMPT = f"""You are analyzing a Statement of Work or contract from a consulting firm diagnostic engagement.
 
 Extract signals related to SOW quality, scope definition, acceptance criteria, assumptions, and sales-to-delivery transition indicators.
 
@@ -93,9 +123,9 @@ Focus particularly on:
 - Whether delivery team involvement is evident from document language
 - Success criteria that are measurable vs vague
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string
 - normalized_band: string
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Note any of the following: the signal is an inference from document tone rather than an explicit statement; contradictory language about the same element appears elsewhere in the document; the evidence is a single ambiguous phrase requiring interpretation. Write "None" only if the signal is unambiguously observable without interpretation.
@@ -106,16 +136,13 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific language from the SOW that supports this signal
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-13"). Omit for freely-extracted signals.
 
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
-STATUS_EXTRACTION_PROMPT = """You are analyzing a project status report from a consulting firm diagnostic engagement.
+STATUS_EXTRACTION_PROMPT = f"""You are analyzing a project status report from a consulting firm diagnostic engagement.
 
 Extract signals related to delivery health, project performance, and governance quality.
 
@@ -129,11 +156,11 @@ Focus on:
 
 Return only signals that are clearly observable in the document. Do not infer signals
 that are not supported by specific text.
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string — short descriptive name (e.g., "Multiple projects Red status")
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string — the specific value or observation (e.g., "3 of 7 projects Red")
 - normalized_band: string — context for the value (e.g., "Above acceptable threshold")
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
@@ -144,14 +171,11 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct quote or specific reference from the document
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-36"). Omit for freely-extracted signals.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
-RESOURCE_EXTRACTION_PROMPT = """You are analyzing a resource utilization or staffing report from a consulting firm diagnostic engagement.
+RESOURCE_EXTRACTION_PROMPT = f"""You are analyzing a resource utilization or staffing report from a consulting firm diagnostic engagement.
 
 Extract signals related to utilization rates, staffing patterns, capacity, and resource management.
 
@@ -164,11 +188,11 @@ Focus on:
 - Capacity vs pipeline alignment — do you have the right skills for upcoming work?
 
 Return only signals that are clearly observable in the document.
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string — short descriptive name
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string — the specific value (e.g., "71% billable utilization")
 - normalized_band: string — context (e.g., "Below 78% target")
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the document for any issues with this signal's evidence: contradictory figures elsewhere in the document for this metric; whether the figure is inferred by you rather than explicitly stated; missing labels or context that make interpretation ambiguous. Write "None" only if the evidence is explicitly stated, clearly labeled, and unambiguous.
@@ -179,14 +203,11 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference from the document
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-25"). Omit for freely-extracted signals.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
-DELIVERY_DOCUMENT_EXTRACTION_PROMPT = """You are analyzing a delivery document from a consulting firm diagnostic engagement.
+DELIVERY_DOCUMENT_EXTRACTION_PROMPT = f"""You are analyzing a delivery document from a consulting firm diagnostic engagement.
 
 Delivery documents include risk registers, project retrospectives, portfolio summaries, and proposals.
 Extract signals that are directly supported by evidence in the document.
@@ -217,11 +238,11 @@ Proposals:
 - Pricing structure — fixed fee, T&M, or hybrid; any margin risk indicators in the structure
 
 Return only signals that are clearly observable in the document.
-Extract no more than 10 signals. If you identify more, keep only the 10 most operationally significant.
+Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string — short descriptive name (e.g., "High open risk count with no mitigations")
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string — the specific observation (e.g., "14 of 22 risks unmitigated")
 - normalized_band: string — context for the value (e.g., "Above acceptable threshold")
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Note any of the following: the signal is inferred from document tone or pattern rather than explicitly stated; contradictory data appears elsewhere in the document; the evidence is a single ambiguous entry requiring interpretation. Write "None" only if the signal is unambiguously stated and supportable by direct reference.
@@ -232,12 +253,9 @@ Each item must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference or quote from the document that supports this signal
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-19"). Omit for freely-extracted signals.
 
-CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
-Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected"""
+""" + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
 
 PROMPT_MAP = {
     'interview':  None,       # uses SIGNAL_EXTRACTION_PROMPT from claude.py
@@ -249,6 +267,73 @@ PROMPT_MAP = {
     'delivery':   DELIVERY_DOCUMENT_EXTRACTION_PROMPT,
     'other':      None,       # uses SIGNAL_EXTRACTION_PROMPT from claude.py
 }
+
+
+def _build_library_block(domains: list) -> str:
+    """Build a compact signal library block for injection into the user message.
+
+    Loads Tier 1 signals for the given domains from SignalLibrary and formats
+    them as a compact checklist. Returns empty string if the library is unavailable
+    or empty — callers skip injection when the block is empty.
+    """
+    import json as _json
+    from api.db.repositories.signal_library import SignalLibraryRepository
+
+    try:
+        repo = SignalLibraryRepository()
+        lines = []
+
+        for domain in domains:
+            signals = [s for s in repo.get_by_domain(domain) if s['priority_tier'] == 1]
+            if not signals:
+                continue
+            lines.append(f"\n{domain.upper()} SIGNALS:")
+            for s in signals:
+                sig_type = s['signal_type'].capitalize()
+                lines.append(f"[{s['signal_id']}] {s['signal_name']} ({sig_type}, Tier 1)")
+                defn = (s.get('definition') or '')[:200].rstrip()
+                lines.append(f"  Definition: {defn}")
+                if s['signal_type'] == 'numeric' and s.get('threshold_bands'):
+                    try:
+                        bands = _json.loads(s['threshold_bands'])
+                        parts = []
+                        for b in bands:
+                            lo, hi, lbl = b.get('min'), b.get('max'), b.get('label', '')
+                            if lo is None and hi is not None:
+                                parts.append(f"{lbl} (<{hi})")
+                            elif lo is not None and hi is None:
+                                parts.append(f"{lbl} (>{lo})")
+                            else:
+                                parts.append(f"{lbl} ({lo}–{hi})")
+                        lines.append(f"  Bands: {' | '.join(parts)}")
+                    except (ValueError, TypeError, KeyError):
+                        pass
+                elif s['signal_type'] == 'maturity':
+                    if s.get('maturity_levels'):
+                        try:
+                            levels = _json.loads(s['maturity_levels'])
+                            lbls = [lv.get('label', '') for lv in levels]
+                            lines.append(f"  Levels: {' | '.join(lbls)}")
+                        except (ValueError, TypeError):
+                            pass
+                    if s.get('none_indicators'):
+                        ni = s['none_indicators'][:200].rstrip()
+                        lines.append(f"  None indicators: {ni}")
+                lines.append('')  # blank line between signals
+
+        if not lines:
+            return ''
+
+        header = (
+            'SIGNAL LIBRARY — Check each signal below against this source.\n'
+            'For matched signals add library_signal_id to found. '
+            'For checked-but-not-found signals add signal_id to not_observed.\n'
+        )
+        return header + '\n'.join(lines)
+
+    except Exception as e:
+        logger.warning(f'_build_library_block failed: {e} — proceeding without library injection')
+        return ''
 
 
 def get_file_type(file_name: str) -> str:
@@ -495,27 +580,46 @@ async def process_file(file_info: dict, engagement_id: str,
 
     logger.info(f"Processing {file_type} file: {file_name} ({len(content)} chars)")
 
+    # Build domain-filtered Tier 1 library block for this file type
+    domains = DOMAIN_FILTER_MAP.get(file_type, sorted(VALID_DOMAINS))
+    library_block = _build_library_block(domains)
+
     prompt = PROMPT_MAP.get(file_type)
 
     if prompt is None:
         # interview, other — use SIGNAL_EXTRACTION_PROMPT via extract_signals_from_transcript
-        raw = await extract_signals_from_transcript(content)
+        raw = await extract_signals_from_transcript(content, library_block)
     else:
+        user_content = f"DOCUMENT:\n\n{content}"
+        if library_block:
+            user_content += f"\n\n---\n\n{library_block}"
         message = await async_client.messages.create(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=prompt,
-            messages=[{"role": "user", "content": f"DOCUMENT:\n\n{content}"}],
+            messages=[{"role": "user", "content": user_content}],
         )
         raw = extract_text(message)
 
     clean = strip_json_fences(raw)
 
     try:
-        candidates = json.loads(clean)
+        parsed = json.loads(clean)
+        if isinstance(parsed, dict):
+            # New format: {"found": [...], "not_observed": [...]}
+            candidates = parsed.get('found', [])
+            not_observed = parsed.get('not_observed', [])
+        else:
+            # Fallback: legacy array format (pre-Session 2 responses)
+            candidates = parsed if isinstance(parsed, list) else []
+            not_observed = []
     except json.JSONDecodeError:
         logger.error(f"Claude returned invalid JSON for {file_name}: {raw[:200]}")
         candidates = []
+        not_observed = []
+
+    # Validate not_observed: only keep well-formed SL-XX IDs
+    not_observed = [sid for sid in not_observed if isinstance(sid, str) and sid.startswith('SL-')]
 
     cleaned = []
     for item in candidates:
@@ -540,9 +644,10 @@ async def process_file(file_info: dict, engagement_id: str,
             'file_type':      file_type,
             'processed_date': date.today().isoformat(),
             'candidates':     cleaned,
+            'not_observed':   not_observed,
         }, f, indent=2)
 
-    logger.info(f"Wrote {len(cleaned)} candidates to {candidate_file}")
+    logger.info(f"Wrote {len(cleaned)} candidates and {len(not_observed)} not_observed to {candidate_file}")
 
     return {
         'file_name':       file_name,
@@ -551,6 +656,7 @@ async def process_file(file_info: dict, engagement_id: str,
         'candidate_count': len(cleaned),
         'candidate_file':  candidate_file,
         'candidates':      cleaned,
+        'not_observed':    not_observed,
     }
 
 
@@ -649,14 +755,17 @@ async def process_engagement_files(engagement_id: str,
                 'error':           str(e),
                 'candidate_count': 0,
                 'candidates':      [],
+                'not_observed':    [],
             })
 
     # Collect all candidates from all files, annotating each with its source file
     all_candidates = []
+    all_not_observed: set = set()
     for result in results:
         source_file = result.get('file_name', '')
         for c in result.get('candidates', []):
             all_candidates.append({**c, 'source_file': source_file})
+        all_not_observed.update(result.get('not_observed', []))
 
     # Deduplicate across files
     deduped, dedup_count = _deduplicate_candidates(all_candidates)
@@ -669,6 +778,11 @@ async def process_engagement_files(engagement_id: str,
     hypothesis_candidates = [c for c in capped if c.get('signal_confidence') == 'Hypothesis']
     hypothesis_count = len(hypothesis_candidates)
 
+    # Signals found in any file are no longer gaps — remove from not_observed
+    found_library_ids = {c.get('library_signal_id') for c in all_candidates
+                         if c.get('library_signal_id')}
+    final_not_observed = sorted(all_not_observed - found_library_ids)
+
     # Write merged candidate file
     merged_file = os.path.join(candidates_folder, f"{engagement_id}_merged_candidates.json")
     with open(merged_file, 'w', encoding='utf-8') as f:
@@ -679,6 +793,7 @@ async def process_engagement_files(engagement_id: str,
             'dedup_count':           dedup_count,
             'domain_cap_count':      domain_cap_count,
             'hypothesis_count':      hypothesis_count,
+            'not_observed':          final_not_observed,
         }, f, indent=2)
 
     logger.info(

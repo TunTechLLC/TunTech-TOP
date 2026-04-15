@@ -48,6 +48,7 @@ export const api = {
     listProcessedFiles:  (id)       => fetch(`${BASE}/engagements/${id}/signals/processed-files`).then(handle),
     deleteProcessedFile: (id, hash) => fetch(`${BASE}/engagements/${id}/signals/processed-files/${hash}`,
                                        { method: 'DELETE' }).then(handle),
+    getCoverage:         (id)       => fetch(`${BASE}/engagements/${id}/signals/coverage`).then(handle),
   },
   patterns: {
     list:    (id)          => fetch(`${BASE}/engagements/${id}/patterns`).then(handle),

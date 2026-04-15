@@ -3,12 +3,16 @@ import asyncio
 import logging
 import anthropic
 
+from api.utils.domains import VALID_DOMAINS
+
 logger = logging.getLogger(__name__)
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"), timeout=120.0, max_retries=0)
 
 from config import MODEL, MAX_TOKENS
+
+_DOMAIN_LIST = ', '.join(f'"{d}"' for d in sorted(VALID_DOMAINS))
 
 
 def extract_text(message: anthropic.types.Message) -> str:
@@ -264,18 +268,18 @@ Return format:
   {"pattern_id": "P12", "confidence": "High", "notes": "Evidence here."}
 ]"""
 
-SIGNAL_EXTRACTION_PROMPT = """You are analyzing an interview transcript from a consulting firm diagnostic engagement.
+SIGNAL_EXTRACTION_PROMPT = f"""You are analyzing an interview transcript from a consulting firm diagnostic engagement.
 
 Extract signals that are directly supported by evidence in the transcript. A signal is a specific, observable indicator of operational health or dysfunction.
 
-Extract between 5 and 10 signals per transcript. If you identify more than 10, keep only
+Extract between 5 and 10 found signals per transcript. If you identify more than 10, keep only
 the 10 most operationally significant. Only include signals where the evidence is clear
 and specific. Do not extract speculative signals to reach a minimum count.
 Do not over-extract weak inferences from thin evidence.
 
-Each item must have exactly these fields:
+Each item in "found" must have exactly these fields:
 - signal_name: string — a concise name for the signal (e.g. "Projects on schedule")
-- domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
+- domain: string — must be exactly one of: {_DOMAIN_LIST}
 - observed_value: string — what was observed (e.g. "57%", "Low", "Increasing")
 - normalized_band: string — context for the observed value (e.g. "Below 80% target", "No standard process exists")
 - evidence_quality: string — COMPLETE THIS BEFORE assigning signal_confidence. Scan the full transcript for any other references to this same topic and list any of the following you find: [unclear] or [inaudible] markers in relevant passages; hedging language used by the interviewee ("I think", "roughly", "around", "probably", "I believe", "I'm not sure"); any statement elsewhere in the transcript that contradicts this one or gives a different figure; the interviewee expressing doubt, admitting an error, or failing to resolve an either/or question; the signal being an inference you drew rather than something the interviewee stated directly. Write "None" only if none of these exist for this topic anywhere in the transcript.
@@ -286,29 +290,42 @@ Each item must have exactly these fields:
 - source: string — always "Interview"
 - economic_relevance: string — one short phrase (e.g. "Delivery margin", "Revenue stability") or empty string
 - notes: string — include the VERBATIM quote from the transcript that supports this signal, followed by your brief interpretation. Format: "Quote: '[exact words]' — Interpretation: [your note]"
+- library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-17"). Omit for freely-extracted signals.
 
 Only extract signals with direct transcript evidence. Do not invent signals.
 
+SIGNAL LIBRARY:
+The user message includes a SIGNAL LIBRARY block listing Tier 1 signals to check against this transcript.
+- For each listed signal where you find evidence: include it in "found" with all required fields plus "library_signal_id": "<SL-XX>"
+- For each listed signal you actively checked but found no evidence for: add its signal_id to "not_observed"
+- You may include freely-extracted signals not in the library in "found" — omit library_signal_id for these
+- Report not_observed ONLY for signals that appear in the SIGNAL LIBRARY block above
+
 CRITICAL OUTPUT FORMAT:
-Your response must begin with the character [ and end with the character ]
-Do not include any text, explanation, or markdown before or after the JSON array
+Your response must be a JSON object beginning with {{ and ending with }}
+Do not include any text, explanation, or markdown before or after the JSON object
 Do not use code fences or backticks of any kind
-If your response does not begin with [, it is invalid and will be rejected
+Your response must follow this structure exactly:
+{{"found": [...signal objects...], "not_observed": ["SL-XX", ...]}}
 
 Return format example:
-[
-  {
-    "signal_name": "Projects on schedule",
-    "domain": "Delivery Operations",
-    "observed_value": "57%",
-    "normalized_band": "Below 80% target",
-    "evidence_quality": "None",
-    "signal_confidence": "High",
-    "source": "Interview",
-    "economic_relevance": "Delivery margin",
-    "notes": "Quote: 'eight of our fourteen active projects are on track, the rest are in some kind of trouble' — Interpretation: 57% on-schedule rate confirmed directly by CEO."
-  }
-]"""
+{{
+  "found": [
+    {{
+      "signal_name": "Projects on schedule",
+      "domain": "Delivery Operations",
+      "observed_value": "57%",
+      "normalized_band": "Below 80% target",
+      "evidence_quality": "None",
+      "signal_confidence": "High",
+      "source": "Interview",
+      "economic_relevance": "Delivery margin",
+      "notes": "Quote: 'eight of our fourteen active projects are on track, the rest are in some kind of trouble' — Interpretation: 57% on-schedule rate confirmed directly by CEO.",
+      "library_signal_id": "SL-18"
+    }}
+  ],
+  "not_observed": ["SL-17", "SL-23"]
+}}"""
 
 AGENT_REGISTRY = {
     "Diagnostician": {
@@ -369,15 +386,19 @@ async def call_claude(
     return response
 
 
-async def extract_signals_from_transcript(transcript: str) -> str:
+async def extract_signals_from_transcript(transcript: str, library_block: str = '') -> str:
     """Extract signal candidates from an interview transcript.
+    library_block is a pre-built SIGNAL LIBRARY section injected after the transcript.
     Returns raw JSON string — fence stripping handled by caller."""
     logger.info(f"Extracting signals from transcript — {len(transcript)} chars")
+    user_content = f"INTERVIEW TRANSCRIPT:\n\n{transcript}"
+    if library_block:
+        user_content += f"\n\n---\n\n{library_block}"
     message = await async_client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SIGNAL_EXTRACTION_PROMPT,
-        messages=[{"role": "user", "content": f"INTERVIEW TRANSCRIPT:\n\n{transcript}"}],
+        messages=[{"role": "user", "content": user_content}],
     )
     raw = extract_text(message)
     clean = raw.strip()

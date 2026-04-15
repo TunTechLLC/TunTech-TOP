@@ -125,18 +125,48 @@ def load_candidates(
             'economic_relevance': signal.get('economic_relevance', ''),
             'notes':              signal.get('notes', ''),
             'source_file':        signal.get('source_file'),
+            'library_signal_id':  signal.get('library_signal_id'),
         }
         repo.create(signal_payload)
         loaded += 1
 
-    # Archive candidate files — non-fatal if it fails
+    # Write SignalCoverage gaps from not_observed in the merged candidate file — non-fatal
     merged_file = payload.get('merged_candidate_file')
+    if merged_file and os.path.exists(merged_file):
+        try:
+            import json as _json
+            from api.db.repositories.signal_coverage import SignalCoverageRepository
+            with open(merged_file, 'r', encoding='utf-8') as _f:
+                merged_data = _json.load(_f)
+            not_observed = merged_data.get('not_observed', [])
+            if not_observed:
+                coverage_repo = SignalCoverageRepository()
+                source_file = os.path.basename(merged_file)
+                coverage_repo.delete_for_engagement(engagement_id)
+                coverage_rows = [
+                    {'engagement_id': engagement_id, 'signal_id': sid, 'source_file': source_file}
+                    for sid in not_observed
+                ]
+                written = coverage_repo.bulk_create(coverage_rows)
+                logger.info(f"Wrote {written} SignalCoverage rows for {engagement_id}")
+        except Exception as _e:
+            logger.warning(f"SignalCoverage write failed (non-fatal): {_e}")
+
+    # Archive candidate files — non-fatal if it fails
     if merged_file:
         from api.services.document_processor import archive_candidate_files
         candidates_folder = os.path.dirname(merged_file)
         archive_candidate_files(engagement_id, candidates_folder, merged_file)
 
     return {'signals_loaded': loaded}
+
+
+@router.get("/{engagement_id}/signals/coverage")
+def list_coverage(engagement_id: str):
+    """Return Tier 1 library signal gaps for an engagement.
+    These are signals that were checked during extraction but not found in any file."""
+    from api.db.repositories.signal_coverage import SignalCoverageRepository
+    return SignalCoverageRepository().get_for_engagement(engagement_id)
 
 
 @router.get("/{engagement_id}/signals/processed-files")

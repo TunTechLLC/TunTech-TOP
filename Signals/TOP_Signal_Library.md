@@ -113,14 +113,16 @@ When a library signal is checked against a source file and no evidence is found:
 
 ## Domain Filter Map (for document-type extraction prompts)
 
-| Document Type              | Domains to Include                                              |
-|----------------------------|-----------------------------------------------------------------|
-| Financial summary          | Consulting Economics, Finance and Commercial                    |
-| Portfolio / project report | Delivery Operations, Resource Management, Project Governance    |
-| SOW / contract             | Sales-to-Delivery Transition, Finance and Commercial            |
-| Status report              | Delivery Operations, Project Governance / PMO                   |
-| Client feedback / NPS      | Customer Experience                                             |
-| Interview (all roles)      | All 10 domains                                                  |
+| Document Type               | Domains to Include                                                                        |
+|-----------------------------|-------------------------------------------------------------------------------------------|
+| Financial summary           | Consulting Economics, Finance and Commercial                                              |
+| Resource utilization report | Resource Management, Consulting Economics                                                 |
+| Portfolio / project report  | Delivery Operations, Resource Management, Project Governance / PMO, Sales-to-Delivery Transition |
+| Delivery document           | Delivery Operations, Project Governance / PMO, Sales-to-Delivery Transition, Resource Management |
+| SOW / contract              | Sales-to-Delivery Transition, Finance and Commercial                                      |
+| Status report               | Delivery Operations, Project Governance / PMO                                             |
+| Client feedback / NPS       | Customer Experience                                                                       |
+| Interview (all roles)       | All 10 domains                                                                            |
 
 ---
 
