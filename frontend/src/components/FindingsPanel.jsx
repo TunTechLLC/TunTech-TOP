@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS } from '../constants'
+import { DEFAULT_DOMAIN, DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS } from '../constants'
 
 function parseDollarToFloat(s) {
   if (!s) return null
@@ -48,7 +48,7 @@ const FIGURE_TYPES = [
 
 const EMPTY_FORM = {
   finding_title:       '',
-  domain:              'Delivery Operations',
+  domain:              DEFAULT_DOMAIN,
   confidence:          'High',
   priority:            'High',
   effort:              'Medium',
@@ -441,7 +441,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                       <div className="col-span-2">
                         <div className="text-xs text-gray-500 mb-0.5">Domain</div>
                         <select
-                          value={c.domain || 'Delivery Operations'}
+                          value={c.domain || DEFAULT_DOMAIN}
                           onChange={e => handleSynthCandidateChange(idx, 'domain', e.target.value)}
                           className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
                         >

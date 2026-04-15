@@ -8,7 +8,7 @@ from api.db.repositories.pattern import PatternRepository
 from api.db.repositories.signal import SignalRepository
 from api.db.repositories.engagement import EngagementRepository
 from api.models.finding import FindingCreate, FindingUpdate, FindingResponse
-from api.utils.domains import VALID_DOMAINS, VALID_FINDING_CONFIDENCES, VALID_PRIORITIES, VALID_EFFORTS
+from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_FINDING_CONFIDENCES, VALID_PRIORITIES, VALID_EFFORTS
 from api.services.report_generator import _prepopulate_display_figure
 from api.services.report_sections import (
     _parse_economic_figures, _format_display_figure, _parse_display_figure_to_float,
@@ -353,7 +353,7 @@ async def parse_synthesizer_findings(
     cleaned = []
     for item in candidates:
         if item.get('domain') not in VALID_DOMAINS:
-            item['domain'] = 'Delivery Operations'
+            item['domain'] = DEFAULT_DOMAIN
         if item.get('priority') not in VALID_PRIORITIES:
             item['priority'] = 'High'
         if item.get('effort') not in VALID_EFFORTS:

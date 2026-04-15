@@ -5,7 +5,7 @@ from api.db.repositories.roadmap import RoadmapRepository
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.finding import FindingRepository
 from api.models.roadmap import RoadmapItemCreate, RoadmapItemResponse
-from api.utils.domains import VALID_DOMAINS, VALID_PRIORITIES, VALID_EFFORTS
+from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_PRIORITIES, VALID_EFFORTS
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ async def parse_synthesizer_roadmap(
     cleaned = []
     for item in candidates:
         if item.get('domain') not in VALID_DOMAINS:
-            item['domain'] = 'Delivery Operations'
+            item['domain'] = DEFAULT_DOMAIN
         if item.get('phase') not in VALID_PHASES:
             item['phase'] = 'Stabilize'
         if item.get('priority') not in VALID_PRIORITIES:

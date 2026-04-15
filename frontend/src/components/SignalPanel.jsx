@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { DOMAINS, CONFIDENCE_LEVELS, SOURCES } from '../constants'
+import { DEFAULT_DOMAIN, DOMAINS, CONFIDENCE_LEVELS, SOURCES } from '../constants'
 
 const confidenceColors = {
   High:       'bg-red-100 text-red-800',
@@ -15,7 +15,7 @@ const sourceColors = {
 
 const EMPTY_FORM = {
   signal_name:        '',
-  domain:             'Delivery Operations',
+  domain:             DEFAULT_DOMAIN,
   observed_value:     '',
   normalized_band:    '',
   signal_confidence:  'High',
@@ -352,7 +352,7 @@ export default function SignalPanel({ engagementId, onRefresh }) {
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Domain</label>
                         <select
-                          value={c.domain || 'Delivery Operations'}
+                          value={c.domain || DEFAULT_DOMAIN}
                           onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
                           className={sel}
                         >

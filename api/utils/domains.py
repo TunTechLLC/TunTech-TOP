@@ -5,6 +5,8 @@ new code that needs to validate domains or confidences.
 Frontend equivalent: src/constants.js (keep in sync manually).
 """
 
+DEFAULT_DOMAIN = 'Delivery Operations'
+
 VALID_DOMAINS = {
     'Sales & Pipeline',
     'Sales-to-Delivery Transition',

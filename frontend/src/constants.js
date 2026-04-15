@@ -1,6 +1,8 @@
 // Single source of truth for frontend constants.
 // Backend equivalent: api/utils/domains.py (keep in sync manually).
 
+export const DEFAULT_DOMAIN = 'Delivery Operations';
+
 export const DOMAINS = [
   'Sales & Pipeline',
   'Sales-to-Delivery Transition',

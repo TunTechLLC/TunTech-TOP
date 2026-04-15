@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import date
 
 from api.db.repositories.processed_files import ProcessedFilesRepository
-from api.utils.domains import VALID_DOMAINS, VALID_CONFIDENCES
+from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_CONFIDENCES
 from api.services.claude import extract_text
 
 logger = logging.getLogger(__name__)
@@ -520,8 +520,8 @@ async def process_file(file_info: dict, engagement_id: str,
     cleaned = []
     for item in candidates:
         if item.get('domain') not in VALID_DOMAINS:
-            logger.warning(f"Invalid domain '{item.get('domain')}' in {file_name} — defaulting to Delivery Operations")
-            item['domain'] = 'Delivery Operations'
+            logger.warning(f"Invalid domain '{item.get('domain')}' in {file_name} — defaulting to {DEFAULT_DOMAIN}")
+            item['domain'] = DEFAULT_DOMAIN
         if item.get('signal_confidence') not in VALID_CONFIDENCES:
             logger.warning(f"Invalid confidence '{item.get('signal_confidence')}' in {file_name} — defaulting to Medium")
             item['signal_confidence'] = 'Medium'

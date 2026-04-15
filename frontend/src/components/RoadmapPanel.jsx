@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { DOMAINS, PHASES, PRIORITIES, EFFORTS } from '../constants'
+import { DEFAULT_DOMAIN, DOMAINS, PHASES, PRIORITIES, EFFORTS } from '../constants'
 
 const STATUSES = ['Proposed', 'In Progress', 'Complete', 'On Hold']
 
@@ -18,7 +18,7 @@ const priorityColors = {
 
 const EMPTY_FORM = {
   initiative_name:        '',
-  domain:                 'Delivery Operations',
+  domain:                 DEFAULT_DOMAIN,
   phase:                  'Stabilize',
   priority:               'High',
   effort:                 'Medium',
@@ -99,7 +99,7 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
     setEditingId(item.item_id)
     setEditForm({
       initiative_name:        item.initiative_name        || '',
-      domain:                 item.domain                 || 'Delivery Operations',
+      domain:                 item.domain                 || DEFAULT_DOMAIN,
       phase:                  item.phase                  || 'Stabilize',
       priority:               item.priority               || 'High',
       effort:                 item.effort                 || 'Medium',
@@ -325,7 +325,7 @@ export default function RoadmapPanel({ engagementId, onRefresh }) {
                             <div>
                               <div className="text-xs text-gray-500 mb-0.5">Domain</div>
                               <select
-                                value={c.domain || 'Delivery Operations'}
+                                value={c.domain || DEFAULT_DOMAIN}
                                 onChange={e => handleCandidateChange(idx, 'domain', e.target.value)}
                                 className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
                               >

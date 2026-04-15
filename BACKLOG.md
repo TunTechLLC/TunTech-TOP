@@ -11,7 +11,7 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
+| 1 | Signal Library — Sessions 2–3 | 2 |
 | 2 | Editable Engagement Info | 1 |
 | 3 | Executive Briefing Sharpness + Execution Path Section | 1 |
 | 4 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
@@ -25,8 +25,6 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 | 12 | Structured File Metadata Capture | 1 |
 | 13 | PowerPoint Export | 1 |
 | — | Checkpoint 5 — Dry Run 5 | milestone |
-
-DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
 
 ---
 
@@ -51,22 +49,9 @@ bands or threshold ranges, none_indicators,
 and pattern linkage. This is the authoritative
 content source for implementation.
 
-**Schema surface (three changes):**
-
-1. New SignalLibrary table — columns include
-   signal_id, signal_name, domain, signal_type,
-   definition, priority_tier (INTEGER DEFAULT 2),
-   threshold_bands (JSON), maturity_levels (JSON),
-   none_indicators, contributing_patterns,
-   created_date. Seed from TOP_Signal_Library.md.
-2. New SignalCoverage table — not-observed
-   gaps only, no status column
-3. ALTER TABLE OPDSignals ADD COLUMN
-   library_signal_id TEXT (nullable FK
-   to SignalLibrary)
-
-Full DDL is in TOP_Signal_Library.md
-Schema Reference section.
+**Session 1 complete** — SignalLibrary table (80 signals seeded), SignalCoverage table,
+library_signal_id on Signals, SignalLibraryRepository, SignalCoverageRepository,
+DEFAULT_DOMAIN constant, all 7 hardcoded fallbacks replaced.
 
 **Two signal types requiring different
 extraction handling:**
@@ -93,16 +78,7 @@ Output format: found signals in standard
 candidate format + not_observed array of
 signal_ids for SignalCoverage rows.
 
-**Implementation scope — significant.
-Do not attempt in one session:**
-
-Session 1: SignalLibrary table + seeding
-script from TOP_Signal_Library.md +
-SignalCoverage table + library_signal_id
-column on OPDSignals. Also add
-DEFAULT_DOMAIN constant to domains.py
-and constants.js; replace 7 hardcoded
-fallback strings (see DEFAULT_DOMAIN item).
+**Remaining sessions:**
 
 Session 2: Update extraction prompts with
 domain-filtered library injection +
@@ -116,10 +92,6 @@ Session 3: Router changes to write
 SignalCoverage rows from not_observed
 output + SignalPanel UI updates to show
 coverage gaps.
-
-**Build after:** Document Cleanup session
-and Economic Impact Table structured
-fields are complete.
 
 ---
 

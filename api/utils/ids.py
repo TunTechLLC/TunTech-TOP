@@ -67,3 +67,6 @@ def next_knowledge_id():
 
 def next_processed_file_id():
     return next_id("ProcessedFiles", "file_id", "PF", 3)
+
+def next_coverage_id():
+    return next_id("SignalCoverage", "coverage_id", "SC", 3)
