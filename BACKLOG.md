@@ -5,7 +5,7 @@
 
 ## Technical Debt — Address Before Next Major Feature
 
-### Build Sequence — Verified 2026-04-13
+### Build Sequence — Verified 2026-04-15
 
 Full code investigation confirmed this order. Work top to bottom within this section.
 
@@ -13,8 +13,18 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 |---|------|----------|
 | 1 | Signal Library — Sessions 1–3 (includes DEFAULT_DOMAIN) | 3 |
 | 2 | Editable Engagement Info | 1 |
-| 3 | Domain Maturity Scoring | 1 |
-| 4 | Visual 3 — Causal Chain | 1 |
+| 3 | Executive Briefing Sharpness + Execution Path Section | 1 |
+| 4 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
+| 5 | Narrator Quality Improvements — Session 2 (Improvements 7–11, 14) | 1 |
+| 6 | Quick Wins Section | 1 |
+| 7 | Domain Maturity Scoring | 1 |
+| 8 | Visual 3 — Causal Chain | 1 |
+| 9 | Three Systemic Drivers Section | 1 |
+| 10 | Auto-Suggest Knowledge | 1 |
+| 11 | Standardize Economic Output | 1 |
+| 12 | Structured File Metadata Capture | 1 |
+| 13 | PowerPoint Export | 1 |
+| — | Checkpoint 5 — Dry Run 5 | milestone |
 
 DEFAULT_DOMAIN standalone session eliminated — see note on that item below.
 
@@ -333,11 +343,7 @@ silently ignored by Claude. Consider dynamic prompt injection in the same sessio
 
 | Visual | Description | Status |
 |--------|-------------|--------|
-| Visual 1 — Economic Breakdown Chart | Horizontal bar chart of confirmed exposures by finding, embedded in Section 6 before economic summary table. matplotlib (Agg backend), temp PNG deleted after embed. | ✅ Complete — pending fix to use structured display fields (see Economic Breakdown Chart backlog item) |
-| Visual 2 — Roadmap Timeline | Gantt-style horizontal bar chart at start of Section 8. Phase zone shading, bars colored by phase, sourced from narrator initiative_details. | ✅ Complete |
 | Visual 3 — Causal Chain Diagram | Left-to-right SVG flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. | Not built — pending |
-
-**Build Visual 3 after:** `report_generator.py` split (see Technical Debt section above). Do not add another visual to the existing monolithic file.
 
 **Visual 3 design:**
 - New `causal_chain` JSON field in narrator output — finding-to-finding relationships for diagram node construction
@@ -410,6 +416,712 @@ pattern. Knowledge should too. Also, existing knowledge promotions have no Edit 
 - `PATCH /{engagement_id}/knowledge/{knowledge_id}` (if not already present)
 
 **Commit message:** Knowledge panel — suggest-review-load + edit/delete on existing promotions
+
+---
+### Narrator and Agent Quality Improvements
+— Sequencing, Prioritization, and 
+Economic Integrity
+
+**Priority: High — affects output quality 
+across all future engagements**
+
+**Scope:** Prompt changes only — 
+REPORT_NARRATOR_PROMPT, SKEPTIC_PROMPT, 
+SYNTHESIZER_PROMPT in claude.py. 
+No schema changes. No report_generator 
+changes. No frontend changes.
+
+**Do in a single focused session.**
+
+**Commit message:** "Narrator and agent 
+prompt improvements — sequencing rules, 
+prioritization logic, economic overlap 
+handling, risk mitigation triggers, 
+leading indicators in success metrics"
+
+---
+
+#### Improvement 1 — Revenue concentration 
+risk belongs in Stabilize not Scale
+
+When a finding identifies a single client 
+representing more than 15% of revenue 
+with any of the following signals present 
+— declining NPS, active escalation, 
+relationship deterioration, no account 
+plan — the account stabilization action 
+must be placed in Stabilize, not Scale.
+
+Revenue concentration with deteriorating 
+relationship signals is a risk containment 
+action, not a growth initiative. Placing 
+it in Scale treats a Stabilize problem 
+as an optimization opportunity and 
+leaves the firm's largest revenue 
+exposure unmanaged for 6-9 months.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When the Revenue Concentration Risk 
+pattern has fired AND relationship 
+deterioration signals are present for 
+the concentrated client (declining NPS, 
+active escalation, no account plan, 
+or client communication gaps), the 
+account stabilization initiative must 
+be placed in Stabilize. Only account 
+expansion initiatives belong in Scale. 
+Stabilization and expansion are 
+different actions with different urgency."
+
+---
+
+#### Improvement 2 — Active rate loss 
+requires Stabilize policy, not just 
+Optimize reporting
+
+When rate card non-enforcement is 
+identified as an ongoing active loss 
+(the gap between realized rate and 
+target rate is confirmed and persisting), 
+the rate floor policy and approval 
+workflow must be drafted in Stabilize 
+and ratified in early Optimize. 
+The reporting infrastructure that 
+enforces the policy belongs in Optimize, 
+but the policy itself does not require 
+the reporting to exist before it can 
+be written.
+
+Waiting for Optimize to begin rate 
+governance means every new deal signed 
+during Stabilize continues at the 
+below-target rate, compounding the 
+confirmed annual loss for 3+ months.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When billable rate realization is 
+below target and rate card non-enforcement 
+is identified as an active ongoing loss, 
+the roadmap must include a rate floor 
+policy and approval workflow draft in 
+Stabilize (not Optimize). Deal-level 
+rate reporting infrastructure belongs 
+in Optimize. The policy does not require 
+the reporting infrastructure to exist 
+before it can be drafted and communicated."
+
+---
+
+#### Improvement 3 — Change order 
+discipline must be portfolio-wide 
+from Month 1
+
+When the Weak Change Control pattern 
+has fired, change order governance 
+initiatives must apply to the entire 
+active portfolio from Month 1. Scoping 
+a change order freeze to specific 
+at-risk projects leaves the remaining 
+portfolio ungoverned and creates 
+inconsistent enforcement that project 
+managers will exploit.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When change order discipline is 
+identified as a finding, the change 
+order governance initiative must be 
+portfolio-wide from Month 1 of Stabilize. 
+Do not scope it to specific at-risk 
+projects — this creates two tiers of 
+enforcement and the ungoverned projects 
+will absorb scope without commercial 
+capture. Portfolio-wide enforcement 
+is the only effective implementation."
+
+---
+
+#### Improvement 4 — Confirmed 
+contractual AI liability is a 
+Stabilize concern regardless of 
+finding confidence level
+
+When a finding documents confirmed 
+contractual exposure from ungoverned 
+AI tool use on active client engagements 
+(no AI usage policy, no SOW AI clause, 
+confirmed tool use on client work), 
+the AI governance initiative must be 
+prioritized as High and placed in 
+Stabilize regardless of the finding's 
+overall confidence level.
+
+Contractual liability exists today on 
+active engagements. It is not a future 
+risk — it is a current condition. 
+Medium confidence on the finding's 
+broader AI readiness picture does not 
+reduce the urgency of closing confirmed 
+contractual gaps.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When the AI Governance Absence pattern 
+has fired AND confirmed AI tool use on 
+client engagements is present without 
+an AI usage policy or SOW AI clause, 
+the AI governance policy initiative 
+must be placed in Stabilize at High 
+priority. The absence of a policy on 
+active client engagements is a confirmed 
+contractual liability today, not a 
+future risk. AI service offering 
+development belongs in Scale."
+
+---
+
+#### Improvement 5 — Dual PM departures 
+or PM over-allocation require structural 
+capacity model, not just hiring 
+recommendation
+
+When two or more simultaneous PM 
+departures are identified, or when 
+PM over-allocation is confirmed across 
+three or more active projects, the 
+roadmap must include a PM capacity 
+model initiative in Stabilize or early 
+Optimize. A hiring recommendation 
+alone is insufficient — the structural 
+condition that made the firm unable 
+to absorb the departures must be 
+addressed or the next departure 
+produces the same crisis.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When PM attrition events or chronic 
+PM over-allocation are identified, 
+the roadmap must include a structural 
+PM capacity model initiative — a 
+pipeline-to-PM-demand forecasting 
+model with a defined bench reserve 
+target — in addition to any hiring 
+recommendation. A hiring recommendation 
+without a capacity model solves the 
+immediate gap but does not prevent 
+recurrence. The capacity model belongs 
+in Stabilize or early Optimize depending 
+on the severity of the current gap."
+
+---
+
+#### Improvement 6 — CEO as bottleneck 
+with multiple P0 ownership requires 
+structural delegation mechanism in 
+risk register
+
+When the Leadership Bottleneck pattern 
+has fired AND the CEO is assigned 
+ownership of more than two P0 or 
+Stabilize initiatives, the risk register 
+must include a structural delegation 
+mechanism as a required mitigation 
+option — not just a tracking log or 
+review cadence.
+
+A tracking log fires after the failure. 
+A structural delegation mechanism 
+(written decision rights matrix, 
+defined escalation thresholds below 
+CEO, or external operating resource) 
+changes the path of least resistance 
+before the failure occurs.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When the Leadership Bottleneck or 
+Scaling Breakdown pattern has fired 
+AND the CEO is identified as the owner 
+of more than two Stabilize initiatives, 
+the risk register entry for CEO 
+reversion must include at least one 
+structural delegation mechanism as 
+a mitigation — a written decision 
+rights matrix with defined thresholds, 
+a fractional operating resource, or 
+an explicit opt-out delegation model. 
+A tracking log or review cadence alone 
+is not a mitigation for a bottleneck 
+risk rated High likelihood."
+
+---
+
+#### Improvement 7 — Scale-phase targets 
+must name the mechanism or flag it 
+as undefined
+
+When a Scale-phase initiative projects 
+a performance improvement of more than 
+20% over current confirmed baseline 
+(e.g. deal size, revenue per consultant, 
+gross margin), the roadmap must either 
+name the specific mechanism that drives 
+the improvement or explicitly state 
+that the mechanism requires definition 
+during the Optimize phase.
+
+A target without a mechanism is 
+aspirational, not defensible. A CFO 
+or board reviewer will immediately 
+challenge an 18-month target that 
+has no bridge math.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When a Scale-phase initiative projects 
+a target that represents more than 20% 
+improvement over the current confirmed 
+baseline for that metric, the initiative 
+description must name the specific 
+mechanism driving the improvement 
+(new segment, new sales motion, pricing 
+change, etc.) or explicitly state: 
+'Mechanism to be defined during Optimize 
+phase based on [specific prerequisite].' 
+Do not generate improvement targets 
+without either a named mechanism or 
+an explicit acknowledgment that the 
+mechanism is undefined."
+
+---
+
+#### Improvement 8 — Utilization recovery 
+requires demand conversion plan 
+acknowledgment
+
+When a utilization improvement target 
+is included in the roadmap, the 
+initiative description must acknowledge 
+that utilization recovery creates 
+new billable capacity that requires 
+a demand conversion plan. Capacity 
+without demand produces bench cost, 
+not revenue.
+
+Add to REPORT_NARRATOR_PROMPT:
+"When a utilization improvement 
+initiative is included in the roadmap, 
+the initiative description must include 
+a note that utilization recovery creates 
+additional billable capacity that requires 
+a corresponding demand conversion plan. 
+Reference the pipeline and account 
+management initiatives as the demand 
+side of the utilization recovery. 
+Do not present utilization improvement 
+as a standalone margin lever without 
+acknowledging the demand requirement."
+
+---
+
+#### Improvement 9 — Success metrics 
+include leading indicators
+
+Each roadmap initiative success metric 
+must include a leading indicator 
+alongside the binary completion 
+criterion. A binary completion criterion 
+alone gives no signal of whether an 
+initiative is on track before it is 
+done.
+
+Add to REPORT_NARRATOR_PROMPT:
+"Each initiative success_metric must 
+include two components:
+1. A leading indicator — an observable 
+   measurable signal that the initiative 
+   is progressing correctly before 
+   completion
+2. A completion criterion — the binary 
+   condition that defines done
+
+Format: '[Leading indicator] → 
+[Completion criterion]'
+
+Example wrong: 'System lockout for 
+weekly time entry is active'
+
+Example right: 'Time entry compliance 
+rate above 90% in week one → System 
+lockout active and all billable 
+consultants submitting weekly for 
+two consecutive weeks'"
+
+---
+
+#### Improvement 10 — Risk mitigations 
+include trigger conditions
+
+Each risk register mitigation must 
+specify the observable trigger condition 
+that activates it. A mitigation without 
+a trigger is advice, not an operational 
+plan. It fires reactively at best and 
+is ignored at worst.
+
+Add to REPORT_NARRATOR_PROMPT:
+"Each risk mitigation must follow this 
+format: 'If [specific observable trigger 
+condition or threshold], then [mitigation 
+action].'
+
+The trigger must be specific and 
+observable — not 'if the risk occurs' 
+but 'if [measurable threshold or 
+observable event].'
+
+Example wrong: 'Complete legal MSA 
+review before the client call'
+
+Example right: 'If MSA review surfaces 
+financial remedy obligations or liability 
+clauses that exceed confirmed project 
+losses, engage outside counsel before 
+the client call and prepare a written 
+position on maximum exposure before 
+any financial remedy discussion occurs.'"
+
+---
+
+#### Improvement 11 — Skeptic flags 
+economic overlap, Synthesizer uses 
+adjusted figures
+
+When the Skeptic identifies overlapping 
+economic inputs across findings (the 
+same underlying figure contributing 
+to two separate finding exposures), 
+the Synthesizer must use the adjusted 
+combined exposure in executive summary 
+prose and economic narrative — not the 
+unadjusted sum of individual findings.
+
+The overlap note in the economic table 
+footnote is correct and should be 
+preserved. The headline figures in the 
+executive summary and economic narrative 
+must reflect the adjusted figure.
+
+Add to SKEPTIC_PROMPT:
+"When you identify that two or more 
+findings share an underlying economic 
+input (the same project loss, the same 
+revenue figure, or the same cost 
+contributing to multiple finding 
+exposures), output an explicit overlap 
+flag in this format:
+
+OVERLAP: [Finding A title] and 
+[Finding B title] share [description 
+of shared input]. Do not sum these 
+independently. Adjusted combined 
+exposure: [figure].
+
+This flag must appear in your output 
+whenever overlapping inputs exist, 
+regardless of whether the findings 
+are in the same domain."
+
+Add to SYNTHESIZER_PROMPT:
+"When the Skeptic output contains an 
+OVERLAP flag, the executive summary 
+economic narrative and all headline 
+economic figures must use the adjusted 
+combined exposure from the overlap 
+flag, not the sum of the individual 
+finding figures.
+
+Acknowledge the overlap explicitly 
+in the economic narrative prose:
+'[Finding A] and [Finding B] share 
+underlying exposure — the combined 
+confirmed figure is [adjusted amount], 
+not the sum of the individual findings.'
+
+The economic table footnote behavior 
+is unchanged — the overlap note there 
+is correct and should be preserved."
+
+### Improvement 12 — Active client 
+escalation with financial exposure 
+requires contingency planning, not 
+just a single recommended action
+
+**Problem:** When an active client 
+escalation is present with confirmed 
+financial exposure and no contractual 
+protection (absent liquidated damages 
+clause, incomplete SOW), the roadmap 
+currently generates a single recommended 
+action. A single-path plan for a live 
+dispute with indeterminate legal and 
+financial exposure is not operationally 
+sound — if the recommended action fails 
+or the client escalates further, the 
+firm has no defined fallback.
+
+This is a general rule that applies to 
+any engagement with an active client 
+crisis, not a Northstar-specific fix.
+
+**Add to REPORT_NARRATOR_PROMPT:**
+"When the Client Escalations pattern 
+has fired AND confirmed financial 
+exposure exists on the escalated 
+engagement AND the SOW lacks contractual 
+protection (no liquidated damages clause, 
+missing client obligation enforcement 
+language, or below-rate pricing with 
+no floor), the roadmap Priority Zero 
+action for that escalation must include 
+three components:
+
+1. Primary path — the recommended 
+   immediate action (e.g. legal MSA 
+   review, revised project plan delivery, 
+   CEO-CTO call)
+
+2. Contingency path — what to do if 
+   the primary path fails or the client 
+   escalates further (e.g. settlement 
+   floor, reserve recognition threshold, 
+   legal escalation criteria)
+
+3. Exposure boundary — the maximum 
+   confirmed financial exposure the 
+   firm faces and the contractual basis 
+   for that boundary (or explicit 
+   acknowledgment that the boundary is 
+   indeterminate without legal review)
+
+Do not generate a single-bullet P0 
+action for an active escalation with 
+financial exposure. A live dispute 
+requires a primary path, a fallback, 
+and a known exposure boundary."
+
+**Scope:** REPORT_NARRATOR_PROMPT only.
+No schema changes. No report_generator 
+changes.
+
+**Priority:** High — a single-path 
+plan for an active client crisis is 
+a material gap in any engagement where 
+this condition exists.
+
+---
+
+### Improvement 13 — Sequential 
+initiative dependencies must be 
+explicitly sequenced, not shown 
+as concurrent
+
+**Problem:** When two initiatives in 
+the same phase have a sequential data 
+dependency — Initiative B requires 
+clean output from Initiative A before 
+it can execute — the Narrator currently 
+places them in the same phase with 
+overlapping timelines. This produces 
+logically impossible roadmaps where 
+a process improvement initiative is 
+deployed before the data infrastructure 
+it depends on exists.
+
+This is an architectural rule that 
+applies to any engagement where 
+reporting infrastructure and process 
+improvement initiatives coexist in 
+the same phase.
+
+**Common patterns where this fires:**
+- Estimation model deployment depends 
+  on PSA or project tracking data 
+  being clean and consistent
+- Pricing governance enforcement 
+  depends on deal-level rate reporting 
+  existing
+- PM performance management depends 
+  on project-level margin visibility 
+  existing
+- Capacity forecasting depends on 
+  utilization tracking being reliable
+
+**Add to REPORT_NARRATOR_PROMPT:**
+"Before finalizing initiative timelines 
+within each phase, check for sequential 
+data dependencies: does any initiative 
+require clean, reliable data that 
+another initiative in the same phase 
+is responsible for producing?
+
+If yes, the dependent initiative must 
+be placed later in the phase timeline 
+or moved to the next phase. Show the 
+dependency explicitly in the initiative 
+description:
+
+'Prerequisite: [Initiative A] must 
+be producing reliable [data type] 
+before this initiative can execute. 
+Realistic start: [month].'
+
+Specific rule: any initiative that 
+deploys a model, framework, or process 
+that calibrates against historical 
+actuals requires that the actuals 
+dataset exists in usable form today 
+or that the infrastructure producing 
+it is fully operational before the 
+model deployment begins. Do not show 
+these as concurrent."
+
+**Scope:** REPORT_NARRATOR_PROMPT only.
+No schema changes. No report_generator 
+changes.
+
+**Priority:** High — logically impossible 
+concurrent timelines undermine the 
+roadmap's credibility with any 
+operationally experienced reviewer 
+and will surface in the first progress 
+review when the dependent initiative 
+cannot start.
+
+---
+
+### Improvement 14 — Utilization 
+recovery with concurrent hiring or 
+capacity initiatives requires a 
+scenario note defining decision 
+criteria for new capacity
+
+**Problem:** When utilization improvement 
+and capacity-related initiatives 
+(hiring plan, PM bench reserve, 
+contractor bench) coexist in the 
+roadmap, the document currently treats 
+them as independent levers. They are 
+not — utilization recovery creates 
+new billable capacity that must either 
+be converted to revenue or actively 
+managed as bench. If pipeline does not 
+convert at the rate assumed, the firm 
+accumulates bench cost while also 
+spending on hiring.
+
+Improvement 8 already requires 
+acknowledging the demand conversion 
+requirement. This improvement adds 
+the scenario planning layer: what 
+are the decision criteria that 
+determine whether the new capacity 
+is held as bench, converted to revenue, 
+or triggers a hiring plan adjustment?
+
+**Add to REPORT_NARRATOR_PROMPT:**
+"When the roadmap contains both a 
+utilization improvement initiative 
+AND a hiring or PM capacity initiative 
+in overlapping phases, include a 
+scenario note in the roadmap overview 
+section addressing the capacity 
+decision tree:
+
+'Utilization recovery and hiring 
+investment are concurrent in this 
+roadmap. The following criteria 
+determine how new billable capacity 
+is managed:
+
+- If pipeline conversion produces 
+  demand within [timeframe]: deploy 
+  new capacity to revenue-generating 
+  work and proceed with hiring plan
+
+- If pipeline conversion does not 
+  materialize within [timeframe]: 
+  pause hiring plan and hold 
+  utilization recovery gains as 
+  bench buffer pending demand 
+  confirmation
+
+- Decision owner: [CEO / Director 
+  of Delivery] reviews at [cadence]'
+
+Use confirmed pipeline coverage ratio 
+and revenue predictability signals 
+from the engagement to set realistic 
+timeframes. Do not leave utilization 
+recovery and hiring as independent 
+levers with no defined interaction 
+logic."
+
+**Scope:** REPORT_NARRATOR_PROMPT only.
+No schema changes. No report_generator 
+changes.
+
+**Priority:** Medium — most firms at 
+this scale are managing both capacity 
+and demand simultaneously. Without 
+a decision tree, the roadmap implicitly 
+assumes both succeed, which is 
+optimistic and will be challenged 
+by any financially sophisticated 
+reviewer.
+
+---
+
+### Implementation note for all 
+14 Narrator improvements
+
+When Claude Code implements these 
+14 prompt additions, organize them 
+in REPORT_NARRATOR_PROMPT as a 
+named section:
+
+"## Roadmap Quality Rules
+
+The following rules must be applied 
+when generating roadmap content. 
+Check each rule against the engagement 
+data before finalizing roadmap output."
+
+Then list the rules in logical groups:
+- Sequencing rules (1, 2, 3, 4, 5, 
+  6, 12)
+- Dependency and timing rules (13)
+- Target and mechanism rules (7, 8, 
+  14)
+- Output structure rules (9, 10)
+- Economic integrity rules (11)
+
+This prevents the prompt from becoming 
+an undifferentiated wall of instructions 
+that Claude cannot reliably reason over. 
+Named sections with logical grouping 
+improve prompt reliability significantly 
+at this instruction count.
+
+Do not implement all 14 in one session. 
+Split into two sessions:
+
+Session 1 — Sequencing and dependency 
+rules (Improvements 1-6, 12, 13): 
+these are the highest priority and 
+most structurally important
+
+Session 2 — Target, output structure, 
+and economic integrity rules 
+(Improvements 7-11, 14): these 
+improve quality but are less likely 
+to produce logically incorrect roadmaps
 
 ---
 
