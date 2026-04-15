@@ -229,7 +229,7 @@ Consulting Economics signals 1-2 quarters later.*
   - `{min: 30, max: 50, label: "Below Target", description: "Account retention is below typical consulting firm benchmark."}`
   - `{min: 50, max: 70, label: "Healthy", description: "Good account retention. Expansion motion should be formalized."}`
   - `{min: 70, max: null, label: "Strong", description: "High retention indicates strong delivery quality and client relationships."}`
-- **Contributing Patterns:** P05, P44
+- **Contributing Patterns:** P05, P44, P47
 
 ---
 
@@ -272,7 +272,7 @@ Consulting Economics signals 1-2 quarters later.*
   - `{min: 0, max: 5, label: "Flat", description: "No meaningful expansion. Growth depends entirely on new logo acquisition."}`
   - `{min: 5, max: 15, label: "Healthy", description: "Consistent expansion within existing accounts. Indicates good delivery satisfaction."}`
   - `{min: 15, max: null, label: "Strong", description: "High expansion rate. Structured account management is likely producing results."}`
-- **Contributing Patterns:** P03, P05
+- **Contributing Patterns:** P03, P05, P47
 
 ---
 
@@ -881,7 +881,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
   - `{min: 20, max: 40, label: "Below Benchmark", description: "Below industry average for IT consulting (~+40). Systematic delivery or communication issues likely."}`
   - `{min: 40, max: 60, label: "Healthy", description: "At or above IT consulting industry benchmark."}`
   - `{min: 60, max: null, label: "Strong", description: "Top quartile client satisfaction. Indicates strong delivery quality and proactive relationship management."}`
-- **Contributing Patterns:** P44, P45
+- **Contributing Patterns:** P44, P45, P46
 
 ---
 
@@ -896,7 +896,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
   - `{min: 0.5, max: 1.5, label: "Moderate", description: "Some escalations. Review root causes for recurrence patterns."}`
   - `{min: 1.5, max: 3.0, label: "Elevated", description: "Frequent escalations. Delivery model or communication discipline needs systemic review."}`
   - `{min: 3.0, max: null, label: "Critical", description: "Escalations are a defining characteristic of the client experience. Trust is eroding."}`
-- **Contributing Patterns:** P44, P45, P29
+- **Contributing Patterns:** P44, P45, P29, P46
 
 ---
 
@@ -910,7 +910,7 @@ occur, the operational failures that caused them are typically 1-2 quarters old.
   - `{min: 20, max: 40, label: "Below Target", description: "Below typical consulting benchmark. Review delivery quality and account management practices."}`
   - `{min: 40, max: 60, label: "Healthy", description: "Good renewal rate. Delivery is satisfying clients."}`
   - `{min: 60, max: null, label: "Strong", description: "High renewal rate. Strong delivery quality and client relationships."}`
-- **Contributing Patterns:** P05, P44
+- **Contributing Patterns:** P05, P44, P46, P47
 
 ---
 
@@ -1554,6 +1554,8 @@ without upgrading it lose the ability to detect deterioration in real time.*
 | P43 Weak Pricing Discipline | SL-08, SL-41, SL-67 |
 | P44 Client Escalations | SL-47, SL-50, SL-49 |
 | P45 Weak Client Communication | SL-49, SL-47 |
+| P46 Low Client Satisfaction | SL-46, SL-47, SL-48 |
+| P47 Weak Account Expansion | SL-07, SL-10, SL-48 |
 | P48 No AI Delivery Capability | SL-53, SL-55 |
 | P49 No AI Service Offering | SL-55 |
 | P50 AI Governance Absence | SL-52, SL-54, SL-57 |
