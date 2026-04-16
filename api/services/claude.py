@@ -380,6 +380,7 @@ async def call_claude(
         max_tokens=MAX_TOKENS,
         system=prompt,
         messages=[{"role": "user", "content": user_message}],
+        timeout=300.0,
     )
     response = extract_text(message)
     logger.info(f"Claude API response received — {len(response)} chars")
@@ -399,6 +400,7 @@ async def extract_signals_from_transcript(transcript: str, library_block: str = 
         max_tokens=MAX_TOKENS,
         system=SIGNAL_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_content}],
+        timeout=300.0,
     )
     raw = extract_text(message)
     clean = raw.strip()
@@ -524,6 +526,7 @@ async def extract_findings_from_synthesizer(synthesizer_output: str,
         max_tokens=MAX_TOKENS,
         system=FINDINGS_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
+        timeout=300.0,
     )
     raw = extract_text(message)
     clean = raw.strip()
@@ -728,7 +731,9 @@ JSON SCHEMA — return exactly these keys:
       "owner": "<role from engagement data>",
       "completion_criteria": "<one clause — what done looks like>"
     }
-  ]
+  ],
+  "execution_path_recommendation": "<internal | guided | partner — one of these three values only>",
+  "execution_path_rationale": "<one sentence — why this specific firm needs this execution path. Ground in firm size, presence or absence of a dedicated operations function, and confirmed leadership bandwidth signals from this engagement. No generic consulting language. Do not use CONFIRMED/DERIVED/INFERRED labels.>"
 }
 
 ---
@@ -746,6 +751,19 @@ executive_briefing — structured object for the one-page CEO teaser:
     sub-bullets, no qualifications. Readable in under 30 seconds.
     Do not use CONFIRMED, DERIVED, or INFERRED labels anywhere in this field. State
     figures directly without qualification labels.
+    PROSE STYLE: Write in short declarative sentences. Each sentence expresses exactly one
+    idea. No sentence should exceed 20 words. Do not embed the key insight inside a
+    subordinate clause — pull it out as its own sentence. The reader must feel the weight
+    of the problem after reading the snapshot, not need to parse compound logic to find it.
+    Wrong: "Northstar's margin problem is not a PM execution problem — it is a pricing and
+    governance problem: gross margin has compressed from 40% to 31% over four years because
+    the CEO retains unilateral authority over pricing, SOW execution, and change order
+    acceptance with no governance gates, and that authority has been used in ways that lock
+    in losses before delivery begins."
+    Right: "Northstar's margin problem is not a PM execution problem. It is a pricing and
+    governance problem. Gross margin has fallen from 40% to 31% in four years. The cause
+    is not delivery failure — it is a decision structure that locks in losses before
+    delivery begins."
 
   problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
     finding_id: must be an ID that appears in the ACCEPTED FINDINGS list — e.g. F001.
@@ -940,6 +958,30 @@ next_steps_rows — maximum 10 rows.
     Just what done looks like. No specific calendar dates. Use role titles from the engagement
     data only — never invent names or project names not present in the input.
 
+execution_path_recommendation — one of three values: "internal", "guided", or "partner".
+  Select based on firm size and capacity signals from this engagement:
+  "internal": firm has a dedicated operations or transformation function; leadership
+    bandwidth is confirmed available for ownership of Stabilize initiatives.
+  "guided": firm lacks a dedicated transformation function; leadership is stretched or
+    capacity signals show over-allocation; or firm is under 75 people without a
+    named transformation owner. This is the correct choice for most engagements.
+  "partner": firm lacks both internal transformation capacity AND sufficient leadership
+    bandwidth for a guided model; delivery is in active crisis or leadership is fully
+    absorbed by operational firefighting.
+  Default rule: firms under 75 people without a dedicated transformation function → "guided".
+  When in doubt between "internal" and "guided", choose "guided".
+
+execution_path_rationale — one sentence. Explain why this specific firm needs the
+  recommended execution path. Ground in firm size, presence or absence of a dedicated
+  operations function, and confirmed leadership bandwidth signals from the engagement.
+  This sentence will appear bold in the client report — write it as a direct statement
+  to the reader, not as a meta-description.
+  Wrong: "Guided execution is recommended for most firms at this stage."
+  Right: "At 45 people with no dedicated operations function and a CEO currently named
+  as owner of four Stabilize initiatives, internal execution would concentrate
+  implementation risk on leadership that is already over-allocated."
+  Do not use CONFIRMED/DERIVED/INFERRED labels in this sentence.
+
 ---
 
 HALLUCINATION PREVENTION — apply to every field:
@@ -1051,6 +1093,7 @@ async def compress_narrative(text: str, section_name: str) -> str:
             max_tokens=MAX_TOKENS,
             system=COMPRESSION_PROMPT,
             messages=[{"role": "user", "content": text}],
+            timeout=300.0,
         )
         compressed = extract_text(message).strip()
         if not compressed:
@@ -1322,6 +1365,7 @@ async def extract_roadmap_from_synthesizer(
         max_tokens=MAX_TOKENS,
         system=ROADMAP_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
+        timeout=300.0,
     )
     raw = extract_text(message)
     clean = raw.strip()
@@ -1368,6 +1412,7 @@ async def suggest_display_label(
             model=MODEL,
             max_tokens=20,
             messages=[{"role": "user", "content": user_message}],
+            timeout=30.0,
         )
         label = extract_text(message).strip().strip("'\"")
         return label if label else None

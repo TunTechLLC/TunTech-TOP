@@ -404,3 +404,10 @@ class ReportGeneratorService(ReportSectionsMixin):
             self._next_steps_table(doc, next_rows)
         else:
             doc.add_paragraph('No next steps generated.')
+
+        doc.add_paragraph()
+        self._execution_path_section(
+            doc,
+            narrative.get('execution_path_recommendation'),
+            narrative.get('execution_path_rationale'),
+        )

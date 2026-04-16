@@ -11,18 +11,17 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Executive Briefing Sharpness + Execution Path Section | 1 |
-| 2 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
-| 3 | Narrator Quality Improvements — Session 2 (Improvements 7–11, 14) | 1 |
-| 4 | Quick Wins Section | 1 |
-| 5 | Domain Maturity Scoring | 1 |
-| 6 | Visual 3 — Causal Chain | 1 |
-| 7 | Three Systemic Drivers Section | 1 |
-| 8 | Auto-Suggest Knowledge | 1 |
-| 9 | Standardize Economic Output | 1 |
-| 10 | Structured File Metadata Capture | 1 |
-| 11 | Editable Engagement Info | 1 |
-| 12 | PowerPoint Export | 1 |
+| 1 | Narrator Quality Improvements — Session 1 (Improvements 1–6, 12, 13) | 1 |
+| 2 | Narrator Quality Improvements — Session 2 (Improvements 7–11, 14) | 1 |
+| 3 | Quick Wins Section | 1 |
+| 4 | Domain Maturity Scoring | 1 |
+| 5 | Visual 3 — Causal Chain | 1 |
+| 6 | Three Systemic Drivers Section | 1 |
+| 7 | Auto-Suggest Knowledge | 1 |
+| 8 | Standardize Economic Output | 1 |
+| 9 | Structured File Metadata Capture | 1 |
+| 10 | Editable Engagement Info | 1 |
+| 11 | PowerPoint Export | 1 |
 | — | Checkpoint 5 — Dry Run 5 | milestone |
 
 ---
@@ -52,154 +51,6 @@ no maturity score. Clients respond to scorecards in a way they don't respond to 
 **File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
 
 **Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
-
----
-### Executive Briefing Sharpness + Execution 
-Path Section
-
-**Problem:** Two related issues identified 
-from external feedback:
-
-1. The Executive Briefing reads like analysis 
-   rather than landing like a punch. Sentences 
-   are long and dense. Key insights are buried 
-   inside paragraphs rather than standing alone. 
-   A CEO reading this page in 5 minutes should 
-   feel the weight of the problem immediately.
-
-2. The document has no clear answer to 
-   "then what?" — after reading the roadmap, 
-   the client does not know how implementation 
-   gets done or what role the consultant plays 
-   going forward. This is a conversion gap, 
-   not just a document gap.
-
-**Fix 1 — Executive Briefing prose style**
-
-Update REPORT_NARRATOR_PROMPT instruction 
-for the executive_briefing opening paragraph:
-
-"Write the opening paragraph in short 
-declarative sentences. Each sentence is 
-one idea. No sentence should exceed 20 words. 
-Do not embed the key insight inside a clause — 
-pull it out as its own sentence. The reader 
-should feel the weight of the problem after 
-three sentences, not after three paragraphs.
-
-Wrong style:
-'Northstar's margin problem is not a PM 
-execution problem — it is a pricing and 
-governance problem: gross margin has compressed 
-from 40% to 31% over four years because the 
-CEO retains unilateral authority over pricing, 
-SOW execution, and change order acceptance 
-with no governance gates, and that authority 
-has been used in ways that lock in losses 
-before delivery begins.'
-
-Right style:
-'Northstar's margin problem is not a PM 
-execution problem. It is a pricing and 
-governance problem. Gross margin has fallen 
-from 40% to 31% in four years. The cause is 
-not delivery failure — it is a decision 
-structure that locks in losses before delivery 
-begins.'"
-
-This is a REPORT_NARRATOR_PROMPT change only.
-No report_generator.py changes needed.
-
-**Fix 2 — How This Gets Implemented section**
-
-Add a new subsection to Section 11 
-(What Happens Next) titled 
-"How This Gets Implemented."
-
-The Narrator generates this section from 
-engagement data. It should produce three 
-short paragraphs covering:
-
-Path 1 — Internal Execution
-If the firm has sufficient internal capacity 
-and leadership bandwidth, the roadmap can 
-be executed internally. The Priority Zero 
-actions require leadership decisions only. 
-The Stabilize phase requires process design 
-and governance changes that internal leaders 
-can own with clear accountability.
-
-Path 2 — Guided Execution (recommended 
-for most firms at this stage)
-A structured advisory engagement where the 
-consultant provides weekly or biweekly 
-leadership alignment, roadmap sequencing, 
-and accountability review. The client executes. 
-The consultant ensures the work gets done 
-correctly and in the right order. This is 
-the recommended model for firms without 
-a dedicated transformation function.
-
-Path 3 — Partner-Supported Execution
-For firms that lack both internal capacity 
-and a structured advisory relationship, 
-specific initiatives can be staffed through 
-fractional resources — fractional PMO, 
-contractor PMs, finance operations support. 
-The consultant architects the solution and 
-directs the resources.
-
-The Narrator should select which path to 
-recommend based on firm size and the 
-capacity signals observed in the engagement 
-data. Firms under 60 people with no dedicated 
-operations function should default to 
-recommending Path 2.
-
-**Implementation:**
-- New Narrator JSON field: 
-  execution_path_recommendation — 
-  one of "internal" | "guided" | "partner"
-- New REPORT_NARRATOR_PROMPT instruction 
-  to generate the execution path narrative
-- New subsection in report_generator.py 
-  within Section 11, rendered after the 
-  existing What Happens Next content
-
-**Trigger for recommendation logic 
-in Narrator prompt:**
-"Based on the firm's headcount, the 
-presence or absence of a dedicated 
-operations or transformation function, 
-and the leadership bandwidth signals 
-observed in this engagement, recommend 
-one of three execution paths: internal, 
-guided, or partner-supported. Most firms 
-under 75 people without a dedicated 
-transformation function should be 
-recommended the guided execution path."
-
-**Priority:** High — do before first 
-paid client engagement. This directly 
-addresses the conversion gap identified 
-by an experienced IT consulting practitioner. 
-The "then what?" question will be asked 
-in every client meeting.
-
-**Scope:**
-- REPORT_NARRATOR_PROMPT — two changes 
-  (executive briefing style, execution 
-  path recommendation)
-- report_generator.py — one new subsection 
-  in Section 11
-- No schema changes
-- No frontend changes
-
-**Do in a single focused session.**
-**Commit message:** "Narrator — sharper 
-Executive Briefing prose style + 
-How This Gets Implemented section 
-in What Happens Next"
 
 ---
 

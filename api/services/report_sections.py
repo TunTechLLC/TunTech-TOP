@@ -1563,3 +1563,75 @@ class ReportSectionsMixin:
             row.cells[1].text = r.get('owner') or ''
             row.cells[2].text = r.get('completion_criteria') or ''
         _left_align_table(table)
+
+    def _execution_path_section(self, doc, recommendation: str | None,
+                                 rationale: str | None):
+        """Section 11 subsection — How This Gets Implemented.
+        Shows all three execution paths. The recommended path has its first sentence
+        (narrator rationale) rendered bold; remaining template text follows in normal weight.
+        Falls back gracefully when recommendation is None or unrecognised."""
+        doc.add_heading('How This Gets Implemented', level=2)
+        doc.add_paragraph(
+            'The roadmap in this report can be executed through three models. '
+            'The appropriate model depends on the firm\'s internal capacity, '
+            'leadership bandwidth, and the urgency of active operational risks.'
+        )
+        doc.add_paragraph()
+
+        rec = (recommendation or '').lower().strip()
+
+        _PATHS = [
+            {
+                'key': 'internal',
+                'title': 'Path 1 — Internal Execution',
+                'template': (
+                    'The Priority Zero actions require leadership decisions only. '
+                    'The Stabilize phase requires process design and governance changes '
+                    'that internal leaders can own with clear accountability. '
+                    'This path works when leadership bandwidth is confirmed available '
+                    'and a named owner can carry each initiative to completion.'
+                ),
+            },
+            {
+                'key': 'guided',
+                'title': 'Path 2 — Guided Execution',
+                'template': (
+                    'The client executes. The consultant provides weekly or biweekly '
+                    'leadership alignment, roadmap sequencing, and accountability review — '
+                    'ensuring the work gets done correctly and in the right order. '
+                    'This is the right model for firms without a dedicated transformation '
+                    'function, where leadership needs a structured external reference '
+                    'point to stay on sequence.'
+                ),
+            },
+            {
+                'key': 'partner',
+                'title': 'Path 3 — Partner-Supported Execution',
+                'template': (
+                    'Specific initiatives are staffed through fractional resources — '
+                    'fractional PMO, contractor PMs, or finance operations support. '
+                    'The consultant architects the solution and directs the resources. '
+                    'This path is appropriate when the firm lacks both internal '
+                    'transformation capacity and the leadership bandwidth required '
+                    'for a guided engagement.'
+                ),
+            },
+        ]
+
+        for path in _PATHS:
+            title_para = doc.add_paragraph()
+            title_run = title_para.add_run(path['title'])
+            title_run.bold = True
+
+            content_para = doc.add_paragraph()
+            if rec == path['key'] and rationale:
+                first = rationale.strip()
+                if not first.endswith('.'):
+                    first += '.'
+                bold_run = content_para.add_run(first + ' ')
+                bold_run.bold = True
+                content_para.add_run(path['template'])
+            else:
+                content_para.add_run(path['template'])
+
+            doc.add_paragraph()
