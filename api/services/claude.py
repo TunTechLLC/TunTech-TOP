@@ -984,6 +984,106 @@ execution_path_rationale — one sentence. Explain why this specific firm needs 
 
 ---
 
+## Roadmap Quality Rules
+
+The following rules must be applied when generating roadmap content.
+Check each rule against the engagement data before finalizing roadmap output.
+
+CONDITIONALITY: Apply each rule only when its trigger condition is directly evidenced
+in the accepted findings, Synthesizer output, or engagement context provided in the
+input. Do not apply a rule based on inference when the trigger condition is not
+explicitly present in the data. Content required by a rule must still be grounded
+in the engagement data — do not fabricate delegation mechanisms, contingency paths,
+or capacity model details that have no basis in the input.
+
+### Sequencing Rules
+
+Rule 1 — Revenue concentration stabilization precedes growth:
+When a finding identifies a single client representing a disproportionate share of
+revenue AND relationship deterioration signals are present in that finding or the
+Synthesizer output (declining NPS, active escalation, no account plan, or client
+communication gaps), the account stabilization initiative must be placed in Stabilize.
+Only account expansion initiatives belong in Scale. Stabilization and expansion are
+different actions with different urgency.
+
+Rule 2 — Rate floor policy belongs in Stabilize, not Optimize:
+When billable rate realization is below target and rate card non-enforcement is
+identified as an active ongoing loss, the roadmap must include a rate floor policy
+and approval workflow draft in Stabilize (not Optimize). Deal-level rate reporting
+infrastructure belongs in Optimize. The policy does not require the reporting
+infrastructure to exist before it can be drafted and communicated.
+
+Rule 3 — Change order governance must be portfolio-wide from Month 1:
+When change order discipline is identified as a finding, the change order governance
+initiative must be portfolio-wide from Month 1 of Stabilize. Do not scope it to
+specific at-risk projects — this creates two tiers of enforcement and the ungoverned
+projects will absorb scope without commercial capture. Portfolio-wide enforcement
+is the only effective implementation.
+
+Rule 4 — Confirmed AI contractual liability is a Stabilize concern:
+When a finding documents confirmed AI tool use on active client engagements without
+an AI usage policy or SOW AI clause, the AI governance policy initiative must be
+placed in Stabilize at High priority. The absence of a policy on active client
+engagements is a confirmed contractual liability today, not a future risk. AI service
+offering development belongs in Scale.
+
+Rule 5 — PM attrition requires structural capacity model, not just hiring:
+When PM attrition events or chronic PM over-allocation are identified in the findings
+or Synthesizer output, the roadmap must include a structural PM capacity model
+initiative — a pipeline-to-PM-demand forecasting model with a defined bench reserve
+target — in addition to any hiring recommendation. A hiring recommendation without
+a capacity model solves the immediate gap but does not prevent recurrence. The
+capacity model belongs in Stabilize or early Optimize depending on the severity
+of the current gap.
+
+Rule 6 — CEO bottleneck requires structural delegation in risk register:
+When a finding identifies leadership bottleneck or decision centralization AND the
+CEO is assigned ownership of more than two Stabilize initiatives in the roadmap
+input, the risk_table_rows entry for CEO reversion risk must include at least one
+structural delegation mechanism as a mitigation — a written decision rights matrix
+with defined thresholds, a fractional operating resource, or an explicit opt-out
+delegation model. A tracking log or review cadence alone is not a mitigation for
+a bottleneck risk rated High likelihood.
+
+Rule 12 — Active client escalation requires contingency planning:
+When a finding documents an active client escalation with confirmed financial exposure
+AND the SOW lacks contractual protection (no liquidated damages clause, missing
+client obligation enforcement language, or below-rate pricing with no floor), the
+priority_zero_table_rows entry for that escalation must include three components:
+  1. Primary path — the recommended immediate action
+  2. Contingency path — what to do if the primary path fails or the client escalates
+  3. Exposure boundary — the maximum confirmed financial exposure and the contractual
+     basis, or explicit acknowledgment that the boundary is indeterminate without
+     legal review
+Do not generate a single-bullet P0 action for an active escalation with confirmed
+financial exposure. A live dispute requires a primary path, a fallback, and a known
+exposure boundary.
+
+### Dependency and Timing Rules
+
+Rule 13 — Sequential data dependencies must be explicitly sequenced:
+Before finalizing initiative_details timelines within each phase, check for sequential
+data dependencies: does any initiative require clean, reliable data that another
+initiative in the same phase is responsible for producing?
+
+If yes: the dependent initiative must be placed later in the phase timeline or moved
+to the next phase. Show the dependency explicitly in the initiative description:
+"Prerequisite: [Initiative A] must be producing reliable [data type] before this
+initiative can execute. Realistic start: [month]."
+
+Specific rule: any initiative that deploys a model, framework, or process that
+calibrates against historical actuals requires that the actuals dataset exists in
+usable form today, or that the infrastructure producing it is fully operational
+before model deployment begins. Do not show these as concurrent.
+
+Common patterns where this fires:
+- Estimation model deployment depends on PSA or project tracking data being clean
+- Pricing governance enforcement depends on deal-level rate reporting existing
+- PM performance management depends on project-level margin visibility existing
+- Capacity forecasting depends on utilization tracking being reliable
+
+---
+
 HALLUCINATION PREVENTION — apply to every field:
 1. Every dollar figure carries CONFIRMED, DERIVED, or INFERRED exactly as in the source. Never strip these labels.
 2. Owners must be roles named in the Synthesizer output or engagement context. Never invent roles.
