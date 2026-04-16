@@ -164,7 +164,19 @@ Produce these required sections:
 
 Domains in scope: Sales & Pipeline, Sales-to-Delivery Transition, Delivery Operations,
 Resource Management, Project Governance / PMO, Consulting Economics, Customer Experience,
-AI Readiness, Human Resources, Finance and Commercial."""
+AI Readiness, Human Resources, Finance and Commercial.
+
+OVERLAP FLAG — when two or more accepted signals reference the same underlying economic
+exposure (e.g., Revenue Concentration Risk and Client Dependency signals both referencing
+the same client relationship), flag this before your Contradiction Report. Format:
+
+   OVERLAP: [Signal A ID] and [Signal B ID] appear to reference the same underlying
+   exposure: "<brief description>". Combined economic impact may be double-counted if
+   treated as independent. Adjusted combined exposure: $[low] – $[high].
+
+Only flag genuine double-counts where the same dollar loss is captured by multiple
+signals independently. Do not flag signals that address different failure modes of the
+same structural problem."""
 
 SYNTHESIZER_PROMPT = """You are the Synthesizer agent in the TOP multi-agent consulting diagnostic system.
 
@@ -233,6 +245,12 @@ Required sections:
 Domains in scope: Sales & Pipeline, Sales-to-Delivery Transition, Delivery Operations,
 Resource Management, Project Governance / PMO, Consulting Economics, Customer Experience,
 AI Readiness, Human Resources, Finance and Commercial.
+
+OVERLAP resolution — when the Skeptic output contains one or more OVERLAP flags, use
+the Skeptic's adjusted combined exposure figure (not the sum of individual signal
+impacts) when computing the Economic Summary total range. Acknowledge the overlap
+explicitly in the Economic Summary: "Note: [Signal A ID] and [Signal B ID] reference
+the same exposure; adjusted combined impact used."
 
 Before completing your response, scan the full output and remove any text that looks like:
 CSS code, HTML tags, markdown code fences (``` blocks), programming syntax, or any
@@ -1081,6 +1099,48 @@ Common patterns where this fires:
 - Pricing governance enforcement depends on deal-level rate reporting existing
 - PM performance management depends on project-level margin visibility existing
 - Capacity forecasting depends on utilization tracking being reliable
+
+### Target and Mechanism Rules
+
+Rule 7 — Scale-phase revenue targets above 20% must name the mechanism or be flagged
+When a scale-phase initiative carries a revenue growth target above 20%, the
+`success_metric` or `initiative_details` must name the specific mechanism (e.g., new
+market entry, pricing expansion, service line extension, pipeline conversion improvement).
+If no mechanism is evident in the engagement data, flag the target explicitly:
+"Target: [X]% growth (mechanism not defined in available data)."
+Do not state a >20% growth target without a mechanism or an explicit flag.
+
+Rule 8 — Utilization improvement initiatives must acknowledge the demand conversion plan
+When an initiative targets utilization rate improvement, `initiative_details` must address
+how the improvement is achieved: through demand generation (pipeline/sales investment),
+capacity reduction (headcount or bench management), or both. A utilization target without
+a conversion mechanism is incomplete. If neither demand conversion nor capacity strategy
+is evident in the engagement data, surface this as a gap in `initiative_details`.
+
+Rule 14 — Concurrent utilization and hiring initiatives require a concurrency scenario note
+When the roadmap includes both a utilization improvement initiative and a headcount growth
+initiative running concurrently or in the same phase, `roadmap_rationale` must include a
+note acknowledging the tension: hiring increases capacity while utilization improvement
+requires filling existing capacity first. Note how the engagement data resolves this
+tension, or flag it as unresolved if the data does not address it.
+
+### Output Structure Rules
+
+Rule 9 — success_metric must include a leading indicator and a completion criterion
+Every `success_metric` must contain two components: (1) a leading indicator — an
+observable signal that the initiative is on track before completion (e.g., "First review
+meeting held by Month 2"); and (2) a completion criterion — what done looks like (e.g.,
+"Policy documented and distributed"). Format: "Track: [leading indicator]. Complete:
+[completion criterion]." If no leading indicator can be derived from the engagement data,
+use the closest observable proxy available in the data.
+
+Rule 10 — risk_table_rows mitigations must follow conditional action format
+Every `mitigation` in `risk_table_rows` must follow the format: "If [trigger condition],
+then [specific action]." The trigger condition must be concrete — a threshold, a date, or
+an observable event — not a generic state. The action must name the actor and the action.
+Do not write mitigations as observations ("Monitor utilization quarterly") or generic
+directives ("Ensure leadership alignment"). Every mitigation must be actionable by a
+named role.
 
 ---
 
