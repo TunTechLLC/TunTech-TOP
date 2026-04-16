@@ -97,7 +97,8 @@ async def detect_patterns(
     library_lookup = {p['pattern_id']: p['pattern_name'] for p in library}
     invalid = [r.pattern_id for r in results if r.pattern_id not in library_lookup]
     if invalid:
-        raise HTTPException(status_code=422, detail=f"Unknown pattern_ids: {invalid}")
+        logger.warning(f"Pattern detection returned unknown pattern_ids (filtered out): {invalid}")
+        results = [r for r in results if r.pattern_id in library_lookup]
 
     # Enrich each candidate with pattern_name so the frontend can display it on review cards
     return [{**r.model_dump(), 'pattern_name': library_lookup.get(r.pattern_id, '')}

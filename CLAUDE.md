@@ -103,7 +103,7 @@ ID generation: `api/utils/ids.py` using MAX+1 logic — reads config.py DB_PATH 
 - E003 — Used for Report Narrator and Synthesizer-to-Roadmap validation (102 signals)
 
 **Patterns:** P01–P60 (58 total)
-- P01–P47: Original 7 domains
+- P01–P45: Original 7 domains
 - P48–P51: AI Readiness
 - P52–P56: Human Resources
 - P57–P60: Finance and Commercial
