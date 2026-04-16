@@ -40,8 +40,8 @@ class ReportGeneratorService(ReportSectionsMixin):
     5. Root Cause Analysis — narrator prose only
     6. Economic Impact Analysis — economic summary table + narrator prose
     7. Future State — metrics table (narrator) + narrative (narrator)
-    8. Transformation Roadmap — 8.1 Priority Zero | 8.2 Overview | 8.3-8.5 Phase Tables
-                                 | 8.6 Dependencies | 8.7 Key Risks
+    8. Transformation Roadmap — 8.1 Priority Zero | 8.2 Overview | 8.3 Quick Wins (conditional)
+                                 | 8.4-8.6 Phase Tables | 8.7 Dependencies | 8.8 Key Risks
     9. Immediate Next Steps — action table (narrator, execution-voice completion criteria)
     """
 
@@ -360,7 +360,22 @@ class ReportGeneratorService(ReportSectionsMixin):
             self._roadmap_overview_table(doc, overview_rows)
         doc.add_paragraph()
 
-        # 8.3 / 8.4 / 8.5 — Phase Tables
+        # 8.3 — Quick Wins (High priority + Low effort items, capped at 5)
+        quick_wins = [
+            r for r in roadmap
+            if r.get('priority') == 'High' and r.get('effort') == 'Low'
+        ][:5]
+        if quick_wins:
+            doc.add_heading('Quick Wins — High Priority, Low Effort', level=2)
+            doc.add_paragraph(
+                'These initiatives deliver significant impact with manageable '
+                'implementation effort. They can be started immediately alongside '
+                'stabilization work.'
+            )
+            self._quick_wins_table(doc, quick_wins)
+            doc.add_paragraph()
+
+        # 8.4 / 8.5 / 8.6 — Phase Tables
         if roadmap:
             for phase in ['Stabilize', 'Optimize', 'Scale']:
                 items = [r for r in roadmap if r.get('phase') == phase]

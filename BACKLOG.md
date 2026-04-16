@@ -11,8 +11,7 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Quick Wins Section | 1 |
-| 2 | Domain Maturity Scoring | 1 |
+| 1 | Domain Maturity Scoring | 1 |
 | 5 | Visual 3 — Causal Chain | 1 |
 | 6 | Three Systemic Drivers Section | 1 |
 | 7 | Auto-Suggest Knowledge | 1 |
@@ -104,29 +103,6 @@ silently ignored by Claude. Consider dynamic prompt injection in the same sessio
 - If generation fails, report generates without the visual and logs a warning
 
 **Commit message:** Visual 3 — causal chain diagram in Section 5
-
----
-
-### Quick Wins Section in the Report
-**Problem:** The report surfaces all roadmap items in three phase tables but does not
-call out which items the client can act on immediately. Executives leave the presentation
-wanting something concrete to do next week — the report should give them that explicitly.
-
-**Note:** Section Priority Zero Actions and Section Immediate Next Steps now
-address the most urgent items from the Synthesizer output. Quick Wins as defined here —
-a filtered table of priority=High AND effort=Low roadmap items — is still distinct and
-worth adding, but is lower priority than before given the new sections.
-
-**Design:** Add a "Quick Wins" subsection in Section 8 between the Roadmap Overview (8.2)
-and the phase tables (8.3). Filter roadmap items where priority=High AND effort=Low.
-Display as a short highlighted table — title, domain, and one-line description. Cap at 5 items.
-
-If no items meet the criteria, omit the section entirely — do not show an empty table.
-
-**Implementation:** Pure report generation logic in `api/services/report_generator.py`.
-No schema changes. No frontend changes. No new endpoints.
-
-**Commit message:** Quick wins section in report — high priority, low effort roadmap items
 
 ---
 

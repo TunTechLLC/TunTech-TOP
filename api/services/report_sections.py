@@ -108,11 +108,16 @@ _SECTION_MAP = {
     'roadmap':           10,
     'priority_zero':     '10.1',
     'roadmap_overview':  '10.2',
-    'stabilize':         '10.3',
-    'optimize':          '10.4',
-    'scale':             '10.5',
-    'dependencies':      '10.6',
-    'risks':             '10.7',
+    # 10.3 Quick Wins is conditionally rendered (High priority + Low effort items only).
+    # When it renders, downstream subsections shift by 1. When it is absent they stay
+    # at these values. Most engagements will have qualifying items, so the map reflects
+    # the common case (Quick Wins present).
+    'quick_wins':        '10.3',
+    'stabilize':         '10.4',
+    'optimize':          '10.5',
+    'scale':             '10.6',
+    'dependencies':      '10.7',
+    'risks':             '10.8',
     'what_happens_next': 11,
 }
 
@@ -1457,9 +1462,29 @@ class ReportSectionsMixin:
                 row.cells[2].text = str(outcomes)
         _left_align_table(table)
 
+    def _quick_wins_table(self, doc, items: list):
+        """Section 10.3 Quick Wins table — High priority, Low effort roadmap items.
+        Columns: Initiative | Domain | Estimated Impact"""
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Initiative', 'Domain', 'Estimated Impact']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'E2EFDA')  # light green — visually distinct from other tables
+        _set_col_widths(table, [2.5, 1.5, 2.5])
+
+        for item in items:
+            row = table.add_row()
+            row.cells[0].text = item.get('initiative_name') or ''
+            row.cells[1].text = item.get('domain') or ''
+            row.cells[2].text = item.get('estimated_impact') or '\u2014'
+        _left_align_table(table)
+
     def _roadmap_phase_table(self, doc, items: list, findings_by_id: dict,
                               initiative_details: dict, roadmap_by_id: dict | None = None):
-        """Sections 8.3/8.4/8.5 phase tables.
+        """Sections 10.4/10.5/10.6 phase tables.
         Columns: Initiative | Priority | Effort | Owner | Timeline | Success Metric"""
         table = doc.add_table(rows=1, cols=6)
         table.style = 'Table Grid'
