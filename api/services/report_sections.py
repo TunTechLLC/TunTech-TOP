@@ -52,6 +52,28 @@ def _left_align_table(table):
                 para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
+def _strip_economic_source_detail(text: str) -> str:
+    """Render-time transform for the Economic Impact cell. Keeps the
+    CONFIRMED/DERIVED/INFERRED label but strips calculation detail from
+    inside the parentheses.
+
+    DB value is preserved unchanged — downstream processes
+    (_parse_economic_figures, structured field suggestion logic) still
+    receive the full text.
+
+    Note: regex uses [^)]+ which matches to the first closing paren. Safe
+    for current prompt output format which does not generate nested
+    parentheses inside the label block. If prompt format changes, revisit
+    this regex.
+    """
+    return re.sub(  # [^)]+ matches to first closing paren — safe unless nested parens appear
+        r'\((CONFIRMED|DERIVED|INFERRED):[^)]+\)',
+        r'(\1)',
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
 def _client_facing_evidence(evidence: str) -> str:
     """Transform stored evidence summary to client-facing language.
 
@@ -1001,7 +1023,7 @@ class ReportSectionsMixin:
                     ('Priority',           f.get('priority') or ''),
                     ('Effort',             f.get('effort') or ''),
                     ('Operational Impact', f.get('operational_impact') or ''),
-                    ('Economic Impact',    f.get('economic_impact') or ''),
+                    ('Economic Impact',    _strip_economic_source_detail(f.get('economic_impact') or '')),
                     ('Root Cause',         f.get('root_cause') or ''),
                     ('Recommendation',     f.get('recommendation') or ''),
                 ])

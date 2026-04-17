@@ -682,7 +682,7 @@ JSON SCHEMA — return exactly these keys:
   },
   "executive_summary_opening": "<3-4 sentences. Single most important finding, written for a CEO who reads nothing else. Lead with the headline — not background. No CONFIRMED/DERIVED/INFERRED labels.>",
   "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'domain_analysis_ref' from the SECTION REFERENCES block.>",
-  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. 2-3 key figures maximum. No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. Exactly two figures only: the largest confirmed or derived acute exposure (immediate or one-time risk) and the largest confirmed or derived annual drag (ongoing structural loss). No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
   "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly the text labeled 'priority_zero_ref' from the SECTION REFERENCES block.>",
   "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
   "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
@@ -711,9 +711,9 @@ JSON SCHEMA — return exactly these keys:
   ],
   "priority_zero_table_rows": [
     {
-      "action": "<the priority zero action>",
+      "action": "<one sentence — the primary recommended action only>",
       "owner": "<role from engagement data>",
-      "what_it_unblocks": "<one clause — what cannot proceed until this is done>"
+      "what_it_unblocks": "<what cannot proceed until this is done. If Rule 12 applies, also include: contingency path and exposure boundary — see Rule 12.>"
     }
   ],
   "roadmap_overview_rows": [
@@ -837,11 +837,26 @@ executive_summary_para1 — 2-3 sentences:
   REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
 
 executive_summary_para2 — 2-3 sentences:
-  Economic stakes in plain language. Include 2-3 key figures maximum. Do not use
-  CONFIRMED/DERIVED/INFERRED labels here — those appear in the Economic Impact section. State
-  what is at stake and what inaction costs.
-  Close the paragraph with exactly the text labeled 'economic_impact_ref' from the SECTION
-  REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
+  Economic stakes in plain language. Include exactly two figures: (1) the largest
+  confirmed or derived acute exposure (an immediate or one-time financial risk), and
+  (2) the largest confirmed or derived annual drag (an ongoing structural loss). No
+  third figure, even when a third feels compelling — all other economic detail belongs
+  in Section 6 and the domain sections.
+  Do not use CONFIRMED/DERIVED/INFERRED labels here. State what is at stake and what
+  inaction costs.
+  Close the paragraph with exactly the text labeled 'economic_impact_ref' from the
+  SECTION REFERENCES block in the input. Copy it verbatim — do not alter the section
+  number or wording.
+
+ANCHOR NUMBER CONSTRAINT — applies across the Executive Briefing and Executive Summary:
+  Only two economic figures may appear across executive_snapshot, executive_summary_para2,
+  and any prose field in executive_briefing: (1) the largest confirmed or derived acute
+  exposure, and (2) the largest confirmed or derived annual drag. Every other dollar figure,
+  percentage, or financial estimate belongs in domain_analysis fields, economic_impact_narrative,
+  future_state_table_rows, or Section 6 tables. Do not add a third figure to any of these
+  fields even when the data supports it. When additional economic figures are relevant,
+  direct the reader to the appropriate section with a reference — for example, "Full
+  economic breakdown in Section 6" — rather than stating the figures inline.
 
 executive_summary_para3 — 2-3 sentences:
   Why sequencing matters. What must happen first and why the order is not optional.
@@ -873,6 +888,15 @@ economic_impact_narrative — 3-4 sentences.
   Lead with total exposure range (CONFIRMED + DERIVED + INFERRED labeled separately).
   Connect to business stakes: reinvestment capacity, talent retention, competitive position.
   Do not repeat individual finding economic_impact fields verbatim — synthesize them.
+  ECONOMIC DATA — EXPLAIN ONCE:
+  Each economic figure is fully explained exactly once in the document. The first
+  appearance includes the full context — the figure, what it represents, and its
+  evidentiary basis (CONFIRMED/DERIVED/INFERRED label).
+  All subsequent references use the figure and plain descriptive label only:
+    'the $644K margin gap'
+    'the $186K bench cost'
+  Do not re-derive or re-explain a figure that has already appeared. Do not repeat
+  the calculation or the source after the first appearance.
 
 future_state_narrative — 2-3 sentences plus one required CEO day sentence.
   Describe what the firm looks like operationally when the full roadmap is executed.
@@ -895,15 +919,61 @@ domain_analysis — one entry per domain that has findings.
   opening: 2-3 sentences introducing what the diagnostic found and why it matters.
   closing: 2-3 sentences connecting this domain's findings to findings in other domains.
 
+  HARD RULE — ONE PARAGRAPH ONLY:
+  Each domain narrative must be expressed in a single paragraph. Do not generate
+  a second paragraph under any condition — not for explanation, not for reinforcement,
+  not for cross-domain connection. All explanation must be compressed into the single
+  paragraph. If a connection to another domain is essential, add one sentence to the
+  end of the single paragraph. A second paragraph is never acceptable.
+  This rule applies independently to opening and closing — each field is one paragraph.
+
+NO CROSS-SECTION REPETITION:
+Do not restate findings explained in prior sections. Each section advances the
+analysis — it does not repeat it.
+
+Section roles are strictly defined:
+- Executive Summary: framing — what is at stake and why it matters now
+- Domain Analysis: evidence — what was observed and what it means in this domain
+- Root Cause: synthesis — what structural conditions explain the pattern across domains
+- Roadmap: action — what to do and in what order
+
+Restating means: repeating the same causal explanation, the same economic figure with
+the same context, or the same root cause framing in a section where it has already
+been explained.
+
+Advancing means: applying the finding to a new question — what it costs, what caused
+it, what to do about it, or what it enables in the next phase.
+
+When referencing a finding from a prior section, use the finding name only — do not
+re-explain it. Example: 'The pricing governance failure (Section 6.2)' not 'The pricing
+governance failure, which occurs because the CEO retains unilateral authority without
+a governance gate.'
+Note: this cross-reference format applies when Root Cause or Roadmap prose refers back
+to a Domain Analysis finding. It is not a general license to add section numbers to
+all references — use it only where the back-reference is the point of the sentence.
+
 roadmap_rationale — one entry per phase that has items.
   Stabilize: why these items are sequenced first — what active damage stops, what gets unblocked.
-    Include 1–2 sentences on the economic stakes of this phase if any Stabilize items have
-    "Addresses economic impact" data in the ROADMAP ITEMS input — synthesize the exposure being
-    stopped or protected, using CONFIRMED/DERIVED/INFERRED notation. Omit if no economic data.
   Optimize: what foundation Stabilize created, what becomes possible now.
-    Include 1–2 sentences on economic stakes if relevant Optimize items have economic linkage data.
   Scale: what the payoff looks like — what the firm can do when Scale work is complete.
-    Include 1–2 sentences on economic stakes if relevant Scale items have economic linkage data.
+  If economic linkage data exists for items in a phase, you may include one forward-looking
+  economic reference per phase in the format 'This phase stops [figure] in [label]' or
+  'This phase protects [figure] in [label].' No sourcing detail. No evidentiary label on
+  this reference. Omit entirely if no economic linkage data exists for that phase.
+
+PHASE NARRATIVES — FUNCTIONAL ONLY:
+Phase descriptions must state exactly two things:
+1. What this phase accomplishes
+2. What it enables next
+
+Prohibited:
+- Re-explaining findings already in Domain Analysis
+- Repeating economic figures already in the Executive Summary or Economic Impact section
+  (the one forward-looking reference above is the only exception)
+- Multi-sentence capability descriptions
+- Any content that appeared in a prior section
+
+The phase narrative is orientation, not summary. One paragraph. Functional language only.
 
 future_state_table_rows — metrics table for Section 7.
   Only include rows where both current_state and target can be sourced from the Synthesizer
@@ -918,10 +988,29 @@ future_state_table_rows — metrics table for Section 7.
   Use an industry benchmark only when no prior period confirmed value exists.
 
 priority_zero_table_rows — one row per Priority Zero item from the Synthesizer.
-  action: the specific Priority Zero item.
+
+  PRIORITY ZERO CONTENT BY LOCATION:
+  The Priority Zero content appears in two locations with different content requirements.
+
+  Location 1 — Executive Briefing 'What Must Happen This Week' block:
+  Shows action and owner only. One sentence per action. No contingency paths. No
+  exposure calculations. No multi-step logic. This is the gate document — it must
+  be readable in 30 seconds.
+
+  Location 2 — Section 10.1 Priority Zero table:
+  Shows the full row: action, owner, and what_it_unblocks. The what_it_unblocks
+  field may contain contingency paths and exposure boundaries per Rule 12 for
+  active escalation findings.
+
+  Rule 12 applies to Location 2 only. It does not affect what appears in the
+  Executive Briefing.
+
+  action: one sentence only — the primary recommended action.
+          Contingency paths and exposure boundaries do not belong here; put them in what_it_unblocks.
   owner: derive from roles named in the Synthesizer output and engagement data only.
          Use "TBD — assign at kickoff" if role is ambiguous or not confirmed.
-  what_it_unblocks: one clause explaining what cannot proceed until this is done.
+  what_it_unblocks: what cannot proceed until this is done. When Rule 12 applies, also
+                    include the contingency path and exposure boundary here — see Rule 12.
 
 roadmap_overview_rows — exactly three rows (Stabilize, Optimize, Scale).
   timeline: derive from phase (Stabilize = Months 1-3, Optimize = Months 3-9, Scale = Months 9-18).
@@ -1066,16 +1155,21 @@ a bottleneck risk rated High likelihood.
 Rule 12 — Active client escalation requires contingency planning:
 When a finding documents an active client escalation with confirmed financial exposure
 AND the SOW lacks contractual protection (no liquidated damages clause, missing
-client obligation enforcement language, or below-rate pricing with no floor), the
-priority_zero_table_rows entry for that escalation must include three components:
-  1. Primary path — the recommended immediate action
-  2. Contingency path — what to do if the primary path fails or the client escalates
-  3. Exposure boundary — the maximum confirmed financial exposure and the contractual
-     basis, or explicit acknowledgment that the boundary is indeterminate without
-     legal review
-Do not generate a single-bullet P0 action for an active escalation with confirmed
-financial exposure. A live dispute requires a primary path, a fallback, and a known
-exposure boundary.
+client obligation enforcement language, or below-rate pricing with no floor):
+  - action: one sentence — the primary recommended immediate action only. Do not
+    embed contingency or exposure detail here. The Executive Briefing shows this field
+    alone; it must be readable as a standalone directive.
+  - what_it_unblocks: must include all three of the following, separated by semicolons:
+      (1) what cannot proceed until this escalation is resolved,
+      (2) contingency path — what to do if the primary action fails or the client
+          escalates further,
+      (3) exposure boundary — the maximum confirmed financial exposure and its
+          contractual basis, or "exposure boundary indeterminate — legal review
+          required" if it cannot be determined from available data.
+The full row (action + owner + what_it_unblocks) appears in Section 10.1 Priority Zero.
+The Executive Briefing shows action only. A live dispute requires all three elements to
+be present in what_it_unblocks — do not collapse them into action.
+See PRIORITY ZERO CONTENT BY LOCATION in the priority_zero_table_rows instruction above.
 
 ### Dependency and Timing Rules
 
@@ -1145,7 +1239,13 @@ named role.
 ---
 
 HALLUCINATION PREVENTION — apply to every field:
-1. Every dollar figure carries CONFIRMED, DERIVED, or INFERRED exactly as in the source. Never strip these labels.
+1. Every dollar figure carries CONFIRMED, DERIVED, or INFERRED on first mention. On
+   subsequent references to the same figure, use the figure and plain descriptive label
+   only. Do not re-attach the evidentiary label or re-derive the figure on subsequent
+   mentions. First mention means the first time the figure appears anywhere in the
+   generated output — in the executive summary, domain analysis, or economic impact
+   narrative, whichever comes first. All subsequent appearances in any section are
+   subsequent mentions.
 2. Owners must be roles named in the Synthesizer output or engagement context. Never invent roles.
 3. No specific dates — use relative timing only (Month 1, Months 3-6, etc.).
 4. future_state_table_rows: omit any row where current or target cannot be sourced from the data.
@@ -1213,7 +1313,30 @@ WRITING RULES:
 8. Banned phrases: "going forward", "leverage", "synergies", "best practices", "it is important
    to note", "it should be noted", "holistic approach", "at the end of the day".
 9. No meta-commentary about the report itself.
-10. Return only the JSON object — no preamble, no sign-off, no explanation."""
+10. Return only the JSON object — no preamble, no sign-off, no explanation.
+
+INSIGHT FIRST:
+Lead every paragraph with the conclusion. Provide only the minimum explanation
+required for the conclusion to be credible. Do not build to the insight through
+explanation — state it first, then support it briefly.
+
+Prohibited pattern:
+'X is not Y — it is Z, which leads to A, which in turn causes B.'
+
+Required pattern:
+'X is Z. This drives A.'
+
+Apply to all narrative fields: domain narratives, root cause paragraphs, phase
+narratives, and executive summary paragraphs.
+
+SENTENCE STRUCTURE:
+Limit sentences to one clause unless additional structure is required for meaning.
+Avoid chaining cause-and-effect within a single sentence.
+
+One idea per sentence. Break compound sentences. Avoid nested logic chains.
+
+Exception: contrast sentences of the form 'Not X — Y' are permitted when the
+contrast is the insight. Use sparingly."""
 
 
 COMPRESSION_PROMPT = """You are a copy editor for a senior consulting report.
