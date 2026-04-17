@@ -1009,11 +1009,10 @@ class ReportSectionsMixin:
                 callout_run.font.color.rgb  = RGBColor(0x66, 0x66, 0x66)
 
             domain_data = domain_analysis.get(domain, {})
-            opening = domain_data.get('opening', '') if isinstance(domain_data, dict) else ''
-            closing = domain_data.get('closing', '') if isinstance(domain_data, dict) else ''
+            narrative = domain_data.get('narrative', '') if isinstance(domain_data, dict) else ''
 
-            if opening:
-                doc.add_paragraph(_resolve_initiative_codes(opening, roadmap_by_id))
+            if narrative:
+                doc.add_paragraph(_resolve_initiative_codes(narrative, roadmap_by_id))
                 doc.add_paragraph()
 
             for f in by_domain[domain]:
@@ -1052,9 +1051,6 @@ class ReportSectionsMixin:
 
                 doc.add_paragraph()
 
-            if closing:
-                doc.add_paragraph(_resolve_initiative_codes(closing, roadmap_by_id))
-                doc.add_paragraph()
 
     # ------------------------------------------------------------------
     # Table helpers — new sections

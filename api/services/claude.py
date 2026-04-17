@@ -691,8 +691,7 @@ JSON SCHEMA — return exactly these keys:
   "future_state_narrative": "<2-3 sentences describing the firm 18 months post-roadmap>",
   "domain_analysis": {
     "<exact domain name>": {
-      "opening": "<2-3 sentence opening paragraph for this domain>",
-      "closing": "<2-3 sentence closing paragraph connecting this domain to others>"
+      "narrative": "<single paragraph — lead with the domain primary finding, support briefly, end with one sentence connecting to another domain only if essential>"
     }
   },
   "roadmap_rationale": {
@@ -916,16 +915,21 @@ future_state_narrative — 2-3 sentences plus one required CEO day sentence.
 
 domain_analysis — one entry per domain that has findings.
   Use the exact domain name as the key (e.g. "Delivery Operations", "Sales & Pipeline").
-  opening: 2-3 sentences introducing what the diagnostic found and why it matters.
-  closing: 2-3 sentences connecting this domain's findings to findings in other domains.
+  narrative: one paragraph, maximum three sentences.
 
-  HARD RULE — ONE PARAGRAPH ONLY:
-  Each domain narrative must be expressed in a single paragraph. Do not generate
-  a second paragraph under any condition — not for explanation, not for reinforcement,
-  not for cross-domain connection. All explanation must be compressed into the single
-  paragraph. If a connection to another domain is essential, add one sentence to the
-  end of the single paragraph. A second paragraph is never acceptable.
-  This rule applies independently to opening and closing — each field is one paragraph.
+    Sentence 1: state the domain's primary diagnostic finding as a single
+      declarative sentence.
+
+    Sentence 2: state the operational consequence — what this finding costs
+      or prevents — in one sentence.
+
+    Sentence 3 (optional): one sentence connecting to another domain only if
+      the connection is the most important thing the reader needs to know.
+      Omit if the connection is not essential.
+
+    Do not explain the finding. Do not provide context or background. Do not
+    summarize signals. The finding table below the narrative carries the detail.
+    The narrative orients the reader — nothing more.
 
 NO CROSS-SECTION REPETITION:
 Do not restate findings explained in prior sections. Each section advances the
