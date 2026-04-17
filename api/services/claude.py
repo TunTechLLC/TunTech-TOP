@@ -582,8 +582,40 @@ Each item must have exactly these fields:
 - estimated_impact: string — one sentence on what this initiative achieves when complete (e.g. "Eliminates below-cost deals from pipeline before SOW signature")
 - rationale: string — one sentence citing the specific finding or Synthesizer evidence that drives this initiative
 - owner: string — the role responsible for driving this initiative to completion (see owner rules below)
-- capability: string — one sentence describing what the organisation will be able to do once this initiative is complete, stated as an organisational capability (e.g. "The ability to consistently scope and price engagements before delivery begins, such that every project enters delivery with a signed SOW and agreed success criteria.")
+- capability: string — REQUIRED. One sentence only. Define what the organization will
+  be able to do after this initiative is complete. Must be testable and outcome-oriented.
+  Good: "Detect below-target pricing at the deal level within the same reporting period."
+  Bad: "The ability to monitor and manage pricing decisions through a structured governance
+  process that involves delivery leadership review."
+  Rules:
+    - One sentence maximum
+    - Describes an outcome, not a process
+    - Must be falsifiable — someone must be able to confirm whether the organization
+      can or cannot do this
+    - No multi-sentence descriptions
+    - No explanatory paragraphs
+    - No process descriptions inside the capability statement
 - addressing_finding_ids: list of strings — the finding_ids from ACCEPTED FINDINGS that this initiative directly addresses. Use the exact finding_id values (e.g. ["F001", "F003"]). If no accepted findings are provided or none are relevant, return an empty list [].
+
+ROADMAP INITIATIVE FORMAT:
+Each initiative must be expressed using outcome-oriented fields only.
+
+Required fields and their purpose:
+- initiative_name: specific, action-oriented name
+- capability: one sentence — what the org can do after this is done (see capability rule above)
+- estimated_impact: one sentence on what this achieves when complete
+- rationale: one sentence citing the specific finding or evidence
+- owner: role from engagement data
+- effort / priority / phase: classification fields
+- addressing_finding_ids: finding links
+
+Prohibited inside any field value:
+- Narrative paragraphs
+- Multi-sentence capability descriptions
+- Process descriptions inside the capability statement
+- Explanatory context that belongs in Domain Analysis or root cause narrative
+
+The initiative record is a decision tool. Every field must be a direct, testable statement.
 
 OWNER RULES — apply these strictly:
 Only assign owners from roles explicitly named in the Synthesizer output or engagement context.
@@ -638,7 +670,7 @@ Return format:
     "estimated_impact": "Removes organizational veto on delivery improvements and enables all subsequent delivery-dependent initiatives",
     "rationale": "Two prior improvement initiatives were blocked by the CEO bypass dynamic; all delivery fixes depend on this structural change",
     "owner": "CEO",
-    "capability": "The ability to make and enforce delivery decisions without CEO override, such that process changes implemented in Optimize and Scale phases are not reversed at the project level.",
+    "capability": "Make and enforce delivery decisions without requiring CEO approval.",
     "addressing_finding_ids": ["F002", "F005"]
   }
 ]"""
