@@ -1,6 +1,10 @@
 """
 Signal Library Migration — Session 1
 =====================================
+NOTE: SignalLibrary is now maintained directly in the DB via DB Browser.
+The SIGNALS list below is the original seed set and is no longer authoritative.
+Do not re-run this script to add signals — edit the DB directly instead.
+
 Run once from the repo root:
     python migrations/migrate_signal_library.py
 
