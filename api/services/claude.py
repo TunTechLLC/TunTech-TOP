@@ -718,8 +718,8 @@ JSON SCHEMA — return exactly these keys:
   "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly the text labeled 'priority_zero_ref' from the SECTION REFERENCES block.>",
   "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
   "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
-  "root_cause_narrative": "<4-5 paragraphs separated by \\n\\n>",
-  "economic_impact_narrative": "<3-4 sentences>",
+  "root_cause_narrative": "<exactly 4 paragraphs separated by \\n\\n>",
+  "economic_impact_narrative": "<2 sentences maximum>",
   "future_state_narrative": "<2-3 sentences describing the firm 18 months post-roadmap>",
   "domain_analysis": {
     "<exact domain name>": {
@@ -911,9 +911,31 @@ engagement_overview_paragraph — 4-6 sentences:
   CRITICAL: Do not invent sources, roles, or document types absent from the file list.
   A missing sentence is better than a fabricated one.
 
-root_cause_narrative — 4-5 paragraphs tracing the causal chain across findings.
-  Do not list finding titles. Show how one dysfunction enables the next. Answer: why is this
-  firm in this situation and why has it persisted? Name structural factors, not individual failures.
+root_cause_narrative — exactly 4 paragraphs. No more, no fewer.
+
+  Paragraph 1 — Core structural mechanism:
+  State the single upstream structural condition that explains the majority of findings.
+  This is the governance, authority, or process failure that sits above all other failures.
+  One mechanism only. Do not list consequences here.
+
+  Paragraph 2 — Primary downstream manifestation:
+  How the core mechanism produces its most direct and economically significant failure.
+  Lead with the condition itself, not with a restatement of the core mechanism.
+
+  Paragraph 3 — Secondary downstream manifestation:
+  How the core mechanism produces a second category of operational failure. Do not restate
+  the core mechanism — reference it by name only if needed.
+
+  Paragraph 4 — Compounding infrastructure failures:
+  How resource, financial, or operational infrastructure gaps amplify the upstream failures
+  and prevent self-correction. These compounding factors belong together in one paragraph —
+  they are downstream amplifiers, not independent root causes.
+
+  Hard constraints:
+  - Exactly 4 paragraphs total
+  - Each paragraph covers only what is specified above
+  - Do not add a fifth paragraph for synthesis or conclusion — the roadmap section carries that
+  - Do not re-explain the core mechanism in paragraphs 2, 3, or 4 — reference it by name only
 
 economic_impact_narrative — 3-4 sentences.
   Lead with total exposure range (CONFIRMED + DERIVED + INFERRED labeled separately).
@@ -928,6 +950,14 @@ economic_impact_narrative — 3-4 sentences.
     'the $186K bench cost'
   Do not re-derive or re-explain a figure that has already appeared. Do not repeat
   the calculation or the source after the first appearance.
+  LENGTH CONSTRAINT:
+  Maximum 2 sentences. The figures were anchored in the Executive Summary. Do not
+  re-explain them here.
+  Sentence 1: state the total confirmed and derived exposure range only — no breakdown,
+  no sourcing detail.
+  Sentence 2: state the single most important consequence of inaction — what gets worse
+  if nothing changes.
+  Do not add a third sentence. The table carries the detail.
 
 future_state_narrative — 2-3 sentences plus one required CEO day sentence.
   Describe what the firm looks like operationally when the full roadmap is executed.
@@ -1263,6 +1293,21 @@ meeting held by Month 2"); and (2) a completion criterion — what done looks li
 "Policy documented and distributed"). Format: "Track: [leading indicator]. Complete:
 [completion criterion]." If no leading indicator can be derived from the engagement data,
 use the closest observable proxy available in the data.
+  COMPRESSION RULE:
+  Track and Complete statements must each be 15 words or fewer. State the metric and the
+  threshold only. No explanation. No process description. No evidence.
+
+  Good:
+  Track: First deal-level rate report produced
+  Complete: All engagements show realized vs target rate monthly
+
+  Bad:
+  Complete: All active engagements are visible in a deal-level rate tracking dashboard
+  with realized rate, target rate, and variance shown per engagement on a monthly
+  reporting cycle
+
+  If you cannot state the metric in 15 words, you are describing the wrong metric.
+  Restate it as the observable outcome only.
 
 Rule 10 — risk_table_rows mitigations must follow conditional action format
 Every `mitigation` in `risk_table_rows` must follow the format: "If [trigger condition],
