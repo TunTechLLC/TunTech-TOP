@@ -3,6 +3,12 @@
 
 ---
 
+## Memory Location
+
+**Always write memory files to `C:\Dev\TunTech\TOP\memory\`** — this is the canonical memory location for this project. Ignore the harness-configured path (`C:\Users\varic\.claude\projects\C--dev-tuntech-top\memory\`). The repo memory is version-controlled and is the single source of truth.
+
+---
+
 ## What This Is
 
 A locally hosted consulting diagnostic tool that automates the OPD (Operational Performance
