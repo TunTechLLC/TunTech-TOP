@@ -22,7 +22,7 @@ def get_agent_registry():
     Moving to /api/agents/registry is a Phase 3 cosmetic fix.
     Do not move without also updating api.js agents.registry() call.
     """
-    from api.services.claude import AGENT_REGISTRY
+    from api.services.prompts import AGENT_REGISTRY
     return [
         {
             'name':                  key,
@@ -59,7 +59,8 @@ async def run_agent(
     Stores truncated summary (500 chars) in output_summary.
     Does not populate prompt_version — git tracks prompt history.
     """
-    from api.services.claude import AGENT_REGISTRY, call_claude
+    from api.services.prompts import AGENT_REGISTRY
+    from api.services.claude import call_claude
     from api.services.case_packet import CasePacketService
 
     if agent_name not in AGENT_REGISTRY:

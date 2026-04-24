@@ -43,7 +43,8 @@ async def detect_patterns(
     Two-step design is intentional — detect returns results for human review,
     load saves them. Prevents bad Claude output from automatically entering the database.
     """
-    from api.services.claude import call_claude, PATTERN_DETECTION_PROMPT
+    from api.services.claude import call_claude
+    from api.services.prompts import PATTERN_DETECTION_PROMPT
     from api.services.case_packet import CasePacketService
 
     signals = signal_repo.get_for_engagement(engagement_id)

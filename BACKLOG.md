@@ -3,6 +3,171 @@
 
 ---
 
+## Accuracy and Human-in-the-Loop — Address Before First Real Client
+
+These items address accuracy risk and reviewer effectiveness. They are higher priority than
+all output quality and feature work below. Identified via architectural review 2026-04-24.
+
+### Build Sequence — Accuracy and Review
+
+| # | Item | Sessions |
+|---|------|----------|
+| A2 | Agent Review UI Redesign — signal ID parsing + inline reference cards | 2–3 |
+| A3 | Skeptic Recommendations as Actionable UI — pattern downgrade + C-code affordances | 1–2 |
+| A4 | Evidence Traceability on Findings — full chain on candidate review cards | 1 |
+| A5 | Signal ID Validation on Agent Output — flag ghost references at accept time | 1 |
+
+---
+
+### A2 — Agent Review UI Redesign
+
+**Problem:** Agent outputs are displayed as raw prose in a scrollable `<pre>` box. To verify
+whether an agent correctly interpreted a signal, you must read thousands of words, find the
+reference, switch tabs, locate the signal, and return. In practice this means agents are
+accepted without meaningful review. The correction field exists but provides no structural
+guidance on what to look for.
+
+**Design:**
+
+**Step 1 — Parse signal references from agent output:**
+On the backend, after storing agent output, extract all `[SXXX]` references using regex.
+Return the list of referenced signal IDs alongside the agent output in the list endpoint.
+No schema change needed — this can be computed on the fly from `output_full`.
+
+**Step 2 — Inline reference cards in AgentPanel.jsx:**
+Below the agent output prose (when expanded), render a collapsible "Referenced Signals"
+section. For each signal ID found in the output, show a card with:
+- Signal ID, name, confidence badge, domain
+- Source file
+- Verbatim quote from the notes field (the `Quote: '...'` portion)
+- A small "flag" toggle button — flagging a signal pre-populates the correction textarea
+  with `"[SXXX] — Flagged for review: "` as a starting point
+
+**Step 3 — Sort case packet signals by confidence:**
+In `case_packet.py` `_section_2_signals()`, sort within each domain by confidence
+(High first, then Medium, then Hypothesis) so the Diagnostician sees the strongest
+evidence first in each domain.
+
+**New backend work:**
+- Add `GET /{engagement_id}/signals/{signal_id}` endpoint or extend the signals list
+  response to be indexable by ID for the inline lookup
+- Add signal reference parsing utility in agents router or a new helper
+
+**Files:**
+- `api/services/case_packet.py` — sort signals by confidence within domain
+- `api/routers/agents.py` — parse signal references from output_full, include in response
+- `frontend/src/components/AgentPanel.jsx` — referenced signals section with inline cards
+
+**Commit message:** Agent review UI — inline signal reference cards for meaningful output review
+
+---
+
+### A3 — Skeptic Recommendations as Actionable UI
+
+**Problem:** The Skeptic recommends pattern confidence downgrades and surfaces C-codes
+(factual_conflict, retraction, role_discrepancy, second_hand_attribution). Acting on these
+recommendations requires reading the Skeptic's prose output, remembering the recommendations,
+manually navigating to the Pattern panel, finding each pattern, and editing it. There is no
+UI affordance connecting the Skeptic's findings to the panels that should respond to them.
+In practice, Skeptic recommendations are accepted as prose and then not acted on.
+
+**Design:**
+
+**Pattern downgrade recommendations:**
+Parse the Skeptic output for downgrade language ("downgrade P12", "reduce confidence on P15",
+"P08 should be Medium not High"). Surface these as pending action cards in PatternPanel.jsx:
+`"Skeptic recommends: P12 → Medium (was High). [Apply] [Dismiss]"`
+Applying writes the updated confidence to the DB. Dismiss records the decision.
+
+**C-code surfacing in SignalPanel:**
+Parse the Skeptic output for C-code blocks (the `[C001]` formatted entries). For each C-code
+that references a signal ID, show a warning badge on that signal in SignalPanel.jsx:
+`"Flagged by Skeptic: factual_conflict — review before accepting findings"`
+The badge links to the relevant C-code text so Victor can read the specific conflict.
+
+**Backend work:**
+- New `POST /{engagement_id}/agents/skeptic/parse-recommendations` endpoint
+  Accepts the Skeptic's run_id, parses downgrade recommendations and C-codes,
+  returns structured list of `{type, pattern_id, signal_id, recommendation, c_code_text}`
+- This parsing can use Claude (a small extraction call) or regex — C-codes have
+  a defined format; downgrades are less structured and likely need Claude
+
+**Files:**
+- `api/routers/agents.py` — new parse-recommendations endpoint
+- `frontend/src/components/PatternPanel.jsx` — pending downgrade action cards
+- `frontend/src/components/SignalPanel.jsx` — C-code warning badges on flagged signals
+
+**Commit message:** Skeptic recommendations — actionable downgrade and C-code affordances in Pattern and Signal panels
+
+---
+
+### A4 — Evidence Traceability on Findings
+
+**Problem:** On the findings candidate review cards, you see the finding title, domain,
+priority, economic impact, and root cause — but not the evidence chain that produced it.
+You cannot tell whether a finding is strongly supported (3 High-confidence patterns, each
+triggered by verbatim quotes from multiple files) or weakly supported (1 Hypothesis pattern
+with a single inferred signal). The accept/reject decision is made on the finding's
+prose fields alone.
+
+**Design:**
+On each findings candidate card, add a collapsible "Evidence Chain" section:
+
+```
+Contributing Patterns:
+  P12 — Scope Creep Without Change Control (High) → triggered by S014, S022, S031
+  P15 — Sales-Delivery Handoff Failure (Medium) → triggered by S008, S019
+
+Source Signals:
+  [S014] Change control bypassed | High | "We just absorb the scope..."  [Interview_CEO.txt]
+  [S022] SOW missing acceptance criteria | High | "There's no definition of done..." [Doc_SOW.txt]
+  [S031] PM reports scope disputes weekly | Medium | "Every week it's the same..." [Interview_Operations.txt]
+  [S008] Sales commits without delivery input | High | "Sales would sign and then tell us..." [Interview_DirectorDelivery.txt]
+  [S019] No formal handoff process | Medium | "It's a phone call if we're lucky..." [Interview_VPSales.txt]
+```
+
+**Backend work:**
+The `extract_findings_from_synthesizer` response already includes `suggested_pattern_ids`.
+The pattern records have notes that list triggering signals. Need a new endpoint or
+an extension of the findings candidate response that resolves the full chain:
+finding → patterns → signals → notes (verbatim quote extracted).
+
+**Files:**
+- `api/routers/findings.py` — enrich candidate response with resolved evidence chain
+- `frontend/src/components/FindingsPanel.jsx` — collapsible evidence chain on candidate cards
+
+**Commit message:** Evidence traceability — full signal chain on findings candidate review cards
+
+---
+
+### A5 — Signal ID Validation on Agent Output
+
+**Problem:** If an agent references `[S099]` and no S099 exists in the case packet, there
+is no check. The ghost reference propagates through subsequent agents and influences findings
+framing without a corresponding signal record or verbatim quote. This is low-probability in
+dry runs but is the kind of error that surfaces in a real client engagement with more
+signals and more ambiguous IDs.
+
+**Design:**
+After storing agent output (in `run_agent()` in `agents.py`), extract all `[SXXX]`
+references and validate them against the engagement's signal IDs. For each unrecognized ID:
+- Log a warning with the agent name, run ID, and the unknown signal ID
+- Return a `signal_warnings` list in the run response alongside the output
+- In AgentPanel.jsx, display a non-blocking yellow warning banner on the run card:
+  `"Warning: Agent referenced unknown signal ID(s): S099, S104. Review before accepting."`
+
+This does not block acceptance — it informs. Victor decides whether the ghost reference
+matters.
+
+**Files:**
+- `api/routers/agents.py` — validate signal IDs post-generation, return warnings
+- `api/db/repositories/signal.py` — `get_ids_for_engagement(engagement_id)` helper
+- `frontend/src/components/AgentPanel.jsx` — warning banner on runs with ghost references
+
+**Commit message:** Signal ID validation — flag ghost signal references in agent outputs
+
+---
+
 ## Technical Debt — Address Before Next Major Feature
 
 ### Build Sequence — Verified 2026-04-15
