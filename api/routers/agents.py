@@ -46,8 +46,8 @@ def list_agent_runs(
     """Return all agent runs for an engagement in chronological order."""
     runs = repo.get_for_engagement(engagement_id)
     for run in runs:
-        raw = re.findall(r'\[S\d+\]', run.get('output_full') or '')
-        run['referenced_signal_ids'] = [s[1:-1] for s in raw]
+        raw = re.findall(r'\bS\d{3,4}\b', run.get('output_full') or '')
+        run['referenced_signal_ids'] = list(dict.fromkeys(raw))
     return runs
 
 
