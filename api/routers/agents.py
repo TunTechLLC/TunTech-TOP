@@ -1,4 +1,5 @@
 import logging
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.agent_run import AgentRunRepository
 from api.models.agent import AgentRunResponse, AgentRegistryEntry
@@ -43,7 +44,11 @@ def list_agent_runs(
     repo: AgentRunRepository = Depends(get_repo)
 ):
     """Return all agent runs for an engagement in chronological order."""
-    return repo.get_for_engagement(engagement_id)
+    runs = repo.get_for_engagement(engagement_id)
+    for run in runs:
+        raw = re.findall(r'\[S\d+\]', run.get('output_full') or '')
+        run['referenced_signal_ids'] = [s[1:-1] for s in raw]
+    return runs
 
 
 @router.post("/{engagement_id}/agents/{agent_name}/run")

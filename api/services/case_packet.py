@@ -5,6 +5,8 @@ from api.db.repositories.pattern    import PatternRepository
 
 logger = logging.getLogger(__name__)
 
+_CONF_PRIORITY = {'High': 0, 'Medium': 1, 'Hypothesis': 2}
+
 
 class CasePacketService:
     """Assembles the structured case packet for Claude API calls.
@@ -68,7 +70,7 @@ CONSULTANT NOTES:
         lines = ["=== SECTION 2: SIGNALS ===\n"]
         current_domain = None
 
-        for s in sorted(signals, key=lambda x: x['domain']):
+        for s in sorted(signals, key=lambda x: (x['domain'], _CONF_PRIORITY.get(x['signal_confidence'], 99))):
             if s['domain'] != current_domain:
                 current_domain = s['domain']
                 lines.append(f"\n--- {current_domain} ---")
