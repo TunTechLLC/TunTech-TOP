@@ -391,7 +391,7 @@ export default function AgentPanel({ engagementId }) {
                     <div className="px-4 pb-4 space-y-2">
                       <p className="text-xs text-gray-400 italic">
                         Appended to this agent's output when passed to downstream agents.
-                        Leave blank if no correction is needed.
+                        Re-run downstream agents after saving for corrections to take effect.
                       </p>
                       <textarea
                         value={corrections[run.run_id] || ''}
