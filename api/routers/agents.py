@@ -3,6 +3,7 @@ import re
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.pattern import PatternRepository
+from api.db.repositories.signal import SignalRepository
 from api.models.agent import AgentRunResponse, AgentRegistryEntry
 from config import MODEL
 
@@ -17,6 +18,10 @@ def get_repo() -> AgentRunRepository:
 
 def get_pattern_repo() -> PatternRepository:
     return PatternRepository()
+
+
+def get_signal_repo() -> SignalRepository:
+    return SignalRepository()
 
 
 def _parse_c_codes(text: str) -> list:
@@ -86,13 +91,23 @@ def get_agent_registry():
 @router.get("/{engagement_id}/agents")
 def list_agent_runs(
     engagement_id: str,
-    repo: AgentRunRepository = Depends(get_repo)
+    repo:        AgentRunRepository = Depends(get_repo),
+    signal_repo: SignalRepository   = Depends(get_signal_repo),
 ):
     """Return all agent runs for an engagement in chronological order."""
-    runs = repo.get_for_engagement(engagement_id)
+    runs      = repo.get_for_engagement(engagement_id)
+    valid_ids = signal_repo.get_ids_for_engagement(engagement_id)
     for run in runs:
-        raw = re.findall(r'\bS\d{3,4}\b', run.get('output_full') or '')
-        run['referenced_signal_ids'] = list(dict.fromkeys(raw))
+        raw        = re.findall(r'\bS\d{3,4}\b', run.get('output_full') or '')
+        referenced = list(dict.fromkeys(raw))
+        run['referenced_signal_ids'] = referenced
+        ghosts = [sid for sid in referenced if sid not in valid_ids]
+        run['signal_warnings'] = ghosts
+        if ghosts:
+            logger.warning(
+                f"Agent {run.get('agent_name')} run {run.get('run_id')} "
+                f"references unknown signal IDs: {ghosts}"
+            )
     return runs
 
 

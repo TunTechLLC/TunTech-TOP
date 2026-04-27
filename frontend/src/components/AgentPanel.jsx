@@ -247,6 +247,15 @@ export default function AgentPanel({ engagementId }) {
                 </div>
               )}
 
+              {/* Ghost signal warning — visible on collapsed cards */}
+              {run && run.signal_warnings && run.signal_warnings.length > 0 && (
+                <div className="px-4 py-2 bg-yellow-50 border-t border-yellow-100">
+                  <p className="text-xs text-yellow-800">
+                    ⚠ Agent referenced unknown signal ID(s): {run.signal_warnings.join(', ')}. Review before accepting.
+                  </p>
+                </div>
+              )}
+
               {/* Output summary — always visible if run exists */}
               {run && run.output_summary && (
                 <div className="px-4 py-3 border-t border-gray-100">

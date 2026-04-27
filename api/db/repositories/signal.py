@@ -51,6 +51,12 @@ DELETE_BY_SOURCE_FILE = """
     WHERE  engagement_id = ? AND source_file = ?
 """
 
+GET_IDS = """
+    SELECT signal_id
+    FROM   Signals
+    WHERE  engagement_id = ?
+"""
+
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -63,6 +69,12 @@ class SignalRepository(BaseRepository):
         logger.info(f"Fetching signals for engagement: {engagement_id}")
         rows = self._query(GET_FOR_ENGAGEMENT, (engagement_id,))
         return [dict(row) for row in rows]
+
+    def get_ids_for_engagement(self, engagement_id: str) -> set:
+        """Return the set of valid signal IDs for an engagement.
+        Used for ghost signal reference validation in agent outputs."""
+        rows = self._query(GET_IDS, (engagement_id,))
+        return {row['signal_id'] for row in rows}
 
     def get_domain_summary(self, engagement_id: str) -> list:
         """Return signal counts grouped by domain and confidence level.
