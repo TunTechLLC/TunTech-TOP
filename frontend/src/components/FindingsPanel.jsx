@@ -79,6 +79,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
   const [displayEdits, setDisplayEdits]       = useState({})
   const [savingDisplay, setSavingDisplay]     = useState({})
   const [saveDisplayError, setSaveDisplayError] = useState({})
+  const [expandedEvidence, setExpandedEvidence] = useState(new Set())
 
   const initDisplayState = (f) => {
     const hasWarning = typeof f.suggested_figure === 'string' && f.suggested_figure.startsWith('\u26a0 ')
@@ -206,6 +207,14 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
 
   const handleSynthCandidateChange = (idx, field, value) => {
     setSynthCandidates(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c))
+  }
+
+  const toggleEvidence = (idx) => {
+    setExpandedEvidence(prev => {
+      const next = new Set(prev)
+      next.has(idx) ? next.delete(idx) : next.add(idx)
+      return next
+    })
   }
 
   const handleSynthPatternToggle = (idx, epId) => {
@@ -592,6 +601,59 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                         )
                       } catch { return null }
                     })()}
+
+                    {/* Evidence chain */}
+                    {c.evidence_chain && (
+                      <div>
+                        <button
+                          onClick={() => toggleEvidence(idx)}
+                          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                        >
+                          <span>{expandedEvidence.has(idx) ? '▼' : '▶'}</span>
+                          <span>
+                            Evidence Chain ({c.evidence_chain.patterns.length} pattern{c.evidence_chain.patterns.length !== 1 ? 's' : ''},{' '}
+                            {c.evidence_chain.signals.length + c.evidence_chain.signals_hidden} signal{(c.evidence_chain.signals.length + c.evidence_chain.signals_hidden) !== 1 ? 's' : ''})
+                          </span>
+                        </button>
+                        {expandedEvidence.has(idx) && (
+                          <div className="mt-2 space-y-2 border-l-2 border-gray-200 pl-3">
+                            <div className="space-y-1">
+                              {c.evidence_chain.patterns.map(p => (
+                                <div key={p.pattern_id} className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
+                                  <span className="font-mono text-gray-400">{p.pattern_id}</span>
+                                  <span>—</span>
+                                  <span className="font-medium">{p.pattern_name}</span>
+                                  <span className={`px-1.5 py-0.5 rounded font-medium ${confidenceColors[p.confidence] || 'bg-gray-100 text-gray-500'}`}>{p.confidence}</span>
+                                  {p.signal_ids.length > 0 && (
+                                    <span className="text-gray-400">→ {p.signal_ids.join(', ')}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {c.evidence_chain.signals.length > 0 && (
+                              <div className="space-y-1 pt-1 border-t border-gray-100">
+                                {c.evidence_chain.signals.map(s => (
+                                  <div key={s.signal_id} className="text-xs text-gray-500">
+                                    <span className="font-mono text-gray-400">{s.signal_id}</span>
+                                    {' '}
+                                    <span className="font-medium text-gray-700">{s.signal_name}</span>
+                                    {' · '}
+                                    <span>{s.confidence}</span>
+                                    {s.quote && <span className="text-gray-500 italic"> · "{s.quote}"</span>}
+                                    {s.source_file && <span className="text-gray-400"> [{s.source_file}]</span>}
+                                  </div>
+                                ))}
+                                {c.evidence_chain.signals_hidden > 0 && (
+                                  <div className="text-xs text-gray-400 italic">
+                                    + {c.evidence_chain.signals_hidden} more signal{c.evidence_chain.signals_hidden !== 1 ? 's' : ''} not shown
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   </div>
                 </div>

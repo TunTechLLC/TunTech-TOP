@@ -1,6 +1,7 @@
 import asyncio
 import json as json_lib
 import logging
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.finding import FindingRepository
 from api.db.repositories.agent_run import AgentRunRepository
@@ -112,6 +113,48 @@ def _compute_evidence_summary(contributing_ep_ids: list, accepted_patterns: list
         signal_str = "no signals recorded"
 
     return f"Supported by {pattern_str} across {domain}; {signal_str}"
+
+
+def _build_evidence_chain(ep_ids: list, ep_by_epid: dict,
+                           signals_by_id: dict, signal_cap: int = 8) -> dict:
+    """Build evidence chain for a finding candidate.
+
+    For each contributing pattern, extracts S-codes from the 'Triggered by:' line
+    in pattern notes (written by PATTERN_DETECTION_PROMPT). Resolves each signal ID
+    to its record, extracts the verbatim quote, and caps total signals at signal_cap.
+    """
+    chain_patterns = []
+    all_signal_ids = []
+    for ep_id in ep_ids:
+        ep = ep_by_epid.get(ep_id)
+        if not ep:
+            continue
+        s_codes = list(dict.fromkeys(re.findall(r'\bS\d{3,4}\b', ep.get('notes') or '')))
+        chain_patterns.append({
+            'pattern_id':   ep['pattern_id'],
+            'pattern_name': ep['pattern_name'],
+            'confidence':   ep['confidence'],
+            'signal_ids':   s_codes,
+        })
+        all_signal_ids.extend(s_codes)
+    unique_ids = list(dict.fromkeys(all_signal_ids))
+    hidden     = max(0, len(unique_ids) - signal_cap)
+    chain_signals = []
+    for sid in unique_ids[:signal_cap]:
+        s = signals_by_id.get(sid)
+        if not s:
+            continue
+        parts      = re.split(r'\s+Interpretation:', s.get('notes') or '', maxsplit=1)
+        quote_part = re.sub(r'^Quote:\s*', '', parts[0].strip()).strip("'\" ")
+        quote      = quote_part[:200] + '…' if len(quote_part) > 200 else quote_part
+        chain_signals.append({
+            'signal_id':   sid,
+            'signal_name': s.get('signal_name', ''),
+            'confidence':  s.get('signal_confidence', ''),
+            'quote':       quote,
+            'source_file': s.get('source_file', ''),
+        })
+    return {'patterns': chain_patterns, 'signals': chain_signals, 'signals_hidden': hidden}
 
 
 def _derive_confidence(contributing_ep_ids: list, accepted_patterns: list) -> str:
@@ -324,6 +367,8 @@ async def parse_synthesizer_findings(
         if domain and notes:
             signals_by_domain.setdefault(domain, []).append(notes)
 
+    signals_by_id = {s['signal_id']: s for s in all_signals}
+
     # Build domain signal counts for evidence summary computation
     domain_summary_rows = signal_repo.get_domain_summary(engagement_id)
     domain_signal_counts: dict = {}
@@ -382,6 +427,9 @@ async def parse_synthesizer_findings(
             ep_ids, accepted_patterns,
             item['domain'], domain_signal_counts
         )
+
+        # Build evidence chain: contributing patterns + source signals with quotes
+        item['evidence_chain'] = _build_evidence_chain(ep_ids, ep_by_epid, signals_by_id)
 
         # Serialise key_quotes to JSON string for storage
         item['key_quotes'] = json_lib.dumps(item['key_quotes'])
