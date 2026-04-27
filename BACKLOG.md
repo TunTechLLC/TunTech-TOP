@@ -24,45 +24,6 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 ---
 
 
-### DEFAULT_DOMAIN Constant — Centralize Hardcoded Domain Fallback
-
-**Do not build as a standalone session. Split across Signal Library Sessions 1 and 2:**
-- **Session 1:** Add `DEFAULT_DOMAIN = 'Delivery Operations'` to `api/utils/domains.py` and
-  `src/constants.js`. Replace the 7 hardcoded fallback strings in backend and frontend files.
-- **Session 2:** Fix domain list injection in all extraction prompts — the domain lists in all
-  6 prompts in `document_processor.py` are hardcoded literal strings, not injected from
-  `VALID_DOMAINS`. Signal Library Session 2 rewrites all extraction prompts anyway — fix
-  the injection at that point. Touching these prompts twice is wrong.
-
-**Problem:** The string `'Delivery Operations'` is hardcoded as a fallback default in 3 backend
-files and 4 frontend components. If the default ever changes it must be updated in 7 places.
-
-**Backend — add to `api/utils/domains.py`:**
-```python
-DEFAULT_DOMAIN = 'Delivery Operations'
-```
-Replace hardcoded strings in:
-- `api/services/document_processor.py` — invalid domain fallback in `process_file()`
-- `api/routers/findings.py` — invalid domain fallback in parse-synthesizer
-- `api/routers/roadmap.py` — invalid domain fallback in parse-synthesizer
-
-**Frontend — add to `src/constants.js`:**
-```javascript
-export const DEFAULT_DOMAIN = 'Delivery Operations'
-```
-Replace hardcoded strings in:
-- `SignalPanel.jsx` — `EMPTY_FORM` default + inline candidate card fallback
-- `FindingsPanel.jsx` — `EMPTY_FORM` default + inline candidate card fallback
-- `RoadmapPanel.jsx` — `EMPTY_FORM` default + two inline candidate card fallbacks
-
-**Also flag:** Domain lists are hardcoded in all extraction prompts in `document_processor.py`
-and `claude.py` instead of being injected from `VALID_DOMAINS`. This is the same violation
-at a larger scale — domain added to `domains.py` without updating prompt strings would be
-silently ignored by Claude. Consider dynamic prompt injection in the same session.
-
-**Commit message:** Centralize DEFAULT_DOMAIN constant — remove hardcoded domain fallbacks
-
----
 
 ### Visual Generator Layer — Status
 
