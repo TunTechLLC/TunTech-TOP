@@ -112,7 +112,9 @@ def load_patterns(
     patterns: list[PatternDetectionResult],
     repo: PatternRepository = Depends(get_pattern_repo)
 ):
-    """Load validated pattern detection results into the database."""
+    """Load validated pattern detection results into the database.
+    Replaces all non-accepted patterns for the engagement before inserting."""
+    repo.delete_unaccepted_for_engagement(engagement_id)
     rows = [
         {
             'engagement_id': engagement_id,

@@ -65,6 +65,12 @@ UPDATE_CONFIDENCE = """
     WHERE  ep_id = ?
 """
 
+DELETE_UNACCEPTED = """
+    DELETE FROM EngagementPatterns
+    WHERE  engagement_id = ?
+      AND  accepted = 0
+"""
+
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -123,6 +129,14 @@ class PatternRepository(BaseRepository):
         """Update the economic impact estimate for a single pattern."""
         logger.info(f"Updating economic estimate for {ep_id}: {estimate}")
         self._write(UPDATE_ECONOMIC_ESTIMATE, (estimate, ep_id))
+
+    def delete_unaccepted_for_engagement(self, engagement_id: str) -> int:
+        """Delete all non-accepted patterns for an engagement.
+        Called before bulk_create on re-detection to replace existing results.
+        Accepted patterns (linked to findings) are preserved."""
+        count = self._write(DELETE_UNACCEPTED, (engagement_id,))
+        logger.info(f"Deleted {count} unaccepted patterns for {engagement_id}")
+        return count
 
     def update_confidence(self, ep_id: str, confidence: str) -> None:
         """Update the confidence level on a single engagement pattern.
