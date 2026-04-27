@@ -59,6 +59,12 @@ UPDATE_ECONOMIC_ESTIMATE = """
     WHERE  ep_id = ?
 """
 
+UPDATE_CONFIDENCE = """
+    UPDATE EngagementPatterns
+    SET    confidence = ?
+    WHERE  ep_id = ?
+"""
+
 LOG_PREVIEW_LENGTH = 80
 
 
@@ -117,3 +123,9 @@ class PatternRepository(BaseRepository):
         """Update the economic impact estimate for a single pattern."""
         logger.info(f"Updating economic estimate for {ep_id}: {estimate}")
         self._write(UPDATE_ECONOMIC_ESTIMATE, (estimate, ep_id))
+
+    def update_confidence(self, ep_id: str, confidence: str) -> None:
+        """Update the confidence level on a single engagement pattern.
+        Called by the Skeptic downgrade apply action in the patterns router."""
+        logger.info(f"Updating confidence for {ep_id} → {confidence}")
+        self._write(UPDATE_CONFIDENCE, (confidence, ep_id))

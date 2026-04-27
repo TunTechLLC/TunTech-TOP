@@ -134,6 +134,11 @@ def update_pattern(
     repo:          PatternRepository = Depends(get_pattern_repo)
 ):
     """Update confidence or economic estimate on an engagement pattern."""
+    if data.confidence is not None:
+        if data.confidence not in ('High', 'Medium', 'Hypothesis'):
+            raise HTTPException(status_code=422,
+                                detail=f"Invalid confidence value: {data.confidence}")
+        repo.update_confidence(ep_id, data.confidence)
     if data.economic_impact_est is not None:
         repo.update_economic_estimate(ep_id, data.economic_impact_est)
     return {"updated": ep_id}

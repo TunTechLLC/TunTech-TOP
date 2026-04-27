@@ -2,6 +2,7 @@ import logging
 import re
 from fastapi import APIRouter, HTTPException, Depends
 from api.db.repositories.agent_run import AgentRunRepository
+from api.db.repositories.pattern import PatternRepository
 from api.models.agent import AgentRunResponse, AgentRegistryEntry
 from config import MODEL
 
@@ -12,6 +13,48 @@ router = APIRouter()
 
 def get_repo() -> AgentRunRepository:
     return AgentRunRepository()
+
+
+def get_pattern_repo() -> PatternRepository:
+    return PatternRepository()
+
+
+def _parse_c_codes(text: str) -> list:
+    """Parse C-code blocks from Skeptic output using the prescribed labeled-field format.
+
+    Returns [] if [NONE DETECTED] is present or no C-code blocks are found.
+    Each entry contains: c_code_id, type, entity, signal_a_id, signal_b_id,
+    signal_ids (flat list of valid S-codes for SignalPanel badge mapping),
+    and full_text (complete block for inline display).
+    """
+    if '[NONE DETECTED]' in text:
+        return []
+    results = []
+    parts = re.split(r'(?=\[C\d{3,}\])', text)
+    for part in parts:
+        c_id_match = re.match(r'\[C(\d+)\]', part.strip())
+        if not c_id_match:
+            continue
+        c_id     = f"C{c_id_match.group(1).zfill(3)}"
+        type_m   = re.search(r'^Type:\s*(\w+)',          part, re.MULTILINE)
+        entity_m = re.search(r'^Entity:\s*(.+)',          part, re.MULTILINE)
+        sig_a_m  = re.search(r'^Signal A:\s*\[(\w+)\]',  part, re.MULTILINE)
+        sig_b_m  = re.search(r'^Signal B:\s*\[(\w+)\]',  part, re.MULTILINE)
+        raw_a    = sig_a_m.group(1) if sig_a_m else None
+        raw_b    = sig_b_m.group(1) if sig_b_m else None
+        sig_a    = raw_a if raw_a and raw_a.lower() != 'none' else None
+        sig_b    = raw_b if raw_b and raw_b.lower() != 'none' else None
+        results.append({
+            'c_code_id':   c_id,
+            'type':        type_m.group(1).strip() if type_m else 'unknown',
+            'entity':      entity_m.group(1).strip() if entity_m else None,
+            'signal_a_id': sig_a,
+            'signal_b_id': sig_b,
+            'signal_ids':  [s for s in [sig_a, sig_b]
+                            if s and re.match(r'^S\d+$', s)],
+            'full_text':   part.strip(),
+        })
+    return results
 
 
 @router.get("/agents/registry")
@@ -155,3 +198,77 @@ def update_agent_correction(
     repo.update_correction(run_id, correction)
     logger.info(f"Correction updated for run: {run_id} — {len(correction or '')} chars")
     return {'updated': run_id}
+
+
+@router.get("/{engagement_id}/agents/skeptic/c-codes")
+def get_skeptic_c_codes(
+    engagement_id: str,
+    repo:          AgentRunRepository = Depends(get_repo),
+):
+    """Parse C-code blocks from the accepted Skeptic run using regex.
+    No Claude call — fast enough for auto-fetch on SignalPanel mount.
+    Returns empty list when no accepted Skeptic run exists."""
+    skeptic_output = repo.get_accepted_output(engagement_id, 'Skeptic')
+    if not skeptic_output:
+        return {'c_codes': [], 'none_detected': False}
+    c_codes       = _parse_c_codes(skeptic_output)
+    none_detected = '[NONE DETECTED]' in skeptic_output and len(c_codes) == 0
+    return {'c_codes': c_codes, 'none_detected': none_detected}
+
+
+@router.post("/{engagement_id}/agents/skeptic/parse-recommendations")
+async def parse_skeptic_recommendations(
+    engagement_id: str,
+    agent_repo:    AgentRunRepository = Depends(get_repo),
+    pattern_repo:  PatternRepository  = Depends(get_pattern_repo),
+):
+    """Parse Skeptic output for downgrade recommendations (Claude) and C-codes (regex).
+    Returns {downgrades, c_codes}. Raises 404 if no accepted Skeptic run exists.
+    Each downgrade includes in_engagement flag — False when the pattern was not
+    detected for this engagement. Those cards are shown disabled in PatternPanel."""
+    from api.services.claude import extract_downgrade_recommendations
+
+    skeptic_output = agent_repo.get_accepted_output(engagement_id, 'Skeptic')
+    if not skeptic_output:
+        raise HTTPException(status_code=404,
+                            detail="No accepted Skeptic run found for this engagement")
+
+    c_codes        = _parse_c_codes(skeptic_output)
+    raw_downgrades = await extract_downgrade_recommendations(skeptic_output)
+
+    library        = pattern_repo.get_library()
+    library_names  = {p['pattern_id']: p['pattern_name'] for p in library}
+    eng_patterns   = pattern_repo.get_for_engagement(engagement_id)
+    pattern_lookup = {p['pattern_id']: p for p in eng_patterns}
+
+    downgrades = []
+    for d in raw_downgrades:
+        pid  = d['pattern_id']
+        ep   = pattern_lookup.get(pid)
+        name = library_names.get(pid, '')
+        if ep:
+            downgrades.append({
+                'pattern_id':             pid,
+                'pattern_name':           name or ep.get('pattern_name', ''),
+                'ep_id':                  ep['ep_id'],
+                'current_confidence':     ep['confidence'],
+                'recommended_confidence': d['recommended_confidence'],
+                'reason':                 d['reason'],
+                'in_engagement':          True,
+            })
+        else:
+            downgrades.append({
+                'pattern_id':             pid,
+                'pattern_name':           name,
+                'ep_id':                  None,
+                'current_confidence':     None,
+                'recommended_confidence': d['recommended_confidence'],
+                'reason':                 d['reason'],
+                'in_engagement':          False,
+            })
+
+    logger.info(
+        f"Skeptic parse for {engagement_id}: "
+        f"{len(downgrades)} downgrade(s), {len(c_codes)} C-code(s)"
+    )
+    return {'downgrades': downgrades, 'c_codes': c_codes}

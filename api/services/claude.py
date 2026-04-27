@@ -1,4 +1,6 @@
 import os
+import re
+import json
 import asyncio
 import logging
 import anthropic
@@ -9,6 +11,7 @@ from api.services.prompts import (
     ROADMAP_EXTRACTION_PROMPT,
     REPORT_NARRATOR_PROMPT,
     COMPRESSION_PROMPT,
+    DOWNGRADE_EXTRACTION_PROMPT,
 )
 
 logger = logging.getLogger(__name__)
@@ -432,6 +435,55 @@ async def extract_roadmap_from_synthesizer(
         clean = clean[start:end + 1]
     logger.info(f"Roadmap extraction complete — {len(clean)} chars")
     return clean
+
+
+async def extract_downgrade_recommendations(skeptic_output: str) -> list[dict]:
+    """Extract pattern downgrade recommendations from a Skeptic agent output.
+
+    Returns a validated list of dicts with pattern_id, recommended_confidence,
+    and reason. Items with invalid pattern_id format or confidence value are
+    dropped. Returns [] on any failure — never raises.
+    max_tokens=500: the response is a small JSON array, never legitimately larger.
+    """
+    user_message = DOWNGRADE_EXTRACTION_PROMPT + "\n" + skeptic_output
+    try:
+        message = await async_client.messages.create(
+            model=MODEL,
+            max_tokens=500,
+            messages=[{"role": "user", "content": user_message}],
+            timeout=60.0,
+        )
+        raw = extract_text(message).strip()
+        if raw.startswith('```'):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        start = raw.find('[')
+        end   = raw.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            logger.warning("extract_downgrade_recommendations: no JSON array in response")
+            return []
+        raw = raw[start:end + 1]
+        items = json.loads(raw)
+    except Exception as exc:
+        logger.warning(f"extract_downgrade_recommendations failed: {exc}")
+        return []
+
+    valid_confidences = {'High', 'Medium', 'Hypothesis'}
+    result = []
+    for item in items:
+        pid    = item.get('pattern_id', '')
+        conf   = item.get('recommended_confidence', '')
+        reason = item.get('reason', '')
+        if not (isinstance(pid, str) and pid.startswith('P') and pid[1:].isdigit()):
+            logger.warning(f"extract_downgrade_recommendations: dropped invalid pattern_id {pid!r}")
+            continue
+        if conf not in valid_confidences:
+            logger.warning(f"extract_downgrade_recommendations: dropped invalid confidence {conf!r}")
+            continue
+        result.append({'pattern_id': pid, 'recommended_confidence': conf, 'reason': reason})
+
+    logger.info(f"extract_downgrade_recommendations: {len(result)} valid recommendation(s)")
+    return result
 
 
 async def suggest_display_label(

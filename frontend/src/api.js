@@ -68,8 +68,11 @@ export const api = {
                                           { method: 'PATCH' }).then(handle),
     reject:           (id, runId)     => fetch(`${BASE}/engagements/${id}/agents/${runId}/reject`,
                                           { method: 'PATCH' }).then(handle),
-    updateCorrection: (id, runId, data) => fetch(`${BASE}/engagements/${id}/agents/${runId}/correction`,
-                                            patch(data)).then(handle),
+    updateCorrection:            (id, runId, data) => fetch(`${BASE}/engagements/${id}/agents/${runId}/correction`,
+                                                       patch(data)).then(handle),
+    getSkepticCCodes:            (id)  => fetch(`${BASE}/engagements/${id}/agents/skeptic/c-codes`).then(handle),
+    parseSkepticRecommendations: (id)  => fetch(`${BASE}/engagements/${id}/agents/skeptic/parse-recommendations`,
+                                            { method: 'POST' }).then(handle),
   },
   findings: {
     list:            (id)            => fetch(`${BASE}/engagements/${id}/findings`).then(handle),

@@ -182,6 +182,42 @@ Only flag genuine double-counts where the same dollar loss is captured by multip
 signals independently. Do not flag signals that address different failure modes of the
 same structural problem."""
 
+DOWNGRADE_EXTRACTION_PROMPT = """Extract all pattern downgrade recommendations from the Skeptic output below.
+
+Look specifically in the section labeled "Downgrade Recommendations". Extract only
+patterns identified by a P-code in P## format (e.g. P12, P08, P45) that appear as
+literal text in that section.
+
+For each explicitly named pattern extract:
+- pattern_id: the P-code exactly as written (e.g. "P12")
+- recommended_confidence: the target confidence level — must be exactly one of
+  "High", "Medium", or "Hypothesis". If no explicit target is stated, use "Medium".
+- reason: one sentence from the surrounding text explaining why the downgrade is
+  recommended. Do not invent reasons — extract directly from the Skeptic's text.
+
+Rules:
+- Only include patterns where a P-code appears as literal text (P followed by digits)
+- Do not infer or fabricate pattern IDs that are not present in the text
+- reason must be a single sentence derived directly from the Skeptic output
+- If the recommended confidence is ambiguous, use "Medium"
+- If no downgrade recommendations are present, return []
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with [ and end with ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid
+
+Return format:
+[
+  {"pattern_id": "P12", "recommended_confidence": "Medium", "reason": "Only one confirmed signal supports this pattern; the remaining evidence is indirect."}
+]
+
+Return exactly [] if no downgrade recommendations are found.
+
+Skeptic output:
+"""
+
 SYNTHESIZER_PROMPT = """You are the Synthesizer agent in the TOP multi-agent consulting diagnostic system.
 
 Produce the integrated final diagnostic. You must explicitly address every Skeptic challenge —
