@@ -11,9 +11,60 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt, RGBColor
 from lxml import etree
 
+from api.utils.domains import VALID_DOMAINS
+
 logger = logging.getLogger(__name__)
 
 PRIORITY_ORDER = {'High': 0, 'Medium': 1, 'Low': 2}
+
+_MATURITY_COLORS = {
+    'healthy':  'C6EFCE',
+    'concern':  'FFEB9C',
+    'critical': 'FFC7CE',
+    'no_data':  'D9D9D9',
+}
+
+
+def _compute_domain_scores(signals: list, patterns: list, findings: list) -> dict:
+    """Compute 1–5 maturity score per domain across all 10 VALID_DOMAINS.
+    Returns {domain: float} for scored domains, {domain: None} for unexamined ones."""
+    signal_counts   = defaultdict(int)
+    pattern_domains = defaultdict(list)
+    finding_domains = defaultdict(list)
+    for s in signals:
+        if s.get('domain'):
+            signal_counts[s['domain']] += 1
+    for p in patterns:
+        if p.get('accepted') and p.get('domain'):
+            pattern_domains[p['domain']].append(p)
+    for f in findings:
+        if f.get('domain'):
+            finding_domains[f['domain']].append(f)
+    scores = {}
+    for domain in VALID_DOMAINS:
+        sigs  = signal_counts.get(domain, 0)
+        pats  = pattern_domains.get(domain, [])
+        finds = finding_domains.get(domain, [])
+        if sigs == 0 and len(pats) == 0 and len(finds) == 0:
+            scores[domain] = None
+            continue
+        score = 5.0
+        for p in pats:
+            conf = p.get('confidence', '')
+            if conf == 'High':
+                score -= 1.0
+            elif conf == 'Medium':
+                score -= 0.5
+            elif conf == 'Hypothesis':
+                score -= 0.25
+        for f in finds:
+            pri = f.get('priority', '')
+            if pri == 'High':
+                score -= 0.5
+            elif pri == 'Medium':
+                score -= 0.25
+        scores[domain] = round(max(1.0, score), 1)
+    return scores
 
 
 def _resolve_initiative_codes(text: str, roadmap_by_id: dict | None) -> str:
@@ -983,6 +1034,45 @@ class ReportSectionsMixin:
             "from additional data collection before final recommendations are finalized."
         )
         callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    def _maturity_scorecard(self, doc, signals: list, patterns: list, findings: list):
+        """Domain maturity scorecard — 1–5 score per domain, traffic-light shading."""
+        scores = _compute_domain_scores(signals, patterns, findings)
+        p = doc.add_paragraph(
+            'The maturity scorecard below summarises operational health across all assessed '
+            'domains. Scores are computed from patterns detected and finding severity: '
+            '5 indicates no patterns or findings of concern; '
+            '1 indicates critical operational risk. '
+            'Domains with no signals, patterns, or findings were not examined.'
+        )
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        doc.add_paragraph()
+        table = doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+        for i, h in enumerate(['Domain', 'Maturity Score (1 – 5)']):
+            cell = table.rows[0].cells[i]
+            cell.text = h
+            if cell.paragraphs[0].runs:
+                cell.paragraphs[0].runs[0].bold = True
+            _shade_cell(cell, 'D9D9D9')
+        _set_col_widths(table, [3.5, 2.5])
+        for domain in sorted(scores):
+            score = scores[domain]
+            row   = table.add_row()
+            row.cells[0].text = domain
+            if score is None:
+                row.cells[1].text = 'No Data'
+                _shade_cell(row.cells[1], _MATURITY_COLORS['no_data'])
+            elif score >= 4.0:
+                row.cells[1].text = f'{score} — Healthy'
+                _shade_cell(row.cells[1], _MATURITY_COLORS['healthy'])
+            elif score >= 3.0:
+                row.cells[1].text = f'{score} — Concern'
+                _shade_cell(row.cells[1], _MATURITY_COLORS['concern'])
+            else:
+                row.cells[1].text = f'{score} — Critical'
+                _shade_cell(row.cells[1], _MATURITY_COLORS['critical'])
+        _left_align_table(table)
 
     def _findings_by_domain(self, doc, findings: list, narrative: dict,
                             roadmap_by_id: dict | None = None):

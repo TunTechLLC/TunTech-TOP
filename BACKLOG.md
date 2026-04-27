@@ -3,14 +3,6 @@
 
 ---
 
-## Accuracy and Human-in-the-Loop — Address Before First Real Client
-
-These items address accuracy risk and reviewer effectiveness. They are higher priority than
-all output quality and feature work below. Identified via architectural review 2026-04-24.
-
-**All A-series items complete.** ✅
-
----
 
 ## Technical Debt — Address Before Next Major Feature
 
@@ -20,7 +12,6 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 | # | Item | Sessions |
 |---|------|----------|
-| 1 | Domain Maturity Scoring | 1 |
 | 5 | Visual 3 — Causal Chain | 1 |
 | 6 | Three Systemic Drivers Section | 1 |
 | 7 | Auto-Suggest Knowledge | 1 |
@@ -32,33 +23,6 @@ Full code investigation confirmed this order. Work top to bottom within this sec
 
 ---
 
-### Domain Maturity Scoring
-**Problem:** Section 3 (Operational Maturity Overview) shows signal counts by domain but
-no maturity score. Clients respond to scorecards in a way they don't respond to tables.
-
-**Design:**
-- Compute a 1–5 maturity score per domain at report generation time from existing data:
-  - Pattern count (more patterns = more problems = lower score)
-  - Average pattern confidence (High-confidence patterns weight more heavily)
-  - Finding severity (High-priority findings pull score down)
-- Domains with zero signals AND zero patterns show "No data" — a score of 5 would be
-  misleading since it could mean genuinely healthy or simply unexamined
-- Show as a scorecard table in Section 3 alongside the existing signal count table
-- No new database columns — computed entirely at report time
-- Future value: as TOP accumulates data across engagements, scoring becomes benchmarked
-
-**Scoring formula (starting point — refine after first use):**
-- Base score: 5
-- Subtract 0.5 per accepted High-confidence pattern in the domain
-- Subtract 0.25 per accepted Medium-confidence pattern
-- Subtract 0.5 per High-priority finding in the domain
-- Floor at 1; show "No data" if zero signals and zero patterns
-
-**File:** `api/services/report_generator.py` — add `_compute_domain_scores(engagement_id)`
-
-**Commit message:** Domain maturity scoring — 1–5 score per domain in Section 3
-
----
 
 ### DEFAULT_DOMAIN Constant — Centralize Hardcoded Domain Fallback
 

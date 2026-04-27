@@ -8,6 +8,7 @@ from docx.shared import Inches, Pt
 
 from api.db.repositories.engagement import EngagementRepository
 from api.db.repositories.finding import FindingRepository
+from api.db.repositories.pattern import PatternRepository
 from api.db.repositories.roadmap import RoadmapRepository
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.processed_files import ProcessedFilesRepository
@@ -65,6 +66,7 @@ class ReportGeneratorService(ReportSectionsMixin):
         findings        = FindingRepository().get_all(self.engagement_id)
         roadmap         = RoadmapRepository().get_all(self.engagement_id)
         signals         = ReportingRepository().get_engagement_signals(self.engagement_id)
+        patterns        = PatternRepository().get_for_engagement(self.engagement_id)
         processed_files = ProcessedFilesRepository().get_for_engagement(self.engagement_id)
 
         interview_roles = _extract_interview_roles(processed_files)
@@ -100,7 +102,7 @@ class ReportGeneratorService(ReportSectionsMixin):
         else:
             logger.warning(f"Template not found at {_TEMPLATE} — using default styles")
             doc = Document()
-        self._build(doc, eng, findings, roadmap, signals, narrative)
+        self._build(doc, eng, findings, roadmap, signals, patterns, narrative)
 
         file_path = self._output_path(eng)
         doc.save(file_path)
@@ -127,7 +129,7 @@ class ReportGeneratorService(ReportSectionsMixin):
     # Document assembly
     # ------------------------------------------------------------------
 
-    def _build(self, doc, eng, findings, roadmap, signals, narrative: dict):
+    def _build(self, doc, eng, findings, roadmap, signals, patterns, narrative: dict):
         firm_name = eng.get('firm_name') or self.engagement_id
 
         self._populate_content_controls(doc, firm_name)
@@ -258,6 +260,10 @@ class ReportGeneratorService(ReportSectionsMixin):
         if overview_para:
             doc.add_paragraph()
             self._add_narrative_paragraphs(doc, _resolve_initiative_codes(overview_para, roadmap_by_id))
+        doc.add_paragraph()
+
+        # Domain Maturity Scorecard
+        self._maturity_scorecard(doc, signals, patterns, findings)
         doc.add_paragraph()
 
         # 3 — Operational Maturity Overview
