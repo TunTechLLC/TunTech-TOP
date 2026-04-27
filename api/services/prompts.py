@@ -308,7 +308,7 @@ Before finalizing your response, check every domain in the PATTERN LIBRARY. Do n
 Each item must have exactly these fields:
 - pattern_id: string — must be an ID from the PATTERN LIBRARY (e.g. "P12")
 - confidence: string — exactly "High", "Medium", or "Hypothesis"
-- notes: string — 1-2 sentences explaining which signals triggered this pattern
+- notes: string — begin with "Triggered by: " followed by the signal IDs (S-codes) from the SIGNALS section above that directly support this pattern (e.g. "Triggered by: S014, S022, S031"). Use only signal IDs present in the SIGNALS input — do not use pattern library signal IDs or invent codes not present in the input. Then a newline, then 1-2 sentences explaining how those signals triggered this pattern. If no specific signal IDs from the input can be cited, write "Triggered by: (none)" on the first line.
 
 Confidence rules:
 - High: 3 or more strong signals directly confirm this pattern
