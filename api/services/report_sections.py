@@ -1533,7 +1533,7 @@ class ReportSectionsMixin:
             if cell.paragraphs[0].runs:
                 cell.paragraphs[0].runs[0].bold = True
             _shade_cell(cell, 'D9D9D9')
-        _set_col_widths(table, [2.5, 1.2, 2.8])
+        _set_col_widths(table, [2.5, 1.2, 1.8])
 
         for r in rows:
             if not isinstance(r, dict):
@@ -1543,6 +1543,22 @@ class ReportSectionsMixin:
             row.cells[1].text = r.get('owner') or ''
             row.cells[2].text = r.get('what_it_unblocks') or ''
         _left_align_table(table)
+
+        # Execution Notes — rendered below table when Rule 12 applies to any P0 action
+        notes_rows = [
+            r for r in rows
+            if isinstance(r, dict) and r.get('execution_notes')
+        ]
+        if notes_rows:
+            doc.add_paragraph()
+            notes_heading = doc.add_paragraph('Execution Notes')
+            notes_heading.runs[0].bold = True
+            for r in notes_rows:
+                action_ref = (r.get('action') or '')[:60]
+                note_text  = r.get('execution_notes', '')
+                p = doc.add_paragraph(style='List Bullet')
+                p.add_run(f'{action_ref}... — ').bold = True
+                p.add_run(note_text)
 
     def _roadmap_overview_table(self, doc, rows: list):
         """Section 8.2 Roadmap Overview table.

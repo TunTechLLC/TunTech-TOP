@@ -663,7 +663,8 @@ JSON SCHEMA — return exactly these keys:
     {
       "action": "<one sentence — the primary recommended action only>",
       "owner": "<role from engagement data>",
-      "what_it_unblocks": "<what cannot proceed until this is done. If Rule 12 applies, also include: contingency path and exposure boundary — see Rule 12.>"
+      "what_it_unblocks": "<one line only — what cannot proceed until this is done>",
+      "execution_notes": "<null unless Rule 12 applies. When Rule 12 applies: contingency path and exposure boundary separated by a semicolon. Null for all other P0 actions.>"
     }
   ],
   "roadmap_overview_rows": [
@@ -1144,11 +1145,12 @@ client obligation enforcement language, or below-rate pricing with no floor):
   - action: one sentence — the primary recommended immediate action only. Do not
     embed contingency or exposure detail here. The Executive Briefing shows this field
     alone; it must be readable as a standalone directive.
-  - what_it_unblocks: must include all three of the following, separated by semicolons:
-      (1) what cannot proceed until this escalation is resolved,
-      (2) contingency path — what to do if the primary action fails or the client
+  - what_it_unblocks: one line only — what cannot proceed until this escalation
+    is resolved.
+  - execution_notes: must include both of the following, separated by a semicolon:
+      (1) contingency path — what to do if the primary action fails or the client
           escalates further,
-      (3) exposure boundary — the maximum confirmed financial exposure and its
+      (2) exposure boundary — the maximum confirmed financial exposure and its
           contractual basis, or "exposure boundary indeterminate — legal review
           required" if it cannot be determined from available data.
 The full row (action + owner + what_it_unblocks) appears in Section 10.1 Priority Zero.
