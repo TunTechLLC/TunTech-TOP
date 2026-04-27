@@ -18,6 +18,14 @@ export default function PatternPanel({ engagementId, onRefresh }) {
   const [approved, setApproved]       = useState({})
   const [loading2, setLoading2]       = useState(false)
 
+  // Skeptic recommendations
+  const [hasAcceptedSkeptic, setHasAcceptedSkeptic] = useState(false)
+  const [skepticRecs, setSkepticRecs]               = useState(null)
+  const [loadingRecs, setLoadingRecs]               = useState(false)
+  const [recsError, setRecsError]                   = useState(null)
+  const [dismissedIds, setDismissedIds]             = useState(new Set())
+  const [applyingId, setApplyingId]                 = useState(null)
+
   const fetchPatterns = () => {
     api.patterns.list(engagementId)
       .then(setPatterns)
@@ -25,7 +33,14 @@ export default function PatternPanel({ engagementId, onRefresh }) {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchPatterns() }, [engagementId])
+  useEffect(() => {
+    fetchPatterns()
+    api.agents.list(engagementId)
+      .then(runs => {
+        setHasAcceptedSkeptic(runs.some(r => r.agent_name === 'Skeptic' && r.accepted === 1))
+      })
+      .catch(() => {})
+  }, [engagementId])
 
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading patterns...</div>
   if (error)   return <div className="p-6 text-red-600 text-sm">Error: {error}</div>
@@ -76,6 +91,44 @@ export default function PatternPanel({ engagementId, onRefresh }) {
     }
   }
 
+  const handleParseRecommendations = async () => {
+    setLoadingRecs(true)
+    setRecsError(null)
+    try {
+      const data = await api.agents.parseSkepticRecommendations(engagementId)
+      setSkepticRecs(data)
+      setDismissedIds(new Set())
+    } catch (err) {
+      setRecsError(err.message)
+    } finally {
+      setLoadingRecs(false)
+    }
+  }
+
+  const handleApply = async (downgrade) => {
+    setApplyingId(downgrade.ep_id)
+    setRecsError(null)
+    try {
+      await api.patterns.update(engagementId, downgrade.ep_id, { confidence: downgrade.recommended_confidence })
+      setDismissedIds(prev => new Set([...prev, downgrade.pattern_id]))
+      fetchPatterns()
+      onRefresh?.()
+    } catch (err) {
+      setRecsError('Failed to apply downgrade: ' + err.message)
+    } finally {
+      setApplyingId(null)
+    }
+  }
+
+  const handleDismiss = (patternId) => {
+    setDismissedIds(prev => new Set([...prev, patternId]))
+  }
+
+  const visibleDowngrades = (skepticRecs?.downgrades ?? []).filter(
+    d => !dismissedIds.has(d.pattern_id) &&
+         !(d.in_engagement && d.current_confidence === d.recommended_confidence)
+  )
+
   return (
     <div className="p-6">
 
@@ -84,19 +137,37 @@ export default function PatternPanel({ engagementId, onRefresh }) {
         <div className="text-sm text-gray-500">
           {patterns.length} patterns detected
         </div>
-        <button
-          onClick={handleDetect}
-          disabled={detecting}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          {detecting ? 'Detecting...' : 'Detect Patterns'}
-        </button>
+        <div className="flex gap-2">
+          {hasAcceptedSkeptic && !skepticRecs && (
+            <button
+              onClick={handleParseRecommendations}
+              disabled={loadingRecs}
+              className="px-3 py-1.5 border border-amber-500 text-amber-700 rounded text-xs font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
+            >
+              {loadingRecs ? 'Parsing...' : 'Parse Skeptic Recommendations'}
+            </button>
+          )}
+          <button
+            onClick={handleDetect}
+            disabled={detecting}
+            className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {detecting ? 'Detecting...' : 'Detect Patterns'}
+          </button>
+        </div>
       </div>
 
       {/* Detection error */}
       {detectError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
           {detectError}
+        </div>
+      )}
+
+      {/* Recommendations error */}
+      {recsError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {recsError}
         </div>
       )}
 
@@ -163,6 +234,76 @@ export default function PatternPanel({ engagementId, onRefresh }) {
                   {p.notes && (
                     <p className="text-xs text-gray-600 leading-relaxed">{p.notes}</p>
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Skeptic Recommendations */}
+      {skepticRecs && skepticRecs.downgrades.length === 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+          Skeptic output contained no downgrade recommendations.
+        </div>
+      )}
+      {skepticRecs && skepticRecs.downgrades.length > 0 && visibleDowngrades.length === 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+          All Skeptic downgrade recommendations have been applied or dismissed.
+        </div>
+      )}
+      {skepticRecs && visibleDowngrades.length > 0 && (
+        <div className="mb-6 border border-amber-200 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-amber-50 flex items-center justify-between">
+            <span className="text-sm font-semibold text-amber-900">
+              Skeptic Recommendations ({visibleDowngrades.length})
+            </span>
+            <span className="text-xs text-amber-600">
+              Apply updates pattern confidence · Dismiss skips for this session
+            </span>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {visibleDowngrades.map(d => (
+              <div key={d.pattern_id} className={`px-4 py-3 ${!d.in_engagement ? 'bg-gray-50' : ''}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className={`flex-1 ${!d.in_engagement ? 'opacity-50' : ''}`}>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-xs font-mono text-gray-400">{d.pattern_id}</span>
+                      {d.pattern_name && (
+                        <span className="text-sm font-medium text-gray-900">{d.pattern_name}</span>
+                      )}
+                      <span className="flex items-center gap-1 text-xs">
+                        <span className={`px-1.5 py-0.5 rounded font-medium ${confidenceColors[d.current_confidence] || 'bg-gray-100 text-gray-500'}`}>
+                          {d.current_confidence || '—'}
+                        </span>
+                        <span className="text-gray-400">→</span>
+                        <span className={`px-1.5 py-0.5 rounded font-medium ${confidenceColors[d.recommended_confidence] || 'bg-gray-100 text-gray-500'}`}>
+                          {d.recommended_confidence}
+                        </span>
+                      </span>
+                    </div>
+                    {!d.in_engagement && (
+                      <p className="text-xs text-gray-400 italic mb-1">Pattern not detected in this engagement</p>
+                    )}
+                    {d.reason && (
+                      <p className="text-xs text-gray-500 leading-relaxed">{d.reason}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0 mt-0.5">
+                    <button
+                      onClick={() => handleApply(d)}
+                      disabled={!d.in_engagement || applyingId === d.ep_id}
+                      className="px-2.5 py-1 bg-amber-600 text-white rounded text-xs font-medium hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {applyingId === d.ep_id ? 'Applying...' : 'Apply'}
+                    </button>
+                    <button
+                      onClick={() => handleDismiss(d.pattern_id)}
+                      className="px-2.5 py-1 border border-gray-300 text-gray-500 rounded text-xs hover:bg-gray-50 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
