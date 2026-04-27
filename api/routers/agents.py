@@ -50,8 +50,10 @@ def _parse_c_codes(text: str) -> list:
             'entity':      entity_m.group(1).strip() if entity_m else None,
             'signal_a_id': sig_a,
             'signal_b_id': sig_b,
-            'signal_ids':  [s for s in [sig_a, sig_b]
-                            if s and re.match(r'^S\d+$', s)],
+            'signal_ids':  list(dict.fromkeys(
+                               s for s in [sig_a, sig_b]
+                               if s and re.match(r'^S\d+$', s)
+                           )),
             'full_text':   part.strip(),
         })
     return results

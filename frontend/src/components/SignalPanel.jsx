@@ -48,6 +48,8 @@ export default function SignalPanel({ engagementId, onRefresh }) {
   const [reprocessing, setReprocessing]           = useState(null)
   const [coverage, setCoverage]                   = useState([])
   const [showCoverage, setShowCoverage]           = useState(false)
+  const [cCodesBySignalId, setCCodesBySignalId]   = useState({})
+  const [expandedCCodes, setExpandedCCodes]       = useState(new Set())
 
   const fetchData = () => {
     Promise.all([
@@ -55,8 +57,22 @@ export default function SignalPanel({ engagementId, onRefresh }) {
       api.signals.summary(engagementId),
       api.signals.listProcessedFiles(engagementId),
       api.signals.getCoverage(engagementId),
+      api.agents.getSkepticCCodes(engagementId),
     ])
-      .then(([sigs, sum, pf, cov]) => { setSignals(sigs); setSummary(sum); setProcessedFiles(pf); setCoverage(cov) })
+      .then(([sigs, sum, pf, cov, ccData]) => {
+        setSignals(sigs)
+        setSummary(sum)
+        setProcessedFiles(pf)
+        setCoverage(cov)
+        const bySignal = {}
+        for (const cc of (ccData.c_codes || [])) {
+          for (const sid of (cc.signal_ids || [])) {
+            if (!bySignal[sid]) bySignal[sid] = []
+            bySignal[sid].push(cc)
+          }
+        }
+        setCCodesBySignalId(bySignal)
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }
@@ -164,6 +180,15 @@ export default function SignalPanel({ engagementId, onRefresh }) {
   }
 
   const handleApproveNone = () => setApproved({})
+
+  const toggleCCode = (key) => {
+    setExpandedCCodes(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   const handleLoadCandidates = async () => {
     const approvedList = displayCandidates.filter((_, idx) => approved[idx])
@@ -593,6 +618,29 @@ export default function SignalPanel({ engagementId, onRefresh }) {
               </div>
               <div className="text-xs text-gray-400 whitespace-nowrap">{signal.domain}</div>
             </div>
+            {(cCodesBySignalId[signal.signal_id] || []).length > 0 && (
+              <div className="mt-2 flex flex-col gap-1">
+                {(cCodesBySignalId[signal.signal_id] || []).map(cc => {
+                  const key = `${signal.signal_id}_${cc.c_code_id}`
+                  const isExpanded = expandedCCodes.has(key)
+                  return (
+                    <div key={key}>
+                      <button
+                        onClick={() => toggleCCode(key)}
+                        className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+                      >
+                        ⚠ {cc.c_code_id} · {cc.type}
+                      </button>
+                      {isExpanded && (
+                        <div className="mt-1.5 bg-gray-50 border border-gray-200 rounded p-3 font-mono text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
+                          {cc.full_text}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
