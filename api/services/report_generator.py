@@ -13,7 +13,9 @@ from api.db.repositories.roadmap import RoadmapRepository
 from api.db.repositories.agent_run import AgentRunRepository
 from api.db.repositories.processed_files import ProcessedFilesRepository
 from api.db.repositories.reporting import ReportingRepository
+from api.db.repositories.signal_coverage import SignalCoverageRepository
 from api.services.claude import generate_report_narrative
+from api.services.narrator_auditor import audit_narrator_output, AuditContext
 from api.services.report_sections import (
     ReportSectionsMixin,
     _resolve_initiative_codes,
@@ -49,9 +51,12 @@ class ReportGeneratorService(ReportSectionsMixin):
     def __init__(self, engagement_id: str):
         self.engagement_id = engagement_id
 
-    async def generate(self) -> str:
-        """Generate the OPD Word document. Returns the saved file path.
-        Raises ValueError if the engagement is not found or has no accepted Synthesizer output."""
+    async def generate(self) -> dict:
+        """Generate the OPD Word document and run the audit. Returns
+        ``{'saved_to': <file path>, 'audit': <audit report>}``.
+
+        Raises ValueError if the engagement is not found or has no accepted Synthesizer output.
+        """
         eng = EngagementRepository().get_by_id(self.engagement_id)
         if not eng:
             raise ValueError(f"Engagement {self.engagement_id} not found")
@@ -68,6 +73,7 @@ class ReportGeneratorService(ReportSectionsMixin):
         signals         = ReportingRepository().get_engagement_signals(self.engagement_id)
         patterns        = PatternRepository().get_for_engagement(self.engagement_id)
         processed_files = ProcessedFilesRepository().get_for_engagement(self.engagement_id)
+        signal_coverage = SignalCoverageRepository().get_for_engagement(self.engagement_id)
 
         interview_roles = _extract_interview_roles(processed_files)
         document_types  = _extract_document_types(processed_files)
@@ -97,6 +103,27 @@ class ReportGeneratorService(ReportSectionsMixin):
             section_refs=section_refs,
         )
 
+        # Run the mechanical audit on the raw narrator JSON before any rendering
+        # transforms (e.g. R-code resolution) consume it. Audit results are informational
+        # — they do not block rendering. The consultant reviews them in the trust panel.
+        audit_report = audit_narrator_output(
+            narrative,
+            AuditContext(
+                engagement_id=self.engagement_id,
+                findings=findings,
+                roadmap=roadmap,
+                processed_files=processed_files,
+                signals=signals,
+                signal_coverage=signal_coverage,
+                firm_name=eng.get('firm_name') or '',
+            ),
+        )
+        logger.info(
+            f"Narrator audit: {audit_report['summary']['pass']} pass / "
+            f"{audit_report['summary']['fail']} fail / "
+            f"{audit_report['summary']['na']} n/a"
+        )
+
         if os.path.exists(_TEMPLATE):
             doc = Document(_TEMPLATE)
         else:
@@ -107,7 +134,7 @@ class ReportGeneratorService(ReportSectionsMixin):
         file_path = self._output_path(eng)
         doc.save(file_path)
         logger.info(f"Report saved: {file_path}")
-        return file_path
+        return {'saved_to': file_path, 'audit': audit_report}
 
     # ------------------------------------------------------------------
     # File path helpers

@@ -6,24 +6,104 @@
 
 ## Technical Debt — Address Before Next Major Feature
 
-### Build Sequence — Verified 2026-04-15
+### Build Sequence — Revised 2026-05-21
 
-Full code investigation confirmed this order. Work top to bottom within this section.
+Revised after architectural review of roadmap/report review burden (4–8 hours per
+engagement on the Word document, driven by lack of confidence rather than known errors).
+The audit layer is now the top priority because it changes the build economics of every
+future report feature — once it exists, new output ships with its own checks instead of
+extending the review window. Work top to bottom within this section.
 
-| # | Item | Sessions |
-|---|------|----------|
-| 5 | Visual 3 — Causal Chain | 1 |
-| 6 | Three Systemic Drivers Section | 1 |
-| 7 | Auto-Suggest Knowledge | 1 |
-| 8 | Standardize Economic Output | 1 |
-| 9 | Structured File Metadata Capture | 1 |
-| 10 | Editable Engagement Info | 1 |
-| 11 | PowerPoint Export | 1 |
-| — | Checkpoint 5 — Dry Run 5 | milestone |
+| # | Item | Sessions | Notes |
+|---|------|----------|-------|
+| ✅ | Narrator Output Auditor — Session 1 (mechanical checks) | 1 | Shipped 2026-05-21 — see PROGRESS.md |
+| — | Measure Word doc review time on next engagement | — | Kill-switch decision point |
+| 1 | Narrator Output Auditor — Session 2 (narrow Claude checks) | 1 | Conditional on kill-switch result |
+| 2 | Editable Engagement Info | 1 | Hard requirement before first paid client |
+| — | Checkpoint 5 — Dry Run 5 | milestone | Validates items 1–2 |
+| 3 | PowerPoint Export | 1 | Ships with audit checks |
+| 4 | Visual 3 — Causal Chain | 1 | Ships with audit checks |
+| 5 | Standardize Economic Output | 1 | Priority driven by auditor data |
+| 6 | Three Systemic Drivers Section | 1 | Low — may be redundant with Visual 3 |
+| 7 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 8 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
 
+
+### Narrator Output Auditor
+
+**Status:** Session 1 shipped 2026-05-21. Kill-switch decision pending — measure Word
+doc review time on next engagement before building Session 2.
+
+**Problem framing (preserved for context):** 4–8 hours of review time on the final
+Word document per engagement, driven by lack of confidence rather than known errors.
+Prompt-based enforcement (rules in REPORT_NARRATOR_PROMPT) hit diminishing returns;
+adding a rule traded one violation for another. The auditor produces a structured
+trust report so clean dimensions can be skipped — the test-suite framing.
+
+**Session 1 — shipped.** Full details in PROGRESS.md. 12 mechanical Python checks
+in `api/services/narrator_auditor.py`. Audit runs as part of `/report/generate` and
+is surfaced as a Trust Report panel in ReportPanel.jsx.
+
+**Audit-only endpoint — deferred from Session 1.** BACKLOG originally specified an
+"Audit only" button that re-runs checks without regenerating the doc. This requires
+caching the narrator JSON output (schema change — new `ReportNarratives` table, or
+storing narrator output as an AgentRun row). Session 1 shipped without it: the audit
+runs as part of `/report/generate` and the trust panel persists in localStorage for
+re-display after navigation. If the kill-switch validates the framing, consider this
+as a small follow-up before Session 2 — useful when consultants want to test injected
+errors against the same narrator output or re-display the audit panel without paying
+the 30–60s narrator regeneration cost.
+
+---
+
+**Kill-switch — measurement before Session 2**
+
+After Session 1 ships, run the first engagement and measure Word doc review time.
+- If review time drops meaningfully (e.g., 4–8 hours → 1–3 hours): framing
+  validated. Proceed to Session 2.
+- If review time does not drop: framing is wrong. Stop. Do not build Session 2.
+
+This decision point is built into the sequence intentionally — the auditor is
+recommended on strong-but-not-certain evidence and the kill-switch protects
+against speculative investment in Session 2.
+
+---
+
+**Session 2 — narrow Claude checks (conditional on Session 1 results)**
+
+Only build if Session 1 demonstrates measurable review-time compression. Targets
+dimensions Python cannot check — cross-section coherence, evidence-finding
+alignment, narrative tone. Each check is a focused Claude call with structured
+output (pass/fail + evidence). Same trust-report surface as Session 1.
+
+Specific Session 2 checks are to be determined by what remains in the manual
+review after Session 1 — data-driven, not speculative.
+
+Discipline rule: audit prompts only check specific named violations, structured
+output, one rule = one check. New quality concern → new audit rule, never
+broaden scope.
+
+**Commit message (when built):** Narrator Output Auditor Session 2 — narrow
+Claude checks for [specific dimensions identified from Session 1 measurement]
+
+---
+
+**Interaction with the rest of the backlog**
+
+Once the auditor exists, every new report feature ships with its own audit checks.
+This changes the build economics: adding output no longer adds review burden.
+Applies to:
+- PowerPoint Export — checks that slides match the Word doc data
+- Visual 3 (Causal Chain) — checks that every node resolves to a real finding,
+  no orphan arrows
+- Standardize Economic Output — auditor data will reveal which formulas leak
+  most often, driving prioritization
+- Future report features
+
+---
 
 ### Visual Generator Layer — Status
 
@@ -236,25 +316,42 @@ diagram visually shows the same relationships.
 **Build after:** Causal chain diagram is complete.
 ---
 
-## Checkpoint 5 — Dry Run 5 (Full Feature Validation)
+## Checkpoint 5 — Dry Run 5 (Audit Layer + Editable Engagement Info Validation)
 
-**Goal:** End-to-end run with a new fictional client validating all post-Checkpoint 4
-features: key quotes, roadmap capabilities, economic linkage, dependency mapping, and
-domain maturity scoring.
+**Goal:** End-to-end run with a new fictional client validating the Narrator Output
+Auditor (Session 1, plus Session 2 if built) and Editable Engagement Info. Also
+validates that all features shipped since Checkpoint 4 (Findings enhancements, Roadmap
+enhancements, Domain Maturity Scoring, A1–A5 accuracy items) continue to work end-to-end.
 
 **Pre-run setup:**
 - New fictional client with 3–4 interview transcripts and 1–2 supporting documents
 - Transcripts should use named fictional roles (CEO, Director of Delivery, etc.) so
   key quotes are attributable in the report
+- A planted defect in the narrator output that the auditor should catch (e.g., a
+  fabricated R-code or a named individual in a risk row) — validates auditor catches
+  real violations
+- Engagement metadata that requires mid-engagement correction (e.g., revised
+  hypothesis after second interview) — validates Editable Engagement Info
 
-**Pass criteria:**
-- Every finding has a plain English evidence summary (no P-codes) and 2–3 key quotes in the report
-- Every roadmap item has a capability statement in the report
-- Economic impact context appears under roadmap items and as a phase-level narrative
+**Pass criteria — Auditor:**
+- Audit panel appears in ReportPanel before Word doc rendering
+- Planted defect is caught and surfaced with evidence
+- All other dimensions report clean
+- Word doc review time on the dry run is measurably lower than prior dry runs
+  (target: under 2 hours; baseline: 4–8 hours)
+
+**Pass criteria — Editable Engagement Info:**
+- Firm name, stated problem, hypothesis can be edited after initial save
+- Edited fields appear correctly in the final report
+- No DB Browser operations required during the engagement
+
+**Pass criteria — Carry-forward (must still work):**
+- Every finding has a plain English evidence summary (no P-codes) and 2–3 key quotes
+- Every roadmap item has a capability statement
+- Economic impact context appears under roadmap items and as phase-level narrative
 - At least one roadmap item has dependencies set — prerequisites appear in report
-- Quick wins section appears in Section 8 (if qualifying items exist)
-- Domain maturity scorecard appears in Section 3 — "No data" shown for unexamined domains
-- PowerPoint generated without errors — opens correctly with all slides populated
+- Quick wins section appears in Section 10.3 (if qualifying items exist)
+- Domain maturity scorecard appears in Section 2 — "No data" shown for unexamined domains
 - All Checkpoint 4 pass criteria still met
 
 ---

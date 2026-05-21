@@ -48,7 +48,7 @@ async def download_report(engagement_id: str):
     from fastapi.responses import FileResponse
 
     try:
-        file_path = await ReportGeneratorService(engagement_id).generate()
+        result = await ReportGeneratorService(engagement_id).generate()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -56,7 +56,7 @@ async def download_report(engagement_id: str):
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
     return FileResponse(
-        file_path,
+        result['saved_to'],
         media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         filename=f"OPD_Transformation_Roadmap_{engagement_id}.docx",
     )
@@ -64,19 +64,20 @@ async def download_report(engagement_id: str):
 
 @router.post("/{engagement_id}/report/generate")
 async def generate_report(engagement_id: str):
-    """Generate the OPD Word report, save it to the engagement's reports_folder,
-    and return the saved file path. Does not stream the file to the browser."""
+    """Generate the OPD Word report, run the mechanical audit on the narrator output,
+    save the doc to the engagement's reports_folder, and return both the saved file path
+    and the audit trust report. Does not stream the file to the browser."""
     from api.services.report_generator import ReportGeneratorService
 
     try:
-        file_path = await ReportGeneratorService(engagement_id).generate()
+        result = await ReportGeneratorService(engagement_id).generate()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Report generation failed for {engagement_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
-    return {"saved_to": file_path}
+    return result
 
 
 @router.post("/{engagement_id}/report/open-folder")
