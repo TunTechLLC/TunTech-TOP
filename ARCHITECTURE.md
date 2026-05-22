@@ -114,7 +114,7 @@ Engagements      E001   → FK: client_id → Clients
 Signals          S001   → engagement_id
 Interviews       (FK target for Signals.interview_id — currently nulled out)
 Documents        engagement_id
-Patterns         P01    (static reference library — P01–P60, never engagement-specific)
+Patterns         P01    (static reference library — P01–P60, never engagement-specific; P01–P45 cover the original 7 domains, P48–P51 AI Readiness, P52–P56 Human Resources, P57–P60 Finance and Commercial)
 EngagementPatterns EP001 → engagement_id, pattern_id → Patterns
 AgentRuns        AR001  → engagement_id
 OPDFindings      F001   → engagement_id, pattern_id → Patterns
@@ -433,6 +433,48 @@ Any supported extension may be used (`.txt`, `.xlsx`, `.pdf`, `.pptx`, etc.).
 
 Routing is implemented in `get_file_type()` in `api/services/document_processor.py`.
 Stem matching is case-insensitive substring — `Doc_StatusReport_Q1.xlsx` matches `status`.
+
+### Parsing rules
+
+Implemented in `parse_file_role_and_type()` in `report_generator.py`. These rules govern
+how the narrator labels participants and documents in the Engagement Overview section.
+
+- `Interview_` prefix → interview; role derived from the stem after the prefix
+- `Doc_` prefix → document; type derived from the stem after the prefix
+- No convention prefix → falls back to the `file_type` field from `ProcessedFiles`,
+  then tries stem matching. Preserves backward compat for E001/E002/E003.
+- `_Followup` suffix → role is recognised but omitted from the narrator's role list
+- `_2` (or any `_N`) suffix → stripped before matching; deduplication handles
+  repeated sessions
+- Unrecognised stem → raw stem passed through (underscores → spaces). Never uses
+  "team member" or any other generic placeholder.
+
+### Role display labels
+
+Used by the narrator for the Engagement Overview paragraph. Stem substring (case-insensitive)
+matches in the order listed.
+
+| Stem substring | Display label |
+|---|---|
+| `CEO` / `chief exec` | CEO |
+| `DirectorDelivery` / `Director` | Director of Delivery *(Director alone maps to Delivery)* |
+| `VPSales` / `Sales` | VP of Sales |
+| `FinanceLead` / `Finance` | Finance Lead |
+| `SeniorConsultant` / `Consultant` / `PM` | Senior Consultant and Project Manager |
+| `Operations` / `Admin` | Director of Operations |
+
+### Document type display labels
+
+Used by the narrator for the Engagement Overview paragraph. Stem substring (case-insensitive).
+
+| Stem substring | Display label |
+|---|---|
+| `Financial` | financial performance documentation |
+| `Portfolio` | project portfolio summary |
+| `SOW` | Statement of Work |
+| `StatusReport` / `Status` | project status report |
+| `ClientFeedback` / `Feedback` | client satisfaction data |
+| `Other` | supporting documentation |
 
 ### Legacy files (E001–E003)
 
