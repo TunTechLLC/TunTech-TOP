@@ -22,11 +22,9 @@ extending the review window. Work top to bottom within this section.
 | 2 | Editable Engagement Info | 1 | Hard requirement before first paid client |
 | — | Checkpoint 5 — Dry Run 5 | milestone | Validates items 1–2 |
 | 3 | PowerPoint Export | 1 | Ships with audit checks |
-| 4 | Visual 3 — Causal Chain | 1 | Ships with audit checks |
-| 5 | Standardize Economic Output | 1 | Priority driven by auditor data |
-| 6 | Three Systemic Drivers Section | 1 | Low — may be redundant with Visual 3 |
-| 7 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 8 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| 4 | Standardize Economic Output | 1 | Priority driven by auditor data |
+| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
@@ -102,21 +100,6 @@ Applies to:
 - Standardize Economic Output — auditor data will reveal which formulas leak
   most often, driving prioritization
 - Future report features
-
----
-
-### Visual Generator Layer — Status
-
-| Visual | Description | Status |
-|--------|-------------|--------|
-| Visual 3 — Causal Chain Diagram | Left-to-right SVG flow showing how upstream failures produce downstream consequences. Nodes are finding titles, arrows show causal relationships from Root Cause Analysis. Embedded in Section 5. | Not built — pending |
-
-**Visual 3 design:**
-- New `causal_chain` JSON field in narrator output — finding-to-finding relationships for diagram node construction
-- Generated as a temporary SVG, embedded via python-docx add_picture(), then deleted
-- If generation fails, report generates without the visual and logs a warning
-
-**Commit message:** Visual 3 — causal chain diagram in Section 5
 
 ---
 
@@ -196,9 +179,6 @@ consultant's judgment.
 - New button in ReportPanel.jsx — "Generate Presentation" alongside Generate Report
 - Content pulled from same data as Word report — no new data sources needed
 
-**Build after:** Domain Maturity Scoring — the scorecard slide requires maturity scores
-to be computed. Build maturity scoring first, then PowerPoint.
-
 **Commit message:** PowerPoint export — generate starting-point presentation from roadmap data
 
 ---
@@ -275,45 +255,6 @@ the Report Narrator is fully validated and before the first paid client engageme
 ProcessedFiles migration, `signals.py` router update, `SignalPanel.jsx` form addition,
 `generate_report_narrative()` input assembly update
 
----
-### Three Systemic Drivers Section
-
-**Problem:** The document presents findings across 
-9 domains and 16 roadmap items but never explicitly 
-names the 2-3 upstream structural conditions that 
-most findings trace back to. A CEO reading the 
-document absorbs detail but may not walk away with 
-a crisp mental model of what is actually wrong at 
-the structural level.
-
-**Design:** A new section between Executive Summary 
-and How to Read This Document. Half a page maximum. 
-Each driver gets a bold 3-5 word name and one 
-sentence explanation. No finding cross-references 
-in this section — the domain analysis carries that 
-detail.
-
-**Implementation:**
-- New Narrator JSON field: systemic_drivers array 
-  with driver_name (3-5 words) and 
-  driver_explanation (one sentence) per driver
-- New REPORT_NARRATOR_PROMPT instruction: 
-  "Identify 2-3 systemic drivers — the upstream 
-  structural conditions that are the root cause 
-  of the majority of findings. A driver is not 
-  a finding; it is the condition that produces 
-  multiple findings. Every accepted finding should 
-  be traceable to at least one driver."
-- New section in report_generator.py between 
-  Executive Summary and How to Read This Document
-- Section map already dynamic — section numbers 
-  update automatically
-
-**Priority:** Low — build after causal chain 
-diagram. May be redundant once the causal chain 
-diagram visually shows the same relationships.
-
-**Build after:** Causal chain diagram is complete.
 ---
 
 ## Checkpoint 5 — Dry Run 5 (Audit Layer + Editable Engagement Info Validation)
