@@ -166,6 +166,20 @@ schema_migrations         (version TEXT, applied_at TEXT — no ID prefix)
 - A renamed file with unchanged content is not reprocessed
 - A file whose content changes produces a new hash and is reprocessed
 
+### Test data inventory
+
+| Engagement | Firm | Signals | Patterns | Agents | Findings | Roadmap |
+|-----------|------|---------|----------|--------|---------|---------|
+| E001 | Meridian Consulting Group | 33 | 32 | 5 accepted | 7 | 16 |
+| E002 | Apex Technology Solutions | 33 | 21 | 5 accepted | 7 | 16 |
+| E003 | (Fictional — Dry Run 3) | 102 | — | 5 accepted | Yes | Yes |
+| E004 | (Fictional — Dry Run 4) | — | — | 5 accepted | Yes | Yes |
+
+E001 and E002 are the primary reference engagements. E003 is the primary report
+testing engagement — 102 signals, full agent sequence, findings and roadmap
+generated. E004 is the Checkpoint 4 validation engagement — end-to-end dry run,
+all features validated.
+
 ---
 
 ## The Five-Agent Pipeline
