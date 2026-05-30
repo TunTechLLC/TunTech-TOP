@@ -12,6 +12,9 @@ from api.services.prompts import (
     REPORT_NARRATOR_PROMPT,
     COMPRESSION_PROMPT,
     DOWNGRADE_EXTRACTION_PROMPT,
+    QA_COVERAGE_PROMPT,
+    QA_COHERENCE_PROMPT,
+    QA_EDITORIAL_VOICE_PROMPT,
 )
 
 logger = logging.getLogger(__name__)
@@ -521,3 +524,292 @@ async def suggest_display_label(
     except Exception:
         logger.warning("suggest_display_label: Claude call failed — returning None", exc_info=True)
         return None
+
+
+# ---------------------------------------------------------------------------
+# Post-Assembly QA Stage — Coverage Check (QA-1)
+# ---------------------------------------------------------------------------
+
+QA_COVERAGE_MODEL = "claude-opus-4-7"
+QA_COVERAGE_MAX_TOKENS = 16000
+
+
+async def detect_coverage_gaps(
+    source_documents_block: str,
+    roadmap_v1_text: str,
+    model: str = QA_COVERAGE_MODEL,
+) -> list[dict]:
+    """Detect items present in source documents that are missing or only partially
+    addressed in the v1 roadmap. Used by the QA-1 Coverage Check Agent.
+
+    Args:
+        source_documents_block: pre-assembled string containing all source documents,
+            each preceded by ``=== SOURCE: <filename> ===`` header.
+        roadmap_v1_text: full text of v1 roadmap (extracted from .docx).
+        model: Claude model ID. Defaults to claude-opus-4-7 — latest Opus, the
+            most capable model for detection-quality tasks. Bump this constant
+            when newer Opus releases. Explicit override of global TOP_MODEL
+            (Sonnet) — keeps the rest of TOP on Sonnet.
+
+    Returns:
+        Validated list of item dicts. Items with invalid tier or appears_in_roadmap
+        values are dropped with a warning. Returns [] on API failure, parse failure,
+        or empty response — never raises.
+    """
+    user_message = (
+        f"SOURCE DOCUMENTS:\n\n{source_documents_block}"
+        f"\n\n---\n\n"
+        f"ROADMAP V1:\n\n{roadmap_v1_text}"
+    )
+    logger.info(
+        f"detect_coverage_gaps: source block {len(source_documents_block)} chars, "
+        f"roadmap {len(roadmap_v1_text)} chars, model={model}"
+    )
+    # Streaming required — per Anthropic guidance, long requests (large input +
+    # large output) must stream or the server cuts the connection mid-flight.
+    # See https://docs.anthropic.com/en/api/errors#long-requests
+    try:
+        async with async_client.messages.stream(
+            model=model,
+            max_tokens=QA_COVERAGE_MAX_TOKENS,
+            system=QA_COVERAGE_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        ) as stream:
+            message = await stream.get_final_message()
+        raw = extract_text(message).strip()
+        if raw.startswith('```'):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        start = raw.find('[')
+        end   = raw.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            logger.warning("detect_coverage_gaps: no JSON array in response")
+            return []
+        raw = raw[start:end + 1]
+        items = json.loads(raw)
+    except Exception as exc:
+        logger.warning(f"detect_coverage_gaps failed: {exc}")
+        return []
+
+    valid_tiers = {1, 2, 3}
+    valid_roadmap_states = {0, 1}
+    required_fields = (
+        'source_file', 'who_said_it', 'what_was_said',
+        'location_in_source', 'appears_in_roadmap', 'tier',
+    )
+    result = []
+    for item in items:
+        # Required-string field validation
+        if not all(isinstance(item.get(f), str) and item.get(f).strip() for f in required_fields[:4]):
+            logger.warning(f"detect_coverage_gaps: dropped item missing required string field — {item!r}")
+            continue
+        tier = item.get('tier')
+        appears = item.get('appears_in_roadmap')
+        if tier not in valid_tiers:
+            logger.warning(f"detect_coverage_gaps: dropped item with invalid tier {tier!r}")
+            continue
+        if appears not in valid_roadmap_states:
+            logger.warning(f"detect_coverage_gaps: dropped item with invalid appears_in_roadmap {appears!r}")
+            continue
+        # Normalize roadmap_location: must be None when appears_in_roadmap=0, else a string
+        roadmap_location = item.get('roadmap_location')
+        if appears == 0:
+            roadmap_location = None
+        elif not isinstance(roadmap_location, str) or not roadmap_location.strip():
+            logger.warning(f"detect_coverage_gaps: dropped partial-coverage item with empty roadmap_location")
+            continue
+        result.append({
+            'source_file':        item['source_file'].strip(),
+            'who_said_it':        item['who_said_it'].strip(),
+            'what_was_said':      item['what_was_said'].strip(),
+            'location_in_source': item['location_in_source'].strip(),
+            'appears_in_roadmap': appears,
+            'roadmap_location':   roadmap_location,
+            'tier':               tier,
+        })
+
+    logger.info(f"detect_coverage_gaps: {len(result)} valid coverage gap(s) returned")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Post-Assembly QA Stage — Coherence Check (QA-2)
+# ---------------------------------------------------------------------------
+
+QA_COHERENCE_MODEL = "claude-opus-4-7"
+QA_COHERENCE_MAX_TOKENS = 16000
+QA_COHERENCE_VALID_CATEGORIES = {
+    'contradiction', 'priority_mismatch', 'weak_grounding', 'missing_root_cause',
+}
+
+
+async def detect_coherence_issues(
+    roadmap_v1_text: str,
+    model: str = QA_COHERENCE_MODEL,
+) -> list[dict]:
+    """Detect internal coherence issues in the v1 roadmap document. Used by
+    the QA-2 Coherence Check Agent.
+
+    Standalone read — only the v1 roadmap is passed in. The prompt explicitly
+    instructs the agent not to flag source-vs-doc coverage gaps (QA-1's job).
+
+    Args:
+        roadmap_v1_text: full text of v1 roadmap (extracted from .docx).
+        model: Claude model ID. Defaults to claude-opus-4-7 — same model used
+            for QA-1 detection; matches the proven Cowork quality bar.
+
+    Returns:
+        Validated list of item dicts. Items with invalid category, tier, or
+        sections_involved are dropped with warnings. Returns [] on any failure.
+    """
+    user_message = f"ROADMAP V1:\n\n{roadmap_v1_text}"
+    logger.info(
+        f"detect_coherence_issues: roadmap {len(roadmap_v1_text)} chars, model={model}"
+    )
+    # Streaming required for long outputs — same reasoning as QA-1.
+    try:
+        async with async_client.messages.stream(
+            model=model,
+            max_tokens=QA_COHERENCE_MAX_TOKENS,
+            system=QA_COHERENCE_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        ) as stream:
+            message = await stream.get_final_message()
+        raw = extract_text(message).strip()
+        if raw.startswith('```'):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        start = raw.find('[')
+        end   = raw.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            logger.warning("detect_coherence_issues: no JSON array in response")
+            return []
+        raw = raw[start:end + 1]
+        items = json.loads(raw)
+    except Exception as exc:
+        logger.warning(f"detect_coherence_issues failed: {exc}")
+        return []
+
+    valid_tiers = {1, 2, 3}
+    required_str_fields = ('issue', 'category', 'recommended_fix')
+    result = []
+    for item in items:
+        if not all(isinstance(item.get(f), str) and item.get(f).strip() for f in required_str_fields):
+            logger.warning(
+                f"detect_coherence_issues: dropped item missing required string field — {item!r}"
+            )
+            continue
+        tier = item.get('tier')
+        category = item.get('category')
+        sections = item.get('sections_involved')
+        if tier not in valid_tiers:
+            logger.warning(f"detect_coherence_issues: dropped item with invalid tier {tier!r}")
+            continue
+        if category not in QA_COHERENCE_VALID_CATEGORIES:
+            logger.warning(f"detect_coherence_issues: dropped item with invalid category {category!r}")
+            continue
+        if not isinstance(sections, list) or not all(isinstance(s, str) and s.strip() for s in sections):
+            logger.warning(
+                f"detect_coherence_issues: dropped item with invalid sections_involved {sections!r}"
+            )
+            continue
+        result.append({
+            'issue':             item['issue'].strip(),
+            'category':          category,
+            'sections_involved': [s.strip() for s in sections],
+            'recommended_fix':   item['recommended_fix'].strip(),
+            'tier':              tier,
+        })
+
+    logger.info(f"detect_coherence_issues: {len(result)} valid coherence issue(s) returned")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Post-Assembly QA Stage — Editorial Voice/Audience Check (QA-3, Claude pipe)
+# ---------------------------------------------------------------------------
+
+QA_EDITORIAL_VOICE_MODEL = "claude-opus-4-7"
+QA_EDITORIAL_VOICE_MAX_TOKENS = 8000
+QA_EDITORIAL_VOICE_VALID_CATEGORIES = {'voice', 'context_gap'}
+
+
+async def detect_editorial_voice(
+    roadmap_v1_text: str,
+    model: str = QA_EDITORIAL_VOICE_MODEL,
+) -> list[dict]:
+    """Detect voice/audience editorial issues in the v1 roadmap. Used by the
+    QA-3 Editorial Check (Claude pipeline).
+
+    Narrow scope by design: only voice intrusions, tense-shift issues, and
+    audience-inappropriate language in CEO-facing sections. Other editorial
+    issues (signal codes leaking, undefined acronyms, terminology drift) are
+    handled by the deterministic Python pipeline in editorial_auditor.py.
+
+    Args:
+        roadmap_v1_text: full text of v1 roadmap.
+        model: Claude model ID. Defaults to Opus 4.7.
+
+    Returns:
+        Validated list of item dicts with source='claude' attached. Items
+        with invalid category or tier are dropped with warnings. Returns []
+        on any failure — never raises.
+    """
+    user_message = f"ROADMAP V1:\n\n{roadmap_v1_text}"
+    logger.info(
+        f"detect_editorial_voice: roadmap {len(roadmap_v1_text)} chars, model={model}"
+    )
+    try:
+        async with async_client.messages.stream(
+            model=model,
+            max_tokens=QA_EDITORIAL_VOICE_MAX_TOKENS,
+            system=QA_EDITORIAL_VOICE_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        ) as stream:
+            message = await stream.get_final_message()
+        raw = extract_text(message).strip()
+        if raw.startswith('```'):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        start = raw.find('[')
+        end   = raw.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            logger.warning("detect_editorial_voice: no JSON array in response")
+            return []
+        raw = raw[start:end + 1]
+        items = json.loads(raw)
+    except Exception as exc:
+        logger.warning(f"detect_editorial_voice failed: {exc}")
+        return []
+
+    valid_tiers = {1, 2, 3}
+    required_str_fields = ('issue', 'category', 'location', 'recommended_fix')
+    result = []
+    for item in items:
+        if not all(isinstance(item.get(f), str) and item.get(f).strip() for f in required_str_fields):
+            logger.warning(
+                f"detect_editorial_voice: dropped item missing required string field — {item!r}"
+            )
+            continue
+        tier = item.get('tier')
+        category = item.get('category')
+        if tier not in valid_tiers:
+            logger.warning(f"detect_editorial_voice: dropped item with invalid tier {tier!r}")
+            continue
+        if category not in QA_EDITORIAL_VOICE_VALID_CATEGORIES:
+            logger.warning(
+                f"detect_editorial_voice: dropped item with invalid category {category!r}"
+            )
+            continue
+        result.append({
+            'issue':           item['issue'].strip(),
+            'category':        category,
+            'location':        item['location'].strip(),
+            'recommended_fix': item['recommended_fix'].strip(),
+            'standard_term':   None,
+            'tier':            tier,
+            'source':          'claude',
+        })
+
+    logger.info(f"detect_editorial_voice: {len(result)} valid voice/audience item(s) returned")
+    return result

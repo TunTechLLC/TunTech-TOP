@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from api.routers import engagements, signals, patterns, agents, findings, roadmap, knowledge, reporting
+from api.routers import engagements, signals, patterns, agents, findings, roadmap, knowledge, reporting, qa_coverage, qa_coherence, qa_editorial
 
 # ── Logging ──────────────────────────────────────────────────────────────
 from config import LOG_PATH
@@ -79,6 +79,21 @@ app.include_router(
     reporting.router,
     prefix="/api",
     tags=["reporting"]
+)
+app.include_router(
+    qa_coverage.router,
+    prefix="/api/engagements",
+    tags=["qa_coverage"]
+)
+app.include_router(
+    qa_coherence.router,
+    prefix="/api/engagements",
+    tags=["qa_coherence"]
+)
+app.include_router(
+    qa_editorial.router,
+    prefix="/api/engagements",
+    tags=["qa_editorial"]
 )
 
 # ── Global error handler ──────────────────────────────────────────────────

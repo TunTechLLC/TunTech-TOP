@@ -8,6 +8,9 @@ import FindingsPanel from './FindingsPanel'
 import RoadmapPanel  from './RoadmapPanel'
 import KnowledgePanel from './KnowledgePanel'
 import ReportPanel   from './ReportPanel'
+import QACoveragePanel from './QACoveragePanel'
+import QACoherencePanel from './QACoherencePanel'
+import QAEditorialPanel from './QAEditorialPanel'
 
 const TABS = [
   { id: 'signals',    label: 'Signals' },
@@ -17,6 +20,9 @@ const TABS = [
   { id: 'roadmap',    label: 'Roadmap' },
   { id: 'knowledge',  label: 'Knowledge' },
   { id: 'report',     label: 'Report' },
+  { id: 'qa1',        label: 'QA-1' },
+  { id: 'qa2',        label: 'QA-2' },
+  { id: 'qa3',        label: 'QA-3' },
 ]
 
 function Placeholder({ title }) {
@@ -88,6 +94,9 @@ const handleSettingsSave = async () => {
     case 'roadmap':   return <RoadmapPanel   engagementId={id} onRefresh={fetchEngagement} />
     case 'knowledge': return <KnowledgePanel engagementId={id} onRefresh={fetchEngagement} />
     case 'report':    return <ReportPanel    engagementId={id} onRefresh={fetchEngagement} />
+    case 'qa1':       return <QACoveragePanel  engagementId={id} />
+    case 'qa2':       return <QACoherencePanel engagementId={id} />
+    case 'qa3':       return <QAEditorialPanel engagementId={id} />
     default:          return null
   }
 }

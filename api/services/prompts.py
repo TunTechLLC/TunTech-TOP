@@ -182,6 +182,225 @@ Only flag genuine double-counts where the same dollar loss is captured by multip
 signals independently. Do not flag signals that address different failure modes of the
 same structural problem."""
 
+QA_COVERAGE_PROMPT = """You are the Coverage Check Agent in the TOP Post-Assembly QA Stage.
+
+Your task: identify items present in the source documents (interview transcripts and client artifacts) that do not appear, or appear only partially, in the generated transformation roadmap.
+
+The user message contains two sections separated by `---`:
+1. SOURCE DOCUMENTS — each document is preceded by `=== SOURCE: <filename> ===` and contains the full text. Documents include interview transcripts (Interview_*.txt) and supporting client artifacts (Doc_*.txt, *.docx).
+2. ROADMAP V1 — the full text of the rendered transformation roadmap produced by the Report Generator.
+
+For each gap you identify, produce a record with exactly these fields:
+- source_file: string — the filename from the `=== SOURCE: ===` header where the item appears.
+- who_said_it: string — the speaker or document section attribution (e.g. "David Park, CEO (Strategy section)" or "Portfolio Status Report — Upcoming Decisions").
+- what_was_said: string — a brief quote or close paraphrase, 1–3 sentences, capturing the specific item.
+- location_in_source: string — section name and approximate line range (e.g. "Strategy and Growth section; Lines 133-136"). Use line numbers if visible in the source text; otherwise use section name and paragraph descriptor.
+- appears_in_roadmap: integer — 0 if the item is not in the roadmap at all; 1 if the roadmap addresses the topic but misses this specific dimension (partial coverage).
+- roadmap_location: string or null — where in the roadmap the partial coverage appears (only when appears_in_roadmap = 1); null when appears_in_roadmap = 0.
+- tier: integer — 1, 2, or 3, per the rubric below.
+
+TIER RUBRIC — assign exactly one tier per item:
+
+Tier 1 (obvious accept — consultant will accept without question):
+- A specific time-sensitive item explicitly flagged in source as decision-required within a stated window (e.g. "needs resolution this week", "before the March 4 call", "by end of month").
+- A specific named risk, named client, or named individual whose situation is described in source and absent from the roadmap.
+- A specific financial figure (revenue target, margin number, exposure amount) stated in source and absent from the roadmap.
+- An explicit recommended action from a source document with no roadmap counterpart.
+- A direct quote that establishes a causal chain (e.g. an executive's own statement about a behavioral pattern) absent from the roadmap.
+
+Tier 2 (judgment call — consultant must decide whether to incorporate):
+- Source material that adds analytical depth or supporting evidence to an existing roadmap finding (a specific quote, additional context, an operational detail).
+- A pattern or dynamic mentioned in source where the roadmap addresses a related issue but does not name this specific dynamic.
+- Operational detail (process timing, tool inventory, role descriptions) that may or may not be material to the diagnosis.
+
+Tier 3 (low confidence — may be noise):
+- Minor operational detail that may have been intentionally generalized.
+- Items where the source mention is brief and the absence from the roadmap may be intentional scope.
+- Framing or stylistic differences rather than substantive gaps.
+
+GROUNDING RULE — apply to every item:
+Every item must be clearly present in a specific source document. Each item's what_was_said must be supported by specific text in the cited source_file at the cited location_in_source. If you cannot point to a specific passage, do not include the item. Do not flag items based on your own knowledge of what a consulting firm should care about. Do not invent quotes or paraphrases.
+
+What NOT to flag:
+- Items where the roadmap fully addresses the source point at the same specificity — these are not gaps.
+- General consulting wisdom not present in any source document.
+- Topics that appear in both source and roadmap with equivalent treatment.
+- Suggestions about what the roadmap could include based on best practice rather than source material.
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected
+
+Return format example:
+[
+  {
+    "source_file": "Interview_Director_Rachel_Kim.txt",
+    "who_said_it": "Rachel Kim, Director of Delivery (Governance and Tooling section)",
+    "what_was_said": "Rachel spends 3-4 hours per week manually aggregating portfolio data from multiple sources for her weekly summary. No portfolio management tool or dashboard exists — only a manually maintained spreadsheet.",
+    "location_in_source": "Governance and Tooling section; Lines 228-232",
+    "appears_in_roadmap": 0,
+    "roadmap_location": null,
+    "tier": 2
+  },
+  {
+    "source_file": "Doc_Portfolio_Status_Report.txt",
+    "who_said_it": "Rachel Kim, Director of Delivery (Upcoming Decisions)",
+    "what_was_said": "P14 Blue Sky Supply Chain is flagged as requiring a PM assignment decision this week.",
+    "location_in_source": "Upcoming Milestones / Decisions Required; Lines 313-315",
+    "appears_in_roadmap": 0,
+    "roadmap_location": null,
+    "tier": 1
+  }
+]
+
+Return exactly [] if no coverage gaps are found."""
+
+
+QA_EDITORIAL_VOICE_PROMPT = """You are the Editorial Voice and Audience Check in the TOP Post-Assembly QA Stage.
+
+Your task is narrow and focused: read the generated transformation roadmap document as a standalone artifact and flag issues in three dimensions only:
+1. Voice intrusion — sections where the writing voice shifts from the analytical/diagnostic third-person used throughout the document into a different register (e.g., a vendor-pitch or services-proposal tone in what should be an analytical recommendation).
+2. Tense or register shifts without transition — sections that move into a present-tense future-state vision, an aspirational marketing register, or a different framing without an introductory sentence signaling the shift.
+3. Audience-inappropriate language in CEO-facing sections — undefined jargon or implementation-level detail in the Executive Briefing or Executive Summary that the CEO would not be expected to parse on first read.
+
+You are NOT looking for: contradictions, math errors, terminology drift between known equivalent role names, undefined critical acronyms (PMO, SOW), or internal signal codes. Those are caught by separate checks. Flagging them duplicates work.
+
+The user message contains exactly one section:
+ROADMAP V1 — the full text of the rendered transformation roadmap.
+
+For each issue you identify, produce a record with exactly these fields:
+- issue: string — describe the voice/tense/audience problem precisely. 1-3 sentences. Quote a short representative phrase from the document where helpful.
+- category: enum — exactly one of: "voice" | "context_gap"
+  - Use "voice" for tone, voice register, or tense-shift issues.
+  - Use "context_gap" for audience-inappropriate language in CEO-facing sections.
+- location: string — section name or paragraph descriptor where the issue lives (e.g. "How This Gets Implemented — Path 3 description", "Where Northstar Can Be in 18 Months — opening paragraph").
+- recommended_fix: string — concrete editorial change, 1-2 sentences.
+- standard_term: null — always null for voice items (only the Python terminology check populates standard_term).
+- tier: integer — 1, 2, or 3.
+
+TIER RUBRIC — assign exactly one tier per item:
+
+Tier 1: A direct vendor-pitch sentence in an analytical section (e.g., a description of consulting services with first-person actor framing inside a diagnostic document). An undefined acronym or implementation detail in the CEO Executive Briefing that the CEO would not be able to parse.
+
+Tier 2: A tense shift (e.g., from past/present to future-as-present) without a transitional sentence. A section heading that doesn't match the register of other headings (e.g., aspirational marketing tone in an otherwise functional/descriptive heading set).
+
+Tier 3: Subtle voice variation between sections that is consistent within each section. Stylistic preferences that aren't clear errors.
+
+GROUNDING RULE:
+Each item must cite a specific section, paragraph, or quote in the document. Do not flag voice issues based on general consulting principles. Do not produce stylistic suggestions ("this could be more concise") that are not anchored in a specific defect.
+
+What NOT to flag:
+- Sentence-level word choices that are professional and consistent.
+- Repetition that is structural (e.g. the same finding cited in multiple sections).
+- Differences in detail level between sections (Executive Summary is supposed to be shorter than full Domain Analysis).
+- Anything caught by the other checks listed above.
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected
+
+Return format example:
+[
+  {
+    "issue": "The 'How This Gets Implemented' section describes Path 3 with the phrase 'The consultant architects the solution and directs the resources' — first-person consultant-as-actor framing that appears nowhere else in the diagnostic. The shift from third-person analytical voice to vendor-pitch voice is abrupt and unmarked.",
+    "category": "voice",
+    "location": "How This Gets Implemented — Path 3 (Partner-Supported Execution)",
+    "recommended_fix": "Revise to maintain third-person advisory voice. Replace 'The consultant architects the solution' with 'An external engagement manager architects the solution and coordinates delivery resources.' Optionally add a framing sentence at the top of the section noting that the three paths describe TunTech involvement at varying levels.",
+    "standard_term": null,
+    "tier": 1
+  },
+  {
+    "issue": "The 'Where Northstar Can Be in 18 Months' section opens with 'Eighteen months post-roadmap, Northstar operates a portfolio where...' — present-tense, declarative framing of a future state with no transition. A reader encountering this paragraph without the section heading could read it as describing current conditions.",
+    "category": "voice",
+    "location": "Where Northstar Can Be in 18 Months — opening paragraph",
+    "recommended_fix": "Add a one-sentence transition before the vision: 'The following describes where Northstar Technology Partners should be operating 18 months from engagement kickoff, assuming the roadmap is executed as designed.' Then the present-tense visioning can follow without ambiguity.",
+    "standard_term": null,
+    "tier": 2
+  }
+]
+
+Return exactly [] if no voice or audience issues are found."""
+
+
+QA_COHERENCE_PROMPT = """You are the Coherence Check Agent in the TOP Post-Assembly QA Stage.
+
+Your task: read the generated transformation roadmap document as a standalone artifact and flag internal inconsistencies. You will NOT see source transcripts or original signal data — you are reviewing the rendered document on its own terms, the same way a sharp reader encounters it on first read.
+
+The user message contains exactly one section:
+ROADMAP V1 — the full text of the rendered transformation roadmap.
+
+For each issue you identify, produce a record with exactly these fields:
+- issue: string — a precise description of the problem, 1-3 sentences. State what is wrong, not what could be improved.
+- category: enum — exactly one of: "contradiction" | "priority_mismatch" | "weak_grounding" | "missing_root_cause"
+- sections_involved: array of strings — specific section names, table references, or paragraph identifiers in the roadmap that exhibit the issue (e.g. ["Executive Briefing — Three Numbers That Matter (Table 3)", "Resource Management domain summary"])
+- recommended_fix: string — concrete change needed to resolve the issue, 1-2 sentences. Specific enough that an editor could apply it.
+- tier: integer — 1, 2, or 3, per the rubric below.
+
+CATEGORY DEFINITIONS:
+- contradiction: two parts of the document make incompatible factual claims — a number mislabeled, an arithmetic error, two sections giving different figures for the same metric, a classification that conflicts between Executive Summary and detail tables.
+- priority_mismatch: a finding rates priority/effort one way but the corresponding initiative table rates the same recommendation differently; or a recommendation's stated urgency is incompatible with its phase placement.
+- weak_grounding: a recommendation is presented without the arithmetic, evidence, or causal chain that would support it; a metric is asserted without the math connecting it to upstream factors; a quantified target is named without the components that sum to it.
+- missing_root_cause: a governance recommendation describes the mechanism without naming the behavioral pattern it must change; an action is assigned without addressing why the responsible party would behave differently this time than they have historically.
+
+TIER RUBRIC — assign exactly one tier per item:
+
+Tier 1 (obvious accept — objective error):
+- A specific number mislabeled (e.g. a confirmed cost figure attached to a different concept's label).
+- An arithmetic error in narrative or a totals row (stated total does not equal sum of stated components).
+- A cross-section number mismatch where the same metric carries different values in two places.
+- A direct contradiction between Executive Summary and detail tables on classification (e.g. an action listed as Priority Zero in one section and a Quick Win in another with no explanation).
+- A target value that differs between two sections describing the same outcome.
+
+Tier 2 (judgment call — real but debatable):
+- A finding's stated priority/effort doesn't match the corresponding initiative's priority/effort.
+- A recommendation's phase placement contradicts the urgency the finding describes.
+- A recommendation appears to lack a complete causal chain from diagnosis to action.
+
+Tier 3 (low confidence — may be stylistic or subjective):
+- A behavioral pattern is described but not explicitly named.
+- A governance recommendation could be framed more sharply but isn't actually missing a step.
+- A subtle inconsistency in framing across domains.
+
+GROUNDING RULE — every item must be supported by specific text in the roadmap:
+Each issue must cite specific sections, tables, or paragraph references where the inconsistency is observable. For contradictions and priority_mismatches, sections_involved must contain at least two distinct locations in the document. Do not flag items based on general consulting principles. Do not flag style preferences. If you cannot point to specific document locations, do not include the item.
+
+What NOT to flag:
+- General writing improvements ("this paragraph could be clearer").
+- Stylistic choices that are consistent across the document (a chosen voice, a section structure).
+- Items missing from the document that should be there per source material — that is QA-1 Coverage's job, not yours.
+- Suggestions for additional analysis the document doesn't include.
+
+CRITICAL OUTPUT FORMAT:
+Your response must begin with the character [ and end with the character ]
+Do not include any text, explanation, or markdown before or after the JSON array
+Do not use code fences or backticks of any kind
+If your response does not begin with [, it is invalid and will be rejected
+
+Return format example:
+[
+  {
+    "issue": "Table 3 (Three Numbers That Matter) labels the $186K figure as 'EBITDA lost per point of growth'. Everywhere else in the document — the Resource Management domain summary, the Resource Management finding card, and the Economic Impact table — the same $186K is identified as annual bench cost. These are different concepts; EBITDA lost per point of growth would compute to approximately $11.2K (EBITDA decline of $385,720 divided by 34.5 growth points). The label misrepresents the number.",
+    "category": "contradiction",
+    "sections_involved": ["Executive Briefing — Three Numbers That Matter (Table 3)", "Resource Management domain summary", "Resource Management finding card", "Economic Impact table"],
+    "recommended_fix": "Relabel Table 3 row 1 as 'Annual bench cost' with the value $186K, and if EBITDA per point of growth is intended as a separate metric, add it as a distinct row with the correctly computed value (~$11.2K).",
+    "tier": 1
+  },
+  {
+    "issue": "The Customer Experience Deterioration finding rates proactive client communication as Priority: High and Effort: Low. The Scale phase initiative 'Develop Proactive Client Communication Standard' rates the same action as Priority: Medium and Effort: Medium. These ratings disagree on the same recommendation.",
+    "category": "priority_mismatch",
+    "sections_involved": ["Customer Experience Deterioration finding (Table 11)", "Scale phase Proactive Client Communication initiative (Table 25)"],
+    "recommended_fix": "Standardize the priority and effort ratings between the finding card and the initiative table. If the Scale phase rating reflects a deliberate downgrade, document the rationale in the initiative description.",
+    "tier": 2
+  }
+]
+
+Return exactly [] if no coherence issues are found."""
+
+
 DOWNGRADE_EXTRACTION_PROMPT = """Extract all pattern downgrade recommendations from the Skeptic output below.
 
 Look specifically in the section labeled "Downgrade Recommendations". Extract only

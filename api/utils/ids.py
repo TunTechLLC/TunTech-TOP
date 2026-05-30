@@ -70,3 +70,14 @@ def next_processed_file_id():
 
 def next_coverage_id():
     return next_id("SignalCoverage", "coverage_id", "SC", 3)
+
+def next_qa_coverage_id():
+    return next_id("QACoverageItems", "qa_coverage_id", "QC", 3)
+
+def next_qa_coherence_id():
+    # QH prefix = "QA coHerence" — distinct from QC (QA Coverage)
+    return next_id("QACoherenceItems", "qa_coherence_id", "QH", 3)
+
+def next_qa_editorial_id():
+    # QE prefix = "QA Editorial"
+    return next_id("QAEditorialItems", "qa_editorial_id", "QE", 3)

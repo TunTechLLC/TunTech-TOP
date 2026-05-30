@@ -6,100 +6,198 @@
 
 ## Technical Debt — Address Before Next Major Feature
 
-### Build Sequence — Revised 2026-05-21
+### Build Sequence — current
 
-Revised after architectural review of roadmap/report review burden (4–8 hours per
-engagement on the Word document, driven by lack of confidence rather than known errors).
-The audit layer is now the top priority because it changes the build economics of every
-future report feature — once it exists, new output ships with its own checks instead of
-extending the review window. Work top to bottom within this section.
+QA-1, QA-2, QA-3 shipped 2026-05-30 — see PROGRESS.md. QA-4 is the next work,
+followed by QA-5 and Checkpoint 5. Work top to bottom.
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| ✅ | Narrator Output Auditor — Session 1 (mechanical checks) | 1 | Shipped 2026-05-21 — see PROGRESS.md |
-| — | Measure Word doc review time on next engagement | — | Kill-switch decision point |
-| 1 | Narrator Output Auditor — Session 2 (narrow Claude checks) | 1 | Conditional on kill-switch result |
-| 2 | Editable Engagement Info | 1 | Hard requirement before first paid client |
-| — | Checkpoint 5 — Dry Run 5 | milestone | Validates items 1–2 |
-| 3 | PowerPoint Export | 1 | Ships with audit checks |
-| 4 | Standardize Economic Output | 1 | Priority driven by auditor data |
-| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| 1 | QA-4 Revision Agent — single-shot | 1 | Model TBD — test Opus 4.7 vs ChatGPT v44 reference before locking |
+| 2 | QA-5 QA Tab UI | 1 | Integrated tab with diff view between v1 and v2 |
+| — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
+| 3 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 4 | PowerPoint Export | 1 | Ships with audit checks |
+| 5 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 6 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 7 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
+## Post-Assembly QA Stage — remaining work
 
+QA-1 (Coverage), QA-2 (Coherence), and QA-3 (Editorial split) shipped
+2026-05-30 — see PROGRESS.md for full implementation details. QA-4 and
+QA-5 are the remaining items. Decisions locked during the QA-1/2/3 build
+that apply forward:
 
-### Narrator Output Auditor
+- **Model parameter pattern** — Claude calls in QA-N functions pass
+  `model="claude-opus-4-7"` explicitly via the per-call parameter on
+  `api/services/claude.py` rather than changing global `TOP_MODEL`. Keeps
+  the rest of TOP on Sonnet while QA agents target the proven detection
+  model. QA-4 should follow this same pattern (after the empirical model
+  test described in the QA-4 section below).
+- **Streaming required** — `async_client.messages.stream()` for any
+  long Claude call. Non-streaming requests get cut server-side on long
+  generations (QA-1 first attempt timed out at 5 minutes).
+- **Tiering and Tier 1 UI** — established in QA-1/2/3 and inherited by
+  the QA-5 integrated tab.
 
-**Status:** Session 1 shipped 2026-05-21. Kill-switch decision pending — measure Word
-doc review time on next engagement before building Session 2.
+Cowork QA prompt artifacts at `C:\001-cowork-projects\Northstar-working`
+remain available as regression-test reference data.
 
-**Problem framing (preserved for context):** 4–8 hours of review time on the final
-Word document per engagement, driven by lack of confidence rather than known errors.
-Prompt-based enforcement (rules in REPORT_NARRATOR_PROMPT) hit diminishing returns;
-adding a rule traded one violation for another. The auditor produces a structured
-trust report so clean dimensions can be skipped — the test-suite framing.
+### QA-4: Revision Agent — single-shot
 
-**Session 1 — shipped.** Full details in PROGRESS.md. 12 mechanical Python checks
-in `api/services/narrator_auditor.py`. Audit runs as part of `/report/generate` and
-is surfaced as a Trust Report panel in ReportPanel.jsx.
+**Architecture decision (2026-05-30):** Single Claude call, full document in,
+full document out. ChatGPT v44 proves the mechanism on a different model —
+applies accepted items across all three QA categories without breaking
+structured data labels (CONFIRMED/DERIVED/INFERRED), economic figures, or
+analytical voice. `TOP_MAX_TOKENS` will need to be raised for this specific
+call (v44 output was ~79K chars). Per-item-patch alternatives were considered
+and rejected as over-engineering for single-consultant volume.
 
-**Audit-only endpoint — deferred from Session 1.** BACKLOG originally specified an
-"Audit only" button that re-runs checks without regenerating the doc. This requires
-caching the narrator JSON output (schema change — new `ReportNarratives` table, or
-storing narrator output as an AgentRun row). Session 1 shipped without it: the audit
-runs as part of `/report/generate` and the trust panel persists in localStorage for
-re-display after navigation. If the kill-switch validates the framing, consider this
-as a small follow-up before Session 2 — useful when consultants want to test injected
-errors against the same narrator output or re-display the audit panel without paying
-the 30–60s narrator regeneration cost.
+**Model decision: TBD pending empirical test.** The v44 reference was ChatGPT,
+not Claude. Before locking QA-4's model, run Opus (latest, currently 4.7) single-shot in TOP against
+the same v43 + accepted-items input that produced v44, and compare the Opus
+output to v44 as reference. Pass criteria: structured data labels preserved,
+economic figures intact, all accepted items incorporated, analytical voice
+maintained. If Opus passes, lock Opus for QA-4. If Opus drifts, fall back
+options are (a) Sonnet 4.6 (cheaper, less likely to work), (b) external
+ChatGPT integration as the revision engine, or (c) per-item-patch architecture.
 
----
+**Versioning convention (locked 2026-05-30):** v1 and v2 are saved as separate
+files. Naming: `OPD_Roadmap_<engagement_id>_v1.docx` (Report Generator output)
+and `OPD_Roadmap_<engagement_id>_v2.docx` (QA-4 Revision output). Both live
+in the engagement's reports_folder. Neither overwrites the other. Implications
+for the existing Report Generator: when QA-4 ships, update
+`api/services/report_generator.py` to append `_v1` to its output filename so
+the convention is consistent — even on engagements where QA-4 has not yet
+been run, the Report Generator's output is the v1 of a pair. The QA-5 tab
+links to both files and renders the v1↔v2 diff view.
 
-**Kill-switch — measurement before Session 2**
+**Problem:** After the user accepts/rejects items
+from QA-1, QA-2, and QA-3, the roadmap document
+needs to be revised to incorporate all accepted
+items into a client-ready deliverable. This cannot
+be done by re-running the Synthesizer and Report
+Generator because editorial fixes (define SOW on
+first use), coherence fixes (move an initiative
+between phases), and coverage additions (weave
+client data points into domain summaries) are
+prose-level changes to the rendered document, not
+structured data changes to database records.
 
-After Session 1 ships, run the first engagement and measure Word doc review time.
-- If review time drops meaningfully (e.g., 4–8 hours → 1–3 hours): framing
-  validated. Proceed to Session 2.
-- If review time does not drop: framing is wrong. Stop. Do not build Session 2.
+**What to build:** A new revision agent
+(qa_revision) that takes the generated roadmap
+document plus all accepted QA items and produces
+a revised roadmap document. This is a separate
+document assembly path from the Report Generator —
+the Report Generator produces v1, the revision
+agent produces v2.
 
-This decision point is built into the sequence intentionally — the auditor is
-recommended on strong-but-not-certain evidence and the kill-switch protects
-against speculative investment in Session 2.
+**Inputs:**
+- The generated roadmap document from the Report
+  Generator (full text)
+- All accepted items from qa_coverage_items,
+  qa_coherence_items, and qa_editorial_items
 
----
+**Prompt guidance:**
+- Fix every accepted coherence item: resolve
+  contradictions, move initiatives between phases
+  if priority/effort ratings demand it, strengthen
+  weak grounding, name missing root causes
+- Incorporate accepted coverage gaps: weave source
+  data points into domain summaries and finding
+  cards, route time-sensitive items to Priority
+  Zero or a new Active Risk Triage section, add
+  structural sections (e.g. CEO behavioral
+  commitments) if the evidence supports it
+- Apply all accepted editorial fixes: use
+  recommended standard terms, define acronyms at
+  first use, strip internal reference codes, fix
+  grammar, maintain consistent voice
+- Preserve diagnostic voice, confidence labels,
+  economic figures, evidence citations, and the
+  analytical framework — this is a revision, not
+  a rewrite
+- Add a brief revision note at the end documenting
+  what changed
 
-**Session 2 — narrow Claude checks (conditional on Session 1 results)**
+**Output:** A complete revised roadmap document
+that becomes the client deliverable. Saved as a
+separate file (`_v2.docx`) alongside the Report
+Generator's first-pass output (`_v1.docx`) — does
+NOT overwrite v1. See Versioning convention above.
 
-Only build if Session 1 demonstrates measurable review-time compression. Targets
-dimensions Python cannot check — cross-section coherence, evidence-finding
-alignment, narrative tone. Each check is a focused Claude call with structured
-output (pass/fail + evidence). Same trust-report surface as Session 1.
+**Context window note:** This call sends the full
+roadmap document plus all accepted QA items. For
+E004, accepted items alone could be substantial.
+The prompt must instruct the agent to produce a
+complete document, not a diff or a list of edits.
 
-Specific Session 2 checks are to be determined by what remains in the manual
-review after Session 1 — data-driven, not speculative.
+**UI:** Single "Run Final Revision" button. Output
+displays as the revised roadmap document. User does
+a final human read before delivery.
 
-Discipline rule: audit prompts only check specific named violations, structured
-output, one rule = one check. New quality concern → new audit rule, never
-broaden scope.
+**Architecture:**
+- Agent prompt goes in claude.py following existing
+  agent prompt conventions
+- This is a single Claude API call, not a
+  bulk_create() loop — one document in, one
+  document out
+- The revised document is stored alongside the
+  Report Generator output, not replacing it (both
+  versions should be accessible)
+- All SQL in repositories, all Claude API calls
+  through claude.py
 
-**Commit message (when built):** Narrator Output Auditor Session 2 — narrow
-Claude checks for [specific dimensions identified from Session 1 measurement]
+### QA-5: Frontend — QA Tab
 
----
+**Problem:** The three QA agents and the revision
+agent need a UI surface in the existing React
+frontend.
 
-**Interaction with the rest of the backlog**
+**What to build:** A new tab in the engagement
+view (after the existing report/roadmap tab) that
+presents the QA workflow.
 
-Once the auditor exists, every new report feature ships with its own audit checks.
-This changes the build economics: adding output no longer adds review burden.
-Applies to:
-- PowerPoint Export — checks that slides match the Word doc data
-- Visual 3 (Causal Chain) — checks that every node resolves to a real finding,
-  no orphan arrows
-- Standardize Economic Output — auditor data will reveal which formulas leak
-  most often, driving prioritization
-- Future report features
+**Layout:**
+- Top section: status indicator showing whether
+  the Report Generator has produced a first-pass
+  roadmap document. If not, display a message:
+  "Generate the roadmap first." The QA tab cannot
+  run until a first-pass document exists.
+- Three collapsible sections: Coverage, Coherence,
+  Editorial
+- Each section shows agent status (not run / running /
+  complete) and item count (total / accepted /
+  rejected)
+- Each section expands to show items in a table with
+  Accept/Reject controls matching existing agent
+  runner pattern
+- Sections should be runnable in order: Coverage
+  first, then Coherence (which uses accepted
+  Coverage items as context), then Editorial (which
+  runs independently but is sequenced last for
+  workflow clarity)
+- A "Run Final Revision" button at the bottom that
+  becomes active only after at least one QA agent
+  has been run and items reviewed
+- The revised roadmap document displays below the
+  button after the revision agent completes
+- Both the first-pass and revised documents should
+  be accessible (e.g. "View Original" / "View
+  Revised" toggle or tabs)
+
+**Architecture:**
+- All frontend API calls through api.js
+- Follow existing agent runner component patterns
+- New API endpoints in the existing router pattern
+  for each QA table's CRUD operations and agent
+  run triggers
+- Revision agent trigger endpoint separate from
+  QA agent triggers
+
 
 ---
 
@@ -109,7 +207,10 @@ DB Browser to update firm name, stated problem, hypothesis, etc. Items such as s
 hypothesis, etc. should show on the screen after the initial save. It can be in
 a collapsed section like settings is so it doesn't take up a lot of the screen.
 
-**Priority: High — needed before first paid client engagement.** Engagement data will need correction mid-engagement (revised hypothesis, corrected firm name, etc.) and DB Browser is not a viable workaround in a live setting.
+**Priority: Nice-to-have (downgraded 2026-05-30).** Consultant clarified that this
+was originally framed as "before first paid client" but is in practice a workflow
+convenience, not a hard requirement — DB Browser is acceptable as a mid-engagement
+workaround. Slots anywhere in the build sequence.
 
 ---
 
@@ -257,10 +358,10 @@ ProcessedFiles migration, `signals.py` router update, `SignalPanel.jsx` form add
 
 ---
 
-## Checkpoint 5 — Dry Run 5 (Audit Layer + Editable Engagement Info Validation)
+## Checkpoint 5 — Dry Run 5 (Post-Assembly QA Stage Validation)
 
-**Goal:** End-to-end run with a new fictional client validating the Narrator Output
-Auditor (Session 1, plus Session 2 if built) and Editable Engagement Info. Also
+**Goal:** End-to-end run with a new fictional client validating the Post-Assembly
+QA Stage (QA-1 through QA-5) and the Narrator Output Auditor Session 1. Also
 validates that all features shipped since Checkpoint 4 (Findings enhancements, Roadmap
 enhancements, Domain Maturity Scoring, A1–A5 accuracy items) continue to work end-to-end.
 
@@ -268,23 +369,35 @@ enhancements, Domain Maturity Scoring, A1–A5 accuracy items) continue to work 
 - New fictional client with 3–4 interview transcripts and 1–2 supporting documents
 - Transcripts should use named fictional roles (CEO, Director of Delivery, etc.) so
   key quotes are attributable in the report
-- A planted defect in the narrator output that the auditor should catch (e.g., a
-  fabricated R-code or a named individual in a risk row) — validates auditor catches
-  real violations
-- Engagement metadata that requires mid-engagement correction (e.g., revised
-  hypothesis after second interview) — validates Editable Engagement Info
+- Planted defects matched to QA Stage dimensions:
+  - Coverage: a specific time-sensitive item in source (e.g., "decision needed
+    this week") that the v1 roadmap should drop — validates QA-1 catches it
+  - Coherence: a planted contradiction or mislabeled number across sections
+    (analogous to the $186K mislabel from E004) — validates QA-2 catches it
+  - Editorial: an internal signal code left in a finding card, or an undefined
+    acronym in the Executive Briefing — validates QA-3 catches it
+- Narrator-level defect for Session 1 Auditor (e.g., fabricated R-code or named
+  individual in a risk row) — confirms Session 1 still functions
 
-**Pass criteria — Auditor:**
-- Audit panel appears in ReportPanel before Word doc rendering
-- Planted defect is caught and surfaced with evidence
-- All other dimensions report clean
-- Word doc review time on the dry run is measurably lower than prior dry runs
-  (target: under 2 hours; baseline: 4–8 hours)
+**Pass criteria — QA Stage (confidence and risk reduction framing):**
+- QA tab appears in the engagement view after the Report Generator produces v1
+- QA-1, QA-2, QA-3 each run, produce items with tier ratings, and support the
+  tiered UI (Tier 1 collapsed-with-batch-confirm, Tier 2 expanded, Tier 3
+  collapsed-with-opt-in)
+- Each planted defect is caught at the correct tier (Tier 1 defects appear
+  as Tier 1, not buried in Tier 3)
+- Tier 1 precision: no false-Tier-1 items (every Tier 1 is a real error or
+  required addition — overrides are rare exceptions, not routine)
+- Consultant reaches a defined endpoint with documented decisions per item
+  (no items remaining in "pending" state)
+- QA-4 Revision produces v2 incorporating all accepted items without breaking
+  structured data, economic figures, or the analytical voice
+- v1 and v2 are both accessible; diff view shows the changes
+- v2 is delivery-ready without requiring a paranoid blank-slate scan
 
-**Pass criteria — Editable Engagement Info:**
-- Firm name, stated problem, hypothesis can be edited after initial save
-- Edited fields appear correctly in the final report
-- No DB Browser operations required during the engagement
+**Pass criteria — Narrator Auditor Session 1 (carry-forward):**
+- Audit panel appears in ReportPanel on v1 before QA Stage runs
+- Planted narrator-level defect is caught and surfaced
 
 **Pass criteria — Carry-forward (must still work):**
 - Every finding has a plain English evidence summary (no P-codes) and 2–3 key quotes
