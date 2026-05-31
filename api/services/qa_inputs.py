@@ -13,15 +13,19 @@ import logging
 
 from api.db.repositories.engagement import EngagementRepository
 from api.db.repositories.processed_files import ProcessedFilesRepository
+from api.db.repositories.qa_coverage import QACoverageRepository
+from api.db.repositories.qa_coherence import QACoherenceRepository
+from api.db.repositories.qa_editorial import QAEditorialRepository
 from api.services.document_processor import extract_text_from_file
 
 logger = logging.getLogger(__name__)
 
-# Filename produced by report_generator._output_path. When QA-4 ships, this
-# convention changes to ``OPD_Transformation_Roadmap_{engagement_id}_v1.docx``
-# and the Report Generator filename is updated in lockstep (see BACKLOG QA-4
-# Versioning convention). Until then, the Report Generator output IS the v1.
-V1_FILENAME_TEMPLATE = "OPD_Transformation_Roadmap_{engagement_id}.docx"
+# Filenames produced by the Report Generator (v1) and the QA-4 Revision Agent
+# (v2). Kept in lockstep with report_generator._output_path. The Report
+# Generator's output is always the v1 of a pair, even on engagements where QA-4
+# has not been run (see BACKLOG QA-4 Versioning convention).
+V1_FILENAME_TEMPLATE = "OPD_Transformation_Roadmap_{engagement_id}_v1.docx"
+V2_FILENAME_TEMPLATE = "OPD_Transformation_Roadmap_{engagement_id}_v2.docx"
 
 
 def read_v1_roadmap_text(engagement_id: str) -> str:
@@ -146,3 +150,92 @@ def assemble_source_documents_block(engagement_id: str) -> str:
         + (f", {len(skipped)} skipped: {skipped}" if skipped else "")
     )
     return block
+
+
+def _accepted(items: list) -> list:
+    """Filter a QA item list to those the consultant accepted."""
+    return [it for it in items if it.get('status') == 'accepted']
+
+
+def assemble_accepted_qa_items(engagement_id: str):
+    """Assemble the accepted Coverage, Coherence, and Editorial QA items for the
+    QA-4 Revision Agent.
+
+    Returns a tuple ``(block, items)``:
+      - block: prompt-ready text with each item tagged by its QA id.
+      - items: list of ``{'id', 'source', 'summary'}`` dicts — the accepted-item
+        manifest used to reconcile what the agent addressed against what the
+        consultant accepted (so nothing is silently dropped).
+
+    Only items with status == 'accepted' are included.
+
+    Raises:
+        ValueError: no accepted items exist across any of the three QA checks
+            (nothing to revise — the router returns a 422).
+    """
+    coverage  = _accepted(QACoverageRepository().get_for_engagement(engagement_id))
+    coherence = _accepted(QACoherenceRepository().get_for_engagement(engagement_id))
+    editorial = _accepted(QAEditorialRepository().get_for_engagement(engagement_id))
+
+    if not (coverage or coherence or editorial):
+        raise ValueError(
+            f"Engagement {engagement_id} has no accepted QA items — accept "
+            f"Coverage, Coherence, or Editorial items before running the revision"
+        )
+
+    sections = []
+    items = []
+
+    if coverage:
+        lines = ["=== COVERAGE — source items to incorporate into the roadmap ==="]
+        for it in coverage:
+            loc = it.get('roadmap_location')
+            where = f" (currently at: {loc})" if it.get('appears_in_roadmap') and loc else " (not currently in the roadmap)"
+            lines.append(
+                f"[{it['qa_coverage_id']}] {it['who_said_it']} — \"{it['what_was_said']}\" "
+                f"(source: {it['source_file']}, {it['location_in_source']}){where}"
+            )
+            items.append({
+                'id': it['qa_coverage_id'], 'source': 'coverage',
+                'summary': f"{it['who_said_it']}: {it['what_was_said']}",
+            })
+        sections.append("\n".join(lines))
+
+    if coherence:
+        lines = ["=== COHERENCE — internal-consistency fixes ==="]
+        for it in coherence:
+            involved = ", ".join(it.get('sections_involved') or [])
+            lines.append(
+                f"[{it['qa_coherence_id']}] ({it['category']}) {it['issue']}\n"
+                f"    Sections: {involved}\n"
+                f"    Fix: {it['recommended_fix']}"
+            )
+            items.append({
+                'id': it['qa_coherence_id'], 'source': 'coherence',
+                'summary': it['issue'],
+            })
+        sections.append("\n".join(lines))
+
+    if editorial:
+        lines = ["=== EDITORIAL — wording/terminology/voice fixes ==="]
+        for it in editorial:
+            term = it.get('standard_term')
+            term_note = f" Standard term: {term}." if term else ""
+            lines.append(
+                f"[{it['qa_editorial_id']}] ({it['category']}) {it['issue']}\n"
+                f"    Location: {it['location']}\n"
+                f"    Fix: {it['recommended_fix']}.{term_note}"
+            )
+            items.append({
+                'id': it['qa_editorial_id'], 'source': 'editorial',
+                'summary': it['issue'],
+            })
+        sections.append("\n".join(lines))
+
+    block = "\n\n".join(sections)
+    logger.info(
+        f"assemble_accepted_qa_items: {engagement_id} → "
+        f"{len(coverage)} coverage, {len(coherence)} coherence, "
+        f"{len(editorial)} editorial accepted ({len(block)} chars)"
+    )
+    return block, items

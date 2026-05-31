@@ -8,28 +8,28 @@
 
 ### Build Sequence — current
 
-QA-1, QA-2, QA-3 shipped 2026-05-30 — see PROGRESS.md. QA-4 is the next work,
-followed by QA-5 and Checkpoint 5. Work top to bottom.
+QA-1, QA-2, QA-3 shipped 2026-05-30; QA-4 shipped 2026-05-31 (in-place
+edit-list architecture, Opus 4.7, reconciliation — see PROGRESS.md). QA-5 is
+the next work, followed by Checkpoint 5. Work top to bottom.
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| 1 | QA-4 Revision Agent — single-shot | 1 | Model TBD — test Opus 4.7 vs ChatGPT v44 reference before locking |
-| 2 | QA-5 QA Tab UI | 1 | Integrated tab with diff view between v1 and v2 |
+| 1 | QA-5 QA Tab UI | 1 | Integrated tab; runs QA-1/2/3 + revision; v1↔v2 diff view |
 | — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
-| 3 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
-| 4 | PowerPoint Export | 1 | Ships with audit checks |
-| 5 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
-| 6 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 7 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 3 | PowerPoint Export | 1 | Ships with audit checks |
+| 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
 ## Post-Assembly QA Stage — remaining work
 
-QA-1 (Coverage), QA-2 (Coherence), and QA-3 (Editorial split) shipped
-2026-05-30 — see PROGRESS.md for full implementation details. QA-4 and
-QA-5 are the remaining items. Decisions locked during the QA-1/2/3 build
-that apply forward:
+QA-1 (Coverage), QA-2 (Coherence), QA-3 (Editorial split) shipped 2026-05-30,
+and QA-4 (Revision) shipped 2026-05-31 — see PROGRESS.md for full implementation
+details. **QA-5 is the only remaining QA item.** Decisions locked during the
+QA-1/2/3 build that apply forward:
 
 - **Model parameter pattern** — Claude calls in QA-N functions pass
   `model="claude-opus-4-7"` explicitly via the per-call parameter on
@@ -46,9 +46,19 @@ that apply forward:
 Cowork QA prompt artifacts at `C:\001-cowork-projects\Northstar-working`
 remain available as regression-test reference data.
 
-### QA-4: Revision Agent — single-shot
+### QA-4: Revision Agent — ✅ SHIPPED 2026-05-31
 
-**Architecture decision (2026-05-30):** Single Claude call, full document in,
+**Shipped differently than specified below — read PROGRESS.md QA-4 row for the
+as-built design.** The original spec called for single-shot full-document
+regeneration. During the build, diff analysis of the v44 reference proved it was
+an *in-place edit* of v43 (72% identical, all tables preserved, 0 deletions), so
+the as-built QA-4 uses an **in-place edit-list architecture**: Claude returns
+structured edits (anchor + new_text + `source_item_id`), code applies them to the
+v1.docx in place and saves v2.docx. Model **Opus 4.7** (locked via Step 0 test).
+Adds **reconciliation** so every accepted item is provably applied or flagged.
+The original spec is preserved below for historical context.
+
+**Architecture decision (2026-05-30 — superseded, see above):** Single Claude call, full document in,
 full document out. ChatGPT v44 proves the mechanism on a different model —
 applies accepted items across all three QA categories without breaking
 structured data labels (CONFIRMED/DERIVED/INFERRED), economic figures, or

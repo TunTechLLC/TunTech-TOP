@@ -1,14 +1,16 @@
 ---
 name: Build order — Post-Assembly QA Stage is top priority
-description: Build sequence revised 2026-05-30. QA-1 through QA-5 in order, then Checkpoint 5. E004 Cowork evidence retired the Auditor Session 2 kill-switch path.
+description: Build sequence. QA-1/2/3/4 shipped (QA-4 = in-place edit-list, Opus 4.7, reconciliation). QA-5 (QA Tab UI) is next, then Checkpoint 5.
 metadata:
   type: project
 ---
 
-Build order as of 2026-05-30. Post-Assembly QA Stage (QA-1 → QA-2 → QA-3 split →
-QA-4 single-shot → QA-5) is the top priority, replacing the prior Auditor Session 2
-+ kill-switch sequence. Editable Engagement Info downgraded from "hard requirement"
-to nice-to-have per consultant clarification on 2026-05-30.
+Build order as of 2026-05-31. Post-Assembly QA Stage: QA-1, QA-2, QA-3 (split),
+and QA-4 (in-place edit-list revision) are SHIPPED. **QA-5 (integrated QA Tab UI
+with v1↔v2 diff) is the only remaining QA item**, then Checkpoint 5. This stage
+replaced the prior Auditor Session 2 + kill-switch sequence. Editable Engagement
+Info downgraded from "hard requirement" to nice-to-have per consultant
+clarification on 2026-05-30.
 
 **Why:** E004 Cowork three-pass QA produced ~65 verifiable items (27 Coverage, 21
 Coherence, 31 Editorial) with near-zero noise rate. Three Tier-1 errors confirmed
@@ -27,13 +29,24 @@ v44 single-shot revision was run on **ChatGPT**. No Claude data point exists
 yet on the revision task — QA-4 model selection requires empirical validation
 against the v44 reference before locking.
 
-**How to apply (updated 2026-05-30 — QA-1/2/3 shipped):**
-- **Next session: start QA-4 Revision Agent.** Single-shot architecture — one
-  Claude call, v1 + accepted items in, v2 out. Raise `TOP_MAX_TOKENS` for that
-  call (v44 reference output was ~79K chars). ChatGPT v44 is the quality bar.
-  Model decision: empirical test of Opus 4.7 single-shot against ChatGPT v44
-  reference before locking. If Opus matches/exceeds, lock Opus; if Opus drifts,
-  fall back to Sonnet, external ChatGPT, or per-item-patch.
+**How to apply (updated 2026-05-31 — QA-1/2/3/4 shipped):**
+- **Next session: start QA-5 QA Tab UI.** Integrated engagement tab that runs
+  QA-1/2/3 detection + the QA-4 revision in sequence and renders the v1↔v2 diff.
+  Backend endpoints all exist (`/api/engagements/{id}/qa-coverage|qa-coherence|
+  qa-editorial|qa-revision`). QA-4 exposes run / list / v2-download / patch-outcome.
+- **QA-4 shipped with a REVERSED architecture (2026-05-31):** NOT single-shot
+  full-document regeneration. Diff analysis of the v44 reference proved it was an
+  in-place edit of v43 (72% identical, all 29 tables preserved, **0 deletions**),
+  so regeneration would pollute the v1↔v2 diff and defeat the comparison goal.
+  As-built: Claude returns a structured **edit list** (anchor + `context_before`
+  + new_text + `source_item_id`); code applies edits to v1.docx in place via a
+  tolerant matcher (exact→context→fuzzy→**flag**, run-level replace preserving
+  formatting) and saves v2.docx. v1 never modified. The table-cell limitation was
+  fixed with a **prompt-only** single-cell-anchor instruction (no applier code).
+- **Reconciliation is the load-bearing trust feature:** every edit carries
+  `source_item_id`; accepted items with no edit are recorded `unaddressed`. The
+  E004 smoke proved this caught 19 of 49 accepted items that would otherwise have
+  been silently dropped — invisible in v2 AND in the diff review.
 - **QA-3 implementation refinement (vs original BACKLOG language):** the Python
   pipeline lives in NEW module `api/services/editorial_auditor.py`, not as an
   extension of `narrator_auditor.py`. The two auditors check different artifacts
@@ -49,10 +62,16 @@ against the v44 reference before locking.
   pass `model="claude-opus-4-7"` to specific call functions in
   `api/services/claude.py`, do NOT change global `TOP_MODEL` default — keeps the
   rest of TOP on Sonnet.
-- **QA-4 model: TBD pending empirical test.** Before building QA-4, run Opus (latest, currently 4.7)
-  single-shot against v43 + accepted items from E004, compare to v44 ChatGPT
-  reference. If Opus matches or exceeds, lock Opus. If Opus drifts, fall back
-  options are Sonnet 4.6, external ChatGPT, or per-item-patch architecture.
+- **QA-4 model: Opus 4.7 — LOCKED 2026-05-31.** Step 0 empirical test (throwaway
+  script, real E004 v43 + accepted items) compared 4.7 vs 4.8 on the edit-list
+  task with a hardened prompt: **4.7 won** (97% clean anchor applicability, 35
+  auto-applied) over 4.8 (91%, 21 auto-applied — 4.8 over-flagged simple edits as
+  `manual`). Counterintuitive but real: 4.8 is a more conservative *critic*, which
+  is the wrong trait for an *apply-already-accepted-items* task. The mandatory
+  QA-5 diff review is the safety backstop, so maximal correct automation wins.
+  `model="claude-opus-4-7"` passed per-call (global TOP_MODEL stays Sonnet), same
+  pattern as QA-1/2/3. NOTE: 4.8 may be the better pick for the *detection* agents
+  (QA-1/2/3) — untested; a separate experiment if ever revisited.
 
 **Versioning convention — locked 2026-05-30:**
 - **v1 and v2 saved as separate files.** Naming:
@@ -95,14 +114,14 @@ against the v44 reference before locking.
 | ✅ | QA-1 Coverage Check Agent | 1 | Shipped 2026-05-30 — 34 items on E004 smoke |
 | ✅ | QA-2 Coherence Check Agent | 1 | Shipped 2026-05-30 — 10 items on E004 smoke ($186K mislabel caught) |
 | ✅ | QA-3 Editorial Check (split) | 1 | Shipped 2026-05-30 — 9 items on E004 smoke (6 Python in editorial_auditor.py + 3 Claude voice) |
-| 1 | QA-4 Revision Agent — single-shot | 1 | Model TBD — test Opus 4.7 vs ChatGPT v44 reference before locking |
-| 2 | QA-5 QA Tab UI | 1 | Integrated tab with diff view between v1 and v2 |
+| ✅ | QA-4 Revision Agent | 1 | Shipped 2026-05-31 — **in-place edit-list** (NOT single-shot regeneration), Opus 4.7, reconciliation. E004 smoke: 49 accepted → 29 applied, 19 unaddressed surfaced |
+| 1 | QA-5 QA Tab UI | 1 | Integrated tab with diff view between v1 and v2 |
 | — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
-| 3 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
-| 4 | PowerPoint Export | 1 | Ships with audit checks |
-| 5 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
-| 6 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 7 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 3 | PowerPoint Export | 1 | Ships with audit checks |
+| 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ## E004 Artifacts — Evidence Base
 
@@ -153,11 +172,16 @@ because they read the rendered document and either compare it to source (QA-1) o
 read it standalone for internal consistency (QA-2, QA-3). The detect-review-revise
 pattern matches the existing detect-review-load pattern used elsewhere in TOP.
 
-**Single-shot revision (QA-4) was the correct architecture.** Earlier theoretical
-critique (token limits, structured-data drift) was contradicted by ChatGPT v44
-evidence — v44 is 79K chars and preserves CONFIRMED/DERIVED/INFERRED labels,
-economic figures, and analytical framework while applying ~65 accepted items.
-Per-item-patch alternatives are over-engineering for single-consultant volume.
+**QA-4 architecture — CORRECTED 2026-05-31.** The 2026-05-30 plan assumed
+single-shot full-document regeneration. That was reversed during the build:
+diffing the v44 reference against v43 showed v44 is an *in-place edit* (72%
+identical, all 29 tables preserved, 0 deletions), not a regeneration. Two
+consequences made in-place editing correct, not optional: (1) regenerating v2
+from full text would pollute the v1↔v2 diff with rendering noise, defeating the
+consultant's comparison goal; (2) a structured edit-list keeps Claude from
+touching the 72% that should not change. So as-built QA-4 = edit-list in, code
+applies to v1.docx in place. The per-item-patch label was a red herring — this is
+one Claude call returning many edits, not N calls. See PROGRESS.md QA-4 row.
 
 ## Architectural Finding (2026-05-21 — superseded but preserved)
 

@@ -401,6 +401,81 @@ Return format example:
 Return exactly [] if no coherence issues are found."""
 
 
+QA_REVISION_PROMPT = """You are the Revision Agent in the TOP Post-Assembly QA Stage.
+
+You are given:
+  1. ROADMAP V1 - the full text of a client-facing transformation roadmap document.
+  2. ACCEPTED QA ITEMS - issues the consultant has reviewed and accepted from the
+     Coverage, Coherence, and Editorial QA checks. Each item names a problem in
+     ROADMAP V1 and the recommended fix.
+
+Your job is NOT to rewrite the document. Your job is to produce a STRUCTURED
+EDIT LIST that, when applied to ROADMAP V1, incorporates every accepted item
+while leaving everything else untouched. The revised document is later compared
+to V1 to prove the QA stage improved it, so you must change ONLY what the
+accepted items call for. Do not reword, reformat, or "improve" any text the
+accepted items do not flag.
+
+Return ONLY a JSON array. Each element is one edit:
+
+  {
+    "type": "replace" | "insert_after" | "manual",
+    "anchor": "<text copied VERBATIM from ROADMAP V1>",
+    "context_before": "<the ~40 characters of ROADMAP V1 text immediately preceding the anchor, copied verbatim>",
+    "new_text": "<the replacement text, or the text to insert>",
+    "qa_source": "coverage" | "coherence" | "editorial",
+    "source_item_id": "<the bracketed id of the accepted item this edit applies, e.g. QH001>",
+    "reason": "<one short sentence naming which accepted item this applies>"
+  }
+
+EVERY edit MUST carry a "source_item_id" - the exact bracketed id (e.g. QC003,
+QH001, QE004) of the accepted item it addresses, copied from ACCEPTED QA ITEMS.
+Each accepted item must result in at least one edit. If an accepted item needs
+more than one change, emit one edit per change, each tagged with the same
+source_item_id. Do not leave any accepted item unaddressed.
+
+CRITICAL RULES FOR "anchor" - most failures come from breaking these:
+  - The anchor MUST be an EXACT, CHARACTER-FOR-CHARACTER substring of ROADMAP V1.
+    Copy it. Do not paraphrase it, summarize it, fix its typos, change its
+    punctuation, or alter its numbers. If you cannot find the exact text in
+    ROADMAP V1, you are misremembering it - go back and copy the real text.
+  - The anchor is the ORIGINAL text to be changed. NEVER put your revised/new
+    wording into the anchor. The anchor is what exists now; new_text is what it
+    becomes.
+  - Keep the anchor to a single sentence or a single line. Long multi-sentence
+    anchors, and anchors that span a paragraph break, are error-prone and may be
+    rejected.
+  - TABLES: when the text to change sits inside a table, anchor on the smallest
+    SINGLE cell's text that uniquely identifies it - for example, to relabel a
+    metric, anchor on just the label cell ("EBITDA lost per point of growth"),
+    not on a run of cells. NEVER quote across multiple cells or include adjacent
+    cells' values or the row's header words (e.g. do not write
+    "...Risk Confidence High Priority Medium..."). An anchor that spans cells
+    cannot be applied and will be flagged.
+  - "context_before" is the verbatim text immediately before the anchor. It is
+    used to locate the anchor when the same sentence appears more than once.
+    Always provide it (use "" only if the anchor is at the very start of the
+    document).
+
+EDIT TYPES:
+  - "replace": new_text replaces the anchor text. Use for reworded sentences,
+    corrected figures, relabeled headings, defined acronyms.
+  - "insert_after": new_text is inserted immediately AFTER the anchor; the anchor
+    itself is kept. Use to add a sentence or paragraph to an existing section.
+  - "manual": use ONLY for fixes that cannot be expressed as a clean replace or
+    insert - creating a new table, or relocating a block of content from one
+    section/phase to another. Put the nearest locating text in "anchor" and
+    describe the required change in "new_text". These are flagged for the
+    consultant to apply by hand - do not attempt to express them as replace/insert.
+
+PRESERVE: confidence labels (CONFIRMED/DERIVED/INFERRED), economic figures,
+evidence citations, the analytical voice, and the document's structure. This is
+a revision, not a rewrite.
+
+Output the JSON array and nothing else. Return exactly [] if there are no
+accepted items to apply."""
+
+
 DOWNGRADE_EXTRACTION_PROMPT = """Extract all pattern downgrade recommendations from the Skeptic output below.
 
 Look specifically in the section labeled "Downgrade Recommendations". Extract only

@@ -142,15 +142,17 @@ class ReportGeneratorService(ReportSectionsMixin):
 
     def _output_path(self, eng: dict) -> str:
         """Save report to the engagement's reports_folder.
-        Falls back to the system temp directory if reports_folder is not set."""
+        Falls back to the system temp directory if reports_folder is not set.
+
+        The Report Generator's output is the v1 of a pair — the QA-4 Revision
+        Agent produces the _v2 alongside it. Filename kept in lockstep with
+        qa_inputs.V1_FILENAME_TEMPLATE."""
+        filename = f"OPD_Transformation_Roadmap_{self.engagement_id}_v1.docx"
         reports_dir = eng.get('reports_folder') or ''
         if reports_dir:
             os.makedirs(reports_dir, exist_ok=True)
-            return os.path.join(reports_dir, f"OPD_Transformation_Roadmap_{self.engagement_id}.docx")
-        return os.path.join(
-            tempfile.gettempdir(),
-            f"OPD_Transformation_Roadmap_{self.engagement_id}.docx"
-        )
+            return os.path.join(reports_dir, filename)
+        return os.path.join(tempfile.gettempdir(), filename)
 
     # ------------------------------------------------------------------
     # Document assembly

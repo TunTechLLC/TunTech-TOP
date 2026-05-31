@@ -81,3 +81,7 @@ def next_qa_coherence_id():
 def next_qa_editorial_id():
     # QE prefix = "QA Editorial"
     return next_id("QAEditorialItems", "qa_editorial_id", "QE", 3)
+
+def next_qa_revision_id():
+    # QR prefix = "QA Revision" — one row per edit produced by the QA-4 Revision Agent
+    return next_id("QARevisionEdits", "qa_revision_id", "QR", 3)

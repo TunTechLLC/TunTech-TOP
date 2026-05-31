@@ -15,6 +15,7 @@ from api.services.prompts import (
     QA_COVERAGE_PROMPT,
     QA_COHERENCE_PROMPT,
     QA_EDITORIAL_VOICE_PROMPT,
+    QA_REVISION_PROMPT,
 )
 
 logger = logging.getLogger(__name__)
@@ -812,4 +813,117 @@ async def detect_editorial_voice(
         })
 
     logger.info(f"detect_editorial_voice: {len(result)} valid voice/audience item(s) returned")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Post-Assembly QA Stage — Revision Agent (QA-4)
+# ---------------------------------------------------------------------------
+
+QA_REVISION_MODEL = "claude-opus-4-7"
+# Higher than the global TOP_MAX_TOKENS (8000) — a full edit list against an
+# ~80K-char document ran ~13-19K output tokens in the QA-4 Step 0 model test.
+# Per-call value; does NOT change the global default. Streaming required.
+QA_REVISION_MAX_TOKENS = 32000
+QA_REVISION_VALID_TYPES = {'replace', 'insert_after', 'manual'}
+QA_REVISION_VALID_SOURCES = {'coverage', 'coherence', 'editorial'}
+
+
+async def generate_revision_edits(
+    roadmap_v1_text: str,
+    accepted_items_block: str,
+    model: str = QA_REVISION_MODEL,
+) -> list[dict]:
+    """Produce a structured edit list that applies the accepted QA items to the
+    v1 roadmap. Used by the QA-4 Revision Agent.
+
+    This is judgment work — deciding how each accepted item maps to a concrete
+    text edit. Locating the anchors in the document and applying the edits is
+    deterministic and lives in code (api/services/qa_revision.py), not here.
+
+    Args:
+        roadmap_v1_text: full text of v1 roadmap (extracted from the .docx).
+        accepted_items_block: pre-assembled string of accepted Coverage,
+            Coherence, and Editorial items (see qa_inputs.assemble_accepted_qa_items_block).
+        model: Claude model ID. Defaults to claude-opus-4-7 — locked for QA-4
+            after the Step 0 model test (97% clean anchor applicability vs 91%
+            for 4.8, and 4.8 over-flagged simple edits as manual). Explicit
+            override of global TOP_MODEL (Sonnet).
+
+    Returns:
+        Validated list of edit dicts, each with keys: type, anchor,
+        context_before, new_text, qa_source, reason. Malformed edits are
+        dropped with a warning. Returns [] on API/parse failure — never raises.
+        Outcome and match_method are NOT set here — the applier assigns them.
+    """
+    user_message = (
+        f"ROADMAP V1:\n\n{roadmap_v1_text}"
+        f"\n\n---\n\n"
+        f"ACCEPTED QA ITEMS:\n\n{accepted_items_block}"
+    )
+    logger.info(
+        f"generate_revision_edits: roadmap {len(roadmap_v1_text)} chars, "
+        f"accepted items {len(accepted_items_block)} chars, model={model}"
+    )
+    # Streaming required — long input + long output. Non-streaming requests are
+    # cut server-side on long generations (see detect_coverage_gaps note).
+    try:
+        async with async_client.messages.stream(
+            model=model,
+            max_tokens=QA_REVISION_MAX_TOKENS,
+            system=QA_REVISION_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        ) as stream:
+            message = await stream.get_final_message()
+        if message.stop_reason == "max_tokens":
+            logger.warning(
+                "generate_revision_edits: response truncated at max_tokens — "
+                "edit list may be incomplete"
+            )
+        raw = extract_text(message).strip()
+        if raw.startswith('```'):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        start = raw.find('[')
+        end   = raw.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            logger.warning("generate_revision_edits: no JSON array in response")
+            return []
+        edits = json.loads(raw[start:end + 1])
+    except Exception as exc:
+        logger.warning(f"generate_revision_edits failed: {exc}")
+        return []
+
+    result = []
+    for edit in edits:
+        etype = edit.get('type')
+        qa_source = edit.get('qa_source')
+        anchor = edit.get('anchor')
+        new_text = edit.get('new_text')
+        if etype not in QA_REVISION_VALID_TYPES:
+            logger.warning(f"generate_revision_edits: dropped edit with invalid type {etype!r}")
+            continue
+        if qa_source not in QA_REVISION_VALID_SOURCES:
+            logger.warning(f"generate_revision_edits: dropped edit with invalid qa_source {qa_source!r}")
+            continue
+        if not isinstance(anchor, str) or not anchor.strip():
+            logger.warning(f"generate_revision_edits: dropped edit with empty anchor — {edit!r}")
+            continue
+        if not isinstance(new_text, str) or not new_text.strip():
+            logger.warning(f"generate_revision_edits: dropped edit with empty new_text — {edit!r}")
+            continue
+        context_before = edit.get('context_before')
+        reason = edit.get('reason')
+        source_item_id = edit.get('source_item_id')
+        result.append({
+            'type':           etype,
+            'anchor':         anchor,
+            'context_before': context_before if isinstance(context_before, str) else '',
+            'new_text':       new_text,
+            'qa_source':      qa_source,
+            'source_item_id': source_item_id.strip() if isinstance(source_item_id, str) else '',
+            'reason':         reason.strip() if isinstance(reason, str) else '',
+        })
+
+    logger.info(f"generate_revision_edits: {len(result)} valid edit(s) returned")
     return result

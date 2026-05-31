@@ -186,6 +186,20 @@ def test_db(monkeypatch, tmp_path):
             status TEXT NOT NULL DEFAULT 'pending',
             created_date TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS QARevisionEdits (
+            qa_revision_id TEXT PRIMARY KEY,
+            engagement_id TEXT NOT NULL,
+            edit_type TEXT NOT NULL,
+            qa_source TEXT NOT NULL,
+            source_item_id TEXT,
+            anchor TEXT NOT NULL,
+            context_before TEXT,
+            new_text TEXT NOT NULL,
+            reason TEXT,
+            outcome TEXT NOT NULL,
+            match_method TEXT,
+            created_date TEXT NOT NULL
+        );
     """)
     conn.commit()
     conn.close()
@@ -885,3 +899,91 @@ def test_editorial_operations_role_drift_requires_both_terms():
     text_one = "Sandra Okafor, Director of Operations, owns the policy."
     items_one = check_operations_role_drift(text_one)
     assert items_one == []
+
+
+# ---------------------------------------------------------------------------
+# QA-4 Revision Agent — repository tests
+# ---------------------------------------------------------------------------
+
+def _revision_edit(outcome='applied', edit_type='replace', qa_source='coherence',
+                   match_method='exact'):
+    """Helper — minimal valid QA revision edit dict for tests."""
+    return {
+        'edit_type':      edit_type,
+        'qa_source':      qa_source,
+        'source_item_id': 'QH004',
+        'anchor':         'Three actions must happen this week.',
+        'context_before': 'Priority Zero. ',
+        'new_text':       'Four actions must happen this week.',
+        'reason':         'Coherence QH004: Priority Zero is four actions.',
+        'outcome':        outcome,
+        'match_method':   match_method,
+    }
+
+
+def test_qa_revision_bulk_create_sequential_ids():
+    """bulk_create generates unique sequential QR IDs (no duplicate-ID regression)."""
+    from api.db.repositories.qa_revision import QARevisionRepository
+
+    engagement_id = _make_qa_test_engagement()
+    repo = QARevisionRepository()
+    count = repo.bulk_create(engagement_id, [
+        _revision_edit('applied'),
+        _revision_edit('flagged_unresolved', match_method='none'),
+        _revision_edit('manual', edit_type='manual', match_method=None),
+    ])
+
+    rows = repo.get_for_engagement(engagement_id)
+    qr_ids = [r['qa_revision_id'] for r in rows]
+    assert count == 3
+    assert len(qr_ids) == len(set(qr_ids)), f"Duplicate QR IDs: {qr_ids}"
+    for qr_id in qr_ids:
+        assert qr_id.startswith('QR')
+        assert qr_id[2:].isdigit()
+
+
+def test_qa_revision_persists_outcome_and_match_method():
+    """Outcome and match_method round-trip through storage."""
+    from api.db.repositories.qa_revision import QARevisionRepository
+
+    engagement_id = _make_qa_test_engagement()
+    repo = QARevisionRepository()
+    repo.bulk_create(engagement_id, [
+        _revision_edit('applied', match_method='context'),
+        _revision_edit('flagged_unresolved', match_method='fuzzy_near_miss'),
+    ])
+
+    rows = repo.get_for_engagement(engagement_id)
+    outcomes = {r['outcome'] for r in rows}
+    methods = {r['match_method'] for r in rows}
+    assert outcomes == {'applied', 'flagged_unresolved'}
+    assert methods == {'context', 'fuzzy_near_miss'}
+    assert all(r['source_item_id'] == 'QH004' for r in rows)
+
+
+def test_qa_revision_update_outcome():
+    """update_outcome lets QA-5 mark a flagged item as manually handled."""
+    from api.db.repositories.qa_revision import QARevisionRepository
+
+    engagement_id = _make_qa_test_engagement()
+    repo = QARevisionRepository()
+    repo.bulk_create(engagement_id, [_revision_edit('flagged_unresolved', match_method='none')])
+
+    [edit] = repo.get_for_engagement(engagement_id)
+    repo.update_outcome(edit['qa_revision_id'], 'manual_done')
+    [after] = repo.get_for_engagement(engagement_id)
+    assert after['outcome'] == 'manual_done'
+
+
+def test_qa_revision_delete_for_engagement_clears_prior_run():
+    """A re-run replaces the prior revision record."""
+    from api.db.repositories.qa_revision import QARevisionRepository
+
+    engagement_id = _make_qa_test_engagement()
+    repo = QARevisionRepository()
+    repo.bulk_create(engagement_id, [_revision_edit(), _revision_edit()])
+    assert len(repo.get_for_engagement(engagement_id)) == 2
+
+    deleted = repo.delete_for_engagement(engagement_id)
+    assert deleted == 2
+    assert repo.get_for_engagement(engagement_id) == []
