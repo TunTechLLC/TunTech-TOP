@@ -35,8 +35,7 @@ QA-1/2/3 build that apply forward:
   `model="claude-opus-4-7"` explicitly via the per-call parameter on
   `api/services/claude.py` rather than changing global `TOP_MODEL`. Keeps
   the rest of TOP on Sonnet while QA agents target the proven detection
-  model. QA-4 should follow this same pattern (after the empirical model
-  test described in the QA-4 section below).
+  model. QA-4 followed this pattern (Opus 4.7); QA-5 is frontend-only.
 - **Streaming required** — `async_client.messages.stream()` for any
   long Claude call. Non-streaming requests get cut server-side on long
   generations (QA-1 first attempt timed out at 5 minutes).
@@ -45,121 +44,6 @@ QA-1/2/3 build that apply forward:
 
 Cowork QA prompt artifacts at `C:\001-cowork-projects\Northstar-working`
 remain available as regression-test reference data.
-
-### QA-4: Revision Agent — ✅ SHIPPED 2026-05-31
-
-**Shipped differently than specified below — read PROGRESS.md QA-4 row for the
-as-built design.** The original spec called for single-shot full-document
-regeneration. During the build, diff analysis of the v44 reference proved it was
-an *in-place edit* of v43 (72% identical, all tables preserved, 0 deletions), so
-the as-built QA-4 uses an **in-place edit-list architecture**: Claude returns
-structured edits (anchor + new_text + `source_item_id`), code applies them to the
-v1.docx in place and saves v2.docx. Model **Opus 4.7** (locked via Step 0 test).
-Adds **reconciliation** so every accepted item is provably applied or flagged.
-The original spec is preserved below for historical context.
-
-**Architecture decision (2026-05-30 — superseded, see above):** Single Claude call, full document in,
-full document out. ChatGPT v44 proves the mechanism on a different model —
-applies accepted items across all three QA categories without breaking
-structured data labels (CONFIRMED/DERIVED/INFERRED), economic figures, or
-analytical voice. `TOP_MAX_TOKENS` will need to be raised for this specific
-call (v44 output was ~79K chars). Per-item-patch alternatives were considered
-and rejected as over-engineering for single-consultant volume.
-
-**Model decision: TBD pending empirical test.** The v44 reference was ChatGPT,
-not Claude. Before locking QA-4's model, run Opus (latest, currently 4.7) single-shot in TOP against
-the same v43 + accepted-items input that produced v44, and compare the Opus
-output to v44 as reference. Pass criteria: structured data labels preserved,
-economic figures intact, all accepted items incorporated, analytical voice
-maintained. If Opus passes, lock Opus for QA-4. If Opus drifts, fall back
-options are (a) Sonnet 4.6 (cheaper, less likely to work), (b) external
-ChatGPT integration as the revision engine, or (c) per-item-patch architecture.
-
-**Versioning convention (locked 2026-05-30):** v1 and v2 are saved as separate
-files. Naming: `OPD_Roadmap_<engagement_id>_v1.docx` (Report Generator output)
-and `OPD_Roadmap_<engagement_id>_v2.docx` (QA-4 Revision output). Both live
-in the engagement's reports_folder. Neither overwrites the other. Implications
-for the existing Report Generator: when QA-4 ships, update
-`api/services/report_generator.py` to append `_v1` to its output filename so
-the convention is consistent — even on engagements where QA-4 has not yet
-been run, the Report Generator's output is the v1 of a pair. The QA-5 tab
-links to both files and renders the v1↔v2 diff view.
-
-**Problem:** After the user accepts/rejects items
-from QA-1, QA-2, and QA-3, the roadmap document
-needs to be revised to incorporate all accepted
-items into a client-ready deliverable. This cannot
-be done by re-running the Synthesizer and Report
-Generator because editorial fixes (define SOW on
-first use), coherence fixes (move an initiative
-between phases), and coverage additions (weave
-client data points into domain summaries) are
-prose-level changes to the rendered document, not
-structured data changes to database records.
-
-**What to build:** A new revision agent
-(qa_revision) that takes the generated roadmap
-document plus all accepted QA items and produces
-a revised roadmap document. This is a separate
-document assembly path from the Report Generator —
-the Report Generator produces v1, the revision
-agent produces v2.
-
-**Inputs:**
-- The generated roadmap document from the Report
-  Generator (full text)
-- All accepted items from qa_coverage_items,
-  qa_coherence_items, and qa_editorial_items
-
-**Prompt guidance:**
-- Fix every accepted coherence item: resolve
-  contradictions, move initiatives between phases
-  if priority/effort ratings demand it, strengthen
-  weak grounding, name missing root causes
-- Incorporate accepted coverage gaps: weave source
-  data points into domain summaries and finding
-  cards, route time-sensitive items to Priority
-  Zero or a new Active Risk Triage section, add
-  structural sections (e.g. CEO behavioral
-  commitments) if the evidence supports it
-- Apply all accepted editorial fixes: use
-  recommended standard terms, define acronyms at
-  first use, strip internal reference codes, fix
-  grammar, maintain consistent voice
-- Preserve diagnostic voice, confidence labels,
-  economic figures, evidence citations, and the
-  analytical framework — this is a revision, not
-  a rewrite
-- Add a brief revision note at the end documenting
-  what changed
-
-**Output:** A complete revised roadmap document
-that becomes the client deliverable. Saved as a
-separate file (`_v2.docx`) alongside the Report
-Generator's first-pass output (`_v1.docx`) — does
-NOT overwrite v1. See Versioning convention above.
-
-**Context window note:** This call sends the full
-roadmap document plus all accepted QA items. For
-E004, accepted items alone could be substantial.
-The prompt must instruct the agent to produce a
-complete document, not a diff or a list of edits.
-
-**UI:** Single "Run Final Revision" button. Output
-displays as the revised roadmap document. User does
-a final human read before delivery.
-
-**Architecture:**
-- Agent prompt goes in claude.py following existing
-  agent prompt conventions
-- This is a single Claude API call, not a
-  bulk_create() loop — one document in, one
-  document out
-- The revised document is stored alongside the
-  Report Generator output, not replacing it (both
-  versions should be accessible)
-- All SQL in repositories, all Claude API calls
-  through claude.py
 
 ### QA-5: Frontend — QA Tab
 
