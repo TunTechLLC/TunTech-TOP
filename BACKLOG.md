@@ -8,90 +8,32 @@
 
 ### Build Sequence — current
 
-QA-1, QA-2, QA-3 shipped 2026-05-30; QA-4 shipped 2026-05-31 (in-place
-edit-list architecture, Opus 4.7, reconciliation — see PROGRESS.md). QA-5 is
-the next work, followed by Checkpoint 5. Work top to bottom.
+The Post-Assembly QA Stage is COMPLETE: QA-1/2/3 shipped 2026-05-30; QA-4 shipped
+2026-05-31 (in-place edit-list architecture, Opus 4.7, reconciliation); QA-5
+integrated QA Tab UI shipped 2026-06-01 (see PROGRESS.md). **Checkpoint 5 is the
+next work.** Work top to bottom.
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| 1 | QA-5 QA Tab UI | 1 | Integrated tab; runs QA-1/2/3 + revision; v1↔v2 diff view |
 | — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
-| 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
-| 3 | PowerPoint Export | 1 | Ships with audit checks |
-| 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
-| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| 1 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 2 | PowerPoint Export | 1 | Ships with audit checks |
+| 3 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 4 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 5 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
-## Post-Assembly QA Stage — remaining work
+## Post-Assembly QA Stage — COMPLETE
 
 QA-1 (Coverage), QA-2 (Coherence), QA-3 (Editorial split) shipped 2026-05-30,
-and QA-4 (Revision) shipped 2026-05-31 — see PROGRESS.md for full implementation
-details. **QA-5 is the only remaining QA item.** Decisions locked during the
-QA-1/2/3 build that apply forward:
-
-- **Model parameter pattern** — Claude calls in QA-N functions pass
-  `model="claude-opus-4-7"` explicitly via the per-call parameter on
-  `api/services/claude.py` rather than changing global `TOP_MODEL`. Keeps
-  the rest of TOP on Sonnet while QA agents target the proven detection
-  model. QA-4 followed this pattern (Opus 4.7); QA-5 is frontend-only.
-- **Streaming required** — `async_client.messages.stream()` for any
-  long Claude call. Non-streaming requests get cut server-side on long
-  generations (QA-1 first attempt timed out at 5 minutes).
-- **Tiering and Tier 1 UI** — established in QA-1/2/3 and inherited by
-  the QA-5 integrated tab.
+QA-4 (Revision) shipped 2026-05-31, and QA-5 (integrated QA Tab UI) shipped
+2026-06-01 — see PROGRESS.md for full implementation details. The entire
+Post-Assembly QA Stage is now built. Remaining QA work is validation only:
+**Checkpoint 5** (below).
 
 Cowork QA prompt artifacts at `C:\001-cowork-projects\Northstar-working`
-remain available as regression-test reference data.
-
-### QA-5: Frontend — QA Tab
-
-**Problem:** The three QA agents and the revision
-agent need a UI surface in the existing React
-frontend.
-
-**What to build:** A new tab in the engagement
-view (after the existing report/roadmap tab) that
-presents the QA workflow.
-
-**Layout:**
-- Top section: status indicator showing whether
-  the Report Generator has produced a first-pass
-  roadmap document. If not, display a message:
-  "Generate the roadmap first." The QA tab cannot
-  run until a first-pass document exists.
-- Three collapsible sections: Coverage, Coherence,
-  Editorial
-- Each section shows agent status (not run / running /
-  complete) and item count (total / accepted /
-  rejected)
-- Each section expands to show items in a table with
-  Accept/Reject controls matching existing agent
-  runner pattern
-- Sections should be runnable in order: Coverage
-  first, then Coherence (which uses accepted
-  Coverage items as context), then Editorial (which
-  runs independently but is sequenced last for
-  workflow clarity)
-- A "Run Final Revision" button at the bottom that
-  becomes active only after at least one QA agent
-  has been run and items reviewed
-- The revised roadmap document displays below the
-  button after the revision agent completes
-- Both the first-pass and revised documents should
-  be accessible (e.g. "View Original" / "View
-  Revised" toggle or tabs)
-
-**Architecture:**
-- All frontend API calls through api.js
-- Follow existing agent runner component patterns
-- New API endpoints in the existing router pattern
-  for each QA table's CRUD operations and agent
-  run triggers
-- Revision agent trigger endpoint separate from
-  QA agent triggers
-
+remain available as regression-test reference data for Checkpoint 5.
 
 ---
 

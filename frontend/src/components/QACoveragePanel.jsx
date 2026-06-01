@@ -165,7 +165,7 @@ function TierSection({ tier, items, expanded, onToggle, onAccept, onReject, onCo
   )
 }
 
-export default function QACoveragePanel({ engagementId }) {
+export default function QACoveragePanel({ engagementId, onCountsChange }) {
   const [items, setItems] = useState([])
   const [loading, setLoading]   = useState(true)
   const [running, setRunning]   = useState(false)
@@ -187,6 +187,18 @@ export default function QACoveragePanel({ engagementId }) {
   }, [engagementId])
 
   useEffect(() => { fetchItems() }, [fetchItems])
+
+  // Report counts up to the integrated QA tab (QA-5). Fires only when items
+  // change — parent re-renders don't re-run this, so a non-memoized callback
+  // is safe. No-op when rendered standalone (onCountsChange undefined).
+  useEffect(() => {
+    onCountsChange?.({
+      total:    items.length,
+      accepted: items.filter(i => i.status === 'accepted').length,
+      rejected: items.filter(i => i.status === 'rejected').length,
+      pending:  items.filter(i => i.status === 'pending').length,
+    })
+  }, [items])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRun = async () => {
     setRunning(true)

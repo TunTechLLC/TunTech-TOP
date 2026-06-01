@@ -13,6 +13,9 @@ from api.services.qa_revision import (
     insert_paragraph_after,
     iter_paragraphs,
     reconcile_unaddressed,
+    _split_into_lines,
+    _is_multiparagraph,
+    _is_heading,
 )
 
 
@@ -143,6 +146,49 @@ def test_insert_paragraph_after_adds_following_paragraph():
     insert_paragraph_after(p1, "Inserted.")
     texts = [p.text for p in doc.paragraphs]
     assert texts == ["First.", "Inserted.", "Second."]
+
+
+# --- 10.7/10.8 corruption fixes -------------------------------------------------
+
+def test_split_into_lines_drops_blank_lines():
+    # The '\n\n' gaps that collapsed QR037 into one paragraph must be dropped.
+    assert _split_into_lines("Title\n\nBody one\nBody two\n") == ["Title", "Body one", "Body two"]
+    assert _split_into_lines("   \n  ") == []
+
+
+def test_is_multiparagraph():
+    assert _is_multiparagraph("one line only") is False
+    assert _is_multiparagraph("line a\nline b") is True
+    assert _is_multiparagraph("lead\n\nfollow") is True
+
+
+def test_insert_paragraph_after_splits_multiline_into_separate_paragraphs():
+    # Fix #1: a multi-line block becomes one paragraph per line, not a single
+    # run with literal newlines (which is what mangled section 10.7).
+    doc = Document()
+    p1 = doc.add_paragraph("Anchor.")
+    doc.add_paragraph("Following.")
+    insert_paragraph_after(p1, "New title\n\n• bullet one\n• bullet two")
+    texts = [p.text for p in doc.paragraphs]
+    assert texts == ["Anchor.", "New title", "• bullet one", "• bullet two", "Following."]
+
+
+def test_insert_paragraph_after_uses_body_style_not_heading():
+    # Fix #2: inserting after a heading must NOT inherit the heading style —
+    # appended content is body prose. (QR037 became a giant Heading 2 blob.)
+    doc = Document()
+    heading = doc.add_paragraph("Initiative Dependencies", style="Heading 2")
+    new_paras = insert_paragraph_after(heading, "A lead-in sentence.")
+    assert all(p.style.name == "Normal" for p in new_paras)
+
+
+def test_is_heading_detects_heading_and_title_styles():
+    # Fix #3 predicate: the trigger for flagging a heading-anchored insert.
+    doc = Document()
+    h2 = doc.add_paragraph("Section", style="Heading 2")
+    body = doc.add_paragraph("Just body text.")
+    assert _is_heading(h2) is True
+    assert _is_heading(body) is False
 
 
 def test_iter_paragraphs_includes_table_cells_in_order():

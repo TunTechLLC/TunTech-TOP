@@ -192,18 +192,50 @@ def replace_in_paragraph(para, anchor, new_text):
     return True
 
 
+def _split_into_lines(text):
+    """Split insert text into the lines that should each become their own
+    paragraph. Blank/whitespace-only lines (e.g. from a '\\n\\n' gap) are
+    dropped so inserts don't leave stray empty paragraphs."""
+    return [ln.strip() for ln in (text or '').split('\n') if ln.strip()]
+
+
+def _is_multiparagraph(text):
+    """True when `text` carries more than one paragraph's worth of content."""
+    return len(_split_into_lines(text)) > 1
+
+
+def _is_heading(para):
+    """True when a paragraph uses a heading/title style. Used to detect when an
+    insert anchor lands on a section heading rather than body prose."""
+    name = ((para.style.name if para.style else '') or '').lower()
+    return name.startswith('heading') or name.startswith('title')
+
+
 def insert_paragraph_after(para, text):
-    """Insert a new paragraph immediately after `para`, inheriting its style.
-    Returns the new Paragraph."""
-    new_p = OxmlElement('w:p')
-    para._p.addnext(new_p)
-    new_para = Paragraph(new_p, para._parent)
-    try:
-        new_para.style = para.style
-    except Exception:
-        pass
-    new_para.add_run(text)
-    return new_para
+    """Insert `text` as one or more new body paragraphs immediately after
+    `para`, in order. Returns the list of new Paragraphs.
+
+    Two deliberate choices (fixing the 10.7/10.8 corruption — see tests):
+      - Each newline-separated line becomes its own paragraph, so a
+        multi-paragraph/bulleted block is not collapsed into a single run.
+      - Inserted paragraphs use the 'Normal' (body) style and do NOT inherit
+        `para`'s style. Appended content is body prose; inheriting a heading
+        style (when the anchor is a heading) would render the text as a heading."""
+    lines = _split_into_lines(text) or ['']
+    anchor_el = para._p
+    new_paras = []
+    for line in lines:
+        new_p = OxmlElement('w:p')
+        anchor_el.addnext(new_p)
+        new_para = Paragraph(new_p, para._parent)
+        try:
+            new_para.style = 'Normal'
+        except Exception:
+            pass
+        new_para.add_run(line)
+        anchor_el = new_p  # chain so the next line is inserted after this one
+        new_paras.append(new_para)
+    return new_paras
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +335,14 @@ class QARevisionService:
                     if ti is None:
                         record['outcome'] = 'flagged_unresolved'
                         record['match_method'] = 'no_paragraph'
+                    elif _is_heading(paras[ti]) and _is_multiparagraph(e['new_text']):
+                        # A multi-paragraph block anchored on a section heading is
+                        # almost always a misfiled new-section request. Inserting
+                        # it between the heading and its content/table mangles the
+                        # section (this is what broke 10.7/10.8). Flag for manual
+                        # placement instead of applying.
+                        record['outcome'] = 'flagged_unresolved'
+                        record['match_method'] = 'insert_under_heading'
                     else:
                         insert_paragraph_after(paras[ti], e['new_text'])
                         record['outcome'] = 'applied'
@@ -389,6 +429,7 @@ class QARevisionService:
                     'multiparagraph': 'change spans a paragraph break',
                     'anchor_not_in_runs': 'anchor could not be located in the paragraph',
                     'no_paragraph': 'insertion point could not be located',
+                    'insert_under_heading': 'multi-paragraph addition anchored on a section heading — add it as its own section in the right place',
                     'none': 'anchor text was not found in the document',
                 }.get(r['match_method'], r['match_method'] or 'could not be located')
                 doc.add_paragraph(

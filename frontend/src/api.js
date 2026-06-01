@@ -127,4 +127,15 @@ export const api = {
     confirmTier1:   (id)            => fetch(`${BASE}/engagements/${id}/qa-editorial/confirm-tier-1`,
                                         { method: 'POST' }).then(handle),
   },
+  qaRevision: {
+    list:          (id)             => fetch(`${BASE}/engagements/${id}/qa-revision`).then(handle),
+    run:           (id)             => fetch(`${BASE}/engagements/${id}/qa-revision/run`,
+                                        { method: 'POST' }).then(handle),
+    downloadV1:    (id)             => fetch(`${BASE}/engagements/${id}/qa-revision/v1`).then(handleBlob),
+    downloadV2:    (id)             => fetch(`${BASE}/engagements/${id}/qa-revision/v2`).then(handleBlob),
+    updateOutcome: (id, qrid, data) => fetch(`${BASE}/engagements/${id}/qa-revision/${qrid}`,
+                                        patch(data)).then(handle),
+  },
+  // QA-5 tab gate — whether the v1 (Report Generator) and v2 (Revision) docs exist on disk.
+  qaStatus:        (id)             => fetch(`${BASE}/engagements/${id}/qa-status`).then(handle),
 };

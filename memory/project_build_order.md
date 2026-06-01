@@ -1,16 +1,35 @@
 ---
-name: Build order — Post-Assembly QA Stage is top priority
-description: Build sequence. QA-1/2/3/4 shipped (QA-4 = in-place edit-list, Opus 4.7, reconciliation). QA-5 (QA Tab UI) is next, then Checkpoint 5.
+name: Build order — Post-Assembly QA Stage COMPLETE
+description: Build sequence. QA-1/2/3/4/5 ALL shipped. QA-5 = integrated QA tab (wraps 3 detection panels + verify-after revision edit-list comparison). Checkpoint 5 dry run is next.
 metadata:
   type: project
 ---
 
-Build order as of 2026-05-31. Post-Assembly QA Stage: QA-1, QA-2, QA-3 (split),
-and QA-4 (in-place edit-list revision) are SHIPPED. **QA-5 (integrated QA Tab UI
-with v1↔v2 diff) is the only remaining QA item**, then Checkpoint 5. This stage
-replaced the prior Auditor Session 2 + kill-switch sequence. Editable Engagement
-Info downgraded from "hard requirement" to nice-to-have per consultant
-clarification on 2026-05-30.
+Build order as of 2026-06-01. Post-Assembly QA Stage is COMPLETE: QA-1, QA-2,
+QA-3 (split), QA-4 (in-place edit-list revision), and QA-5 (integrated QA Tab UI)
+are ALL SHIPPED. **Checkpoint 5 dry run is the next work** — end-to-end QA Stage
+validation with a new fictional client and planted defects. This stage replaced
+the prior Auditor Session 2 + kill-switch sequence. Editable Engagement Info
+downgraded from "hard requirement" to nice-to-have per consultant clarification
+on 2026-05-30.
+
+**QA-5 as-built (shipped 2026-06-01):** ONE `QA` tab (`QAPanel.jsx`) replaced the
+three temporary `qa1`/`qa2`/`qa3` tabs. The three detection panels were WRAPPED,
+not rebuilt (lowest regression risk) — each gained one additive optional
+`onCountsChange` prop so the parent shows live counts in collapsible section
+headers without lifting state. Gate: new `GET /{id}/qa-status` (pure file-existence,
+in `qa_revision.py`); no v1 → "Generate the roadmap first". Added `GET /qa-revision/v1`
+to serve the SAVED v1 off disk — `/report/download` regenerates and would desync
+the comparison. **Comparison = the structured edit-list, NOT a raw docx text-diff**
+(a text-diff would reintroduce the rendering noise QA-4's in-place-edit design
+eliminated — confirmed with Victor before build). Revision is **verify-after**:
+edits apply to make v2, then `QAPanel` shows `QARevisionEdits` grouped by outcome
+(applied / needs-your-hand / manual / verify-coverage / handled), before→after,
+source chip, match_method badge (non-exact sorted to top of "applied"). "Run Final
+Revision" gates on ≥1 accepted item. "Mark handled" → `PATCH outcome:'manual_done'`.
+**Soft sequencing only** — the old BACKLOG claim that Coherence consumes Coverage
+items is stale (QA-2 is a standalone read). 93/93 tests pass (no new — trivial
+file-existence endpoints, no TestClient harness in suite; verified in manual run).
 
 **Why:** E004 Cowork three-pass QA produced ~65 verifiable items (27 Coverage, 21
 Coherence, 31 Editorial) with near-zero noise rate. Three Tier-1 errors confirmed
@@ -29,8 +48,12 @@ v44 single-shot revision was run on **ChatGPT**. No Claude data point exists
 yet on the revision task — QA-4 model selection requires empirical validation
 against the v44 reference before locking.
 
-**How to apply (updated 2026-05-31 — QA-1/2/3/4 shipped):**
-- **Next session: start QA-5 QA Tab UI.** Integrated engagement tab that runs
+**How to apply (updated 2026-06-01 — QA-1/2/3/4/5 ALL shipped):**
+- **Next session: Checkpoint 5 dry run.** The QA Stage is fully built; the next
+  work is end-to-end validation with a new fictional client and planted defects
+  (Coverage/Coherence/Editorial + a narrator-level defect). See BACKLOG.md
+  Checkpoint 5 pass criteria.
+- _(historical) QA-5 QA Tab UI — shipped 2026-06-01._ Integrated engagement tab that runs
   QA-1/2/3 detection + the QA-4 revision in sequence and renders the v1↔v2 diff.
   Backend endpoints all exist (`/api/engagements/{id}/qa-coverage|qa-coherence|
   qa-editorial|qa-revision`). QA-4 exposes run / list / v2-download / patch-outcome.
@@ -115,13 +138,13 @@ against the v44 reference before locking.
 | ✅ | QA-2 Coherence Check Agent | 1 | Shipped 2026-05-30 — 10 items on E004 smoke ($186K mislabel caught) |
 | ✅ | QA-3 Editorial Check (split) | 1 | Shipped 2026-05-30 — 9 items on E004 smoke (6 Python in editorial_auditor.py + 3 Claude voice) |
 | ✅ | QA-4 Revision Agent | 1 | Shipped 2026-05-31 — **in-place edit-list** (NOT single-shot regeneration), Opus 4.7, reconciliation. E004 smoke: 49 accepted → 29 applied, 19 unaddressed surfaced |
-| 1 | QA-5 QA Tab UI | 1 | Integrated tab with diff view between v1 and v2 |
-| — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
-| 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
-| 3 | PowerPoint Export | 1 | Ships with audit checks |
-| 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
-| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
+| ✅ | QA-5 QA Tab UI | 1 | Shipped 2026-06-01 — one `QA` tab wrapping the 3 detection panels + verify-after revision edit-list comparison; `qa-status` gate + `qa-revision/v1` download. Build clean, 93/93 |
+| — | Checkpoint 5 — Dry Run 5 | milestone | NEXT — validates QA Stage end-to-end |
+| 1 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 2 | PowerPoint Export | 1 | Ships with audit checks |
+| 3 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 4 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 5 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ## E004 Artifacts — Evidence Base
 
