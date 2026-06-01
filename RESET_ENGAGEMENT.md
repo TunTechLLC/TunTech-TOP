@@ -20,6 +20,10 @@ DELETE FROM EngagementPatterns  WHERE engagement_id = 'E00X';
 DELETE FROM AgentRuns           WHERE engagement_id = 'E00X';
 DELETE FROM OPDFindings         WHERE engagement_id = 'E00X';
 DELETE FROM RoadmapItems        WHERE engagement_id = 'E00X';
+DELETE FROM QACoverageItems     WHERE engagement_id = 'E00X';
+DELETE FROM QACoherenceItems    WHERE engagement_id = 'E00X';
+DELETE FROM QAEditorialItems    WHERE engagement_id = 'E00X';
+DELETE FROM QARevisionEdits     WHERE engagement_id = 'E00X';
 DELETE FROM KnowledgePromotions WHERE engagement_id = 'E00X';
 DELETE FROM Engagements         WHERE engagement_id = 'E00X';
 DELETE FROM Clients             WHERE client_id     = 'C00X';
@@ -82,5 +86,29 @@ SELECT 'OPDFindings',                 COUNT(*) FROM OPDFindings         WHERE en
 UNION ALL
 SELECT 'RoadmapItems',                COUNT(*) FROM RoadmapItems        WHERE engagement_id = 'E00X'
 UNION ALL
+SELECT 'QACoverageItems',             COUNT(*) FROM QACoverageItems     WHERE engagement_id = 'E00X'
+UNION ALL
+SELECT 'QACoherenceItems',            COUNT(*) FROM QACoherenceItems    WHERE engagement_id = 'E00X'
+UNION ALL
+SELECT 'QAEditorialItems',            COUNT(*) FROM QAEditorialItems    WHERE engagement_id = 'E00X'
+UNION ALL
+SELECT 'QARevisionEdits',             COUNT(*) FROM QARevisionEdits     WHERE engagement_id = 'E00X'
+UNION ALL
 SELECT 'KnowledgePromotions',         COUNT(*) FROM KnowledgePromotions WHERE engagement_id = 'E00X';
 ```
+
+> **Note — Post-Assembly QA Stage tables.** `QACoverageItems`, `QACoherenceItems`,
+> and `QAEditorialItems` hold QA-1/2/3 detection candidates; `QARevisionEdits` holds
+> the QA-4 revision edit records. Re-running a QA agent already replaces that agent's
+> own rows for the engagement, but a full reset must clear all four so stale QA items
+> do not reappear in the QA tab. `SignalLibrary` and `Patterns` are static reference
+> libraries (not engagement-scoped) — never delete them.
+
+---
+
+## Step 1b — Delete generated report documents (optional)
+
+The Report Generator and QA-4 Revision write `OPD_Transformation_Roadmap_<id>_v1.docx`
+and `_v2.docx` to the engagement's `reports_folder`. They are regenerated on the next
+run, so deleting them is optional — but do it if you want the QA tab's v1 gate to read
+as "not yet generated" after a reset.

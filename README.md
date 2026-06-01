@@ -160,6 +160,20 @@ Copy the database file manually from the source machine.
 > contains the full pattern library (P01–P60) which is required for the diagnostic
 > workflow. Always copy an existing `TOP.db` — do not create an empty SQLite file.
 
+### Database migrations
+
+Schema changes ship as one-off scripts in `migrations/`. The current `TOP.db` already
+has every migration applied — you only need these if you restore an **older** copy of
+the database that predates a feature (for example, the Post-Assembly QA Stage tables).
+Run one from the project root, e.g.:
+
+```powershell
+python migrations\migrate_qa_revision.py
+```
+
+Each migration records itself in the `schema_migrations` table; query that table to
+see what has been applied.
+
 ---
 
 ## Engagement File Folders
@@ -239,6 +253,7 @@ TunTech-TOP/
 │       ├── api.js          # All API calls go through here
 │       ├── constants.js    # Domain lists, confidence levels (keep in sync with domains.py)
 │       └── components/     # One component per panel
+├── migrations/             # One-off schema scripts (only needed when restoring an older DB)
 ├── tests/                  # pytest test suite
 ├── config.py               # Single source of truth for env-variable-backed config
 ├── .env                    # Reference only — not loaded automatically (gitignored)

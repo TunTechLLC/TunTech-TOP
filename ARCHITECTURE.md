@@ -60,7 +60,7 @@ the database directly.
 ┌──────────▼──────────┐   ┌──────────▼──────────────┐
 │   SQLite (TOP.db)   │   │   Anthropic Claude API   │
 │                     │   │   (AsyncAnthropic only)  │
-│  13 tables          │   │   All calls via          │
+│  18 entity tables   │   │   All calls via          │
 │  DB_PATH env var    │   │   api/services/claude.py │
 └─────────────────────┘   └─────────────────────────┘
 ```
@@ -79,10 +79,16 @@ Business logic and external API calls.
 
 | File | Responsibility |
 |------|---------------|
-| `claude.py` | All Claude API calls. All prompt constants. The AGENT_REGISTRY. |
-| `document_processor.py` | File scanning, text extraction, signal candidate processing. |
-| `report_generator.py` | Word document generation, chart generation, narrator assembly. |
+| `claude.py` | All Claude API **call functions** (async). Detection, extraction, narrator, and QA call wrappers. |
+| `prompts.py` | All prompt constants and the `AGENT_REGISTRY` (split out of `claude.py` in A1). |
+| `document_processor.py` | File scanning, text extraction, file-type routing, signal candidate processing. |
 | `case_packet.py` | Assembles the structured context document fed to every agent. |
+| `report_generator.py` | Word document generation, chart generation, narrator assembly. Output is `_v1.docx`. |
+| `report_sections.py` | Per-section report builders, including the domain maturity scorecard. |
+| `narrator_auditor.py` | 12 mechanical checks on the narrator JSON before render (the "Trust Report"). |
+| `editorial_auditor.py` | QA-3 Python pipeline — deterministic editorial checks on the rendered v1 text. |
+| `qa_inputs.py` | Assembles v1 text + source / accepted-item blocks for the QA agents; holds the v1/v2 filename templates. |
+| `qa_revision.py` | QA-4 — applies the Claude edit list to v1 in place, writes v2, reconciles unaddressed items. |
 
 ### `api/db/repositories/`
 All SQL lives here and only here. Every repository inherits from `BaseRepository`,
@@ -104,7 +110,7 @@ model name comes from here. Tests monkeypatch env vars — never hardcode paths.
 
 ## Database Schema
 
-**13 tables total:** 12 entity tables + `schema_migrations` tracking table. ID format: prefix + 3-digit zero-padded number.
+**19 tables total:** 18 entity tables + `schema_migrations` tracking table. ID format: prefix + 3-digit zero-padded number.
 
 The reporting layer uses 7 read-only SQL views queried exclusively through `ReportingRepository`: `vw_PatternFrequency`, `vw_PatternFrequencyByDomain`, `vw_AcceptedPatterns`, `vw_EconomicImpactByEngagement`, `vw_AgentRunLog`, `vw_OPDSummary`, `vw_EngagementSignals`. Views are not entity tables and have no ID generators.
 
@@ -121,8 +127,17 @@ OPDFindings      F001   → engagement_id, pattern_id → Patterns
 RoadmapItems     R001   → engagement_id, finding_id → OPDFindings
 KnowledgePromotions KP001 → engagement_id
 ProcessedFiles   PF001  → engagement_id
+SignalCoverage   SC001  → engagement_id (signal coverage map used by the report)
+SignalLibrary           (static reference library of reusable signal definitions — not engagement-specific)
+QACoverageItems  QC001  → engagement_id (QA-1 Coverage Check detection candidates)
+QACoherenceItems QH001  → engagement_id (QA-2 Coherence Check detection candidates)
+QAEditorialItems QE001  → engagement_id (QA-3 Editorial Check detection candidates)
+QARevisionEdits  QR001  → engagement_id (QA-4 Revision edit records — one row per edit)
 schema_migrations         (version TEXT, applied_at TEXT — no ID prefix)
 ```
+
+The 7 reporting views and the two static reference libraries (`Patterns` P01–P60,
+`SignalLibrary`) are not engagement-scoped and have no per-engagement reset.
 
 ### Key column notes
 
@@ -363,6 +378,24 @@ The reporting router is mounted at `/api` (not `/api/engagements`). Engagement-s
 | POST | `/api/{id}/report/open-folder` | Open reports folder in Windows Explorer |
 | GET | `/api/health` | Health check |
 
+### Post-Assembly QA Stage
+Routers mounted under `/api/engagements`. Coverage / Coherence / Editorial share the
+same CRUD shape; only Coverage is expanded below.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `.../qa-status` | Whether the v1 / v2 roadmap docs exist (QA tab gate) |
+| POST | `.../qa-coverage/run` | Run QA-1 Coverage Check (Opus, streamed) |
+| GET | `.../qa-coverage` | List coverage items |
+| PATCH | `.../qa-coverage/{id}` | Set an item's status |
+| POST | `.../qa-coverage/confirm-tier-1` | Batch-accept Tier 1 items |
+| … | `.../qa-coherence/*`, `.../qa-editorial/*` | QA-2 / QA-3 — same shape as qa-coverage |
+| POST | `.../qa-revision/run` | Run QA-4 Revision — apply accepted items, write v2 |
+| GET | `.../qa-revision` | List revision edits (backs the v1↔v2 comparison) |
+| GET | `.../qa-revision/v1` | Download the saved v1 .docx (no regeneration) |
+| GET | `.../qa-revision/v2` | Download the revised v2 .docx |
+| PATCH | `.../qa-revision/{id}` | Mark a flagged/manual edit handled |
+
 ---
 
 ## Frontend Structure
@@ -384,7 +417,11 @@ src/
     ├── FindingsPanel.jsx      Parse findings, create/edit manually
     ├── RoadmapPanel.jsx       Parse roadmap, manage items by phase
     ├── KnowledgePanel.jsx     Knowledge promotions
-    ├── ReportPanel.jsx        Generate report, open folder
+    ├── ReportPanel.jsx        Generate report, open folder, Narrator Trust Report
+    ├── QAPanel.jsx            Integrated QA tab — v1 gate, 3 detection sections, verify-after revision
+    ├── QACoveragePanel.jsx    QA-1 Coverage Check (wrapped by QAPanel)
+    ├── QACoherencePanel.jsx   QA-2 Coherence Check (wrapped by QAPanel)
+    ├── QAEditorialPanel.jsx   QA-3 Editorial Check (wrapped by QAPanel)
     └── CrossEngagement.jsx    Cross-engagement analytics
 ```
 
@@ -508,7 +545,7 @@ The Word report is generated by `ReportGeneratorService` in `api/services/report
 | Executive Briefing | One-page CEO teaser (headline, 3 problems, 3 numbers, immediate actions) | Narrator (validated against DB) |
 | 1. Executive Summary | Opening + Key Findings box + 3 narrative paragraphs | Narrator |
 | How to Read | Prefatory page with role-based reading guide | Static template + dynamic domain names |
-| 2. Engagement Overview | Metadata + engagement narrative paragraph | Narrator + ProcessedFiles |
+| 2. Engagement Overview | Metadata + engagement narrative + domain maturity scorecard (1–5, traffic-light) | Narrator + ProcessedFiles |
 | 3. Operational Maturity Overview | Signal count table by domain | Signals table |
 | 4. Domain Analysis | Per-domain findings with narrative | Narrator + OPDFindings |
 | 5. Root Cause Analysis | Narrative prose | Narrator |
@@ -529,6 +566,47 @@ The Section 6 table has five columns: Finding | Confirmed Exposure | Derived Exp
 
 ### Narrator
 The Narrator is a separate Claude call (`generate_report_narrative()`) that produces a large JSON object with all prose sections. It runs after all five agents are accepted and findings/roadmap are loaded. Its output drives the narrative content of the report. It does not write to the database — it is called at report generation time and its output is used immediately.
+
+---
+
+## Post-Assembly QA Stage
+
+After the v1 report is generated, an optional QA stage reviews and revises it. It
+applies the same detect-review discipline as the rest of TOP, but on the *rendered
+document* rather than on signals/patterns.
+
+### Versioning
+The Report Generator writes `OPD_Transformation_Roadmap_<id>_v1.docx`; QA-4 writes
+`_v2.docx` alongside it. v1 is never modified, so the v1↔v2 diff is exactly the QA
+contribution. `qa_inputs.py` holds both filename templates.
+
+### The agents
+- **QA-1 Coverage** (`qa_coverage`) — compares the rendered v1 against the source
+  documents; flags source items dropped from the roadmap.
+- **QA-2 Coherence** (`qa_coherence`) — standalone read of v1 for contradictions, math
+  errors, mislabels, and priority mismatches (does *not* consult source documents).
+- **QA-3 Editorial** (`qa_editorial`) — split pipeline: a deterministic Python checker
+  (`editorial_auditor.py` — leaked signal codes, undefined acronyms, terminology drift)
+  plus a narrow Claude voice/audience check.
+- **QA-4 Revision** (`qa_revision`) — one Opus call returns a structured edit list;
+  `qa_revision.py` applies each edit to v1 in place (tolerant matcher: exact → context →
+  fuzzy/flag; never silently corrupts), writes v2, and reconciles every accepted item
+  (any with no edit is recorded `unaddressed` so nothing is silently dropped).
+
+Detection agents and the revision use Opus (`model="claude-opus-4-7"` passed per-call;
+global `TOP_MODEL` stays Sonnet) and stream responses. Each detection item carries a
+`tier` (1 obvious / 2 judgment / 3 low-confidence) driving the tiered review UI.
+
+### Narrator Output Auditor (Session 1)
+`narrator_auditor.py` runs 12 mechanical Python checks on the narrator JSON *before* the
+Word render (during report generation), surfaced as the "Trust Report" in `ReportPanel`.
+It is distinct from the QA stage: it checks pre-render JSON; the QA agents check the
+rendered document.
+
+### Frontend
+A single **QA** tab (`QAPanel.jsx`) gates on a v1 document existing, wraps the three
+detection panels as collapsible sections, and presents the QA-4 revision as a
+verify-after edit-list comparison (grouped by outcome) with v1/v2 downloads.
 
 ---
 
@@ -591,14 +669,20 @@ Tests monkeypatch `TOP_DB_PATH` to a temporary file. Never hardcode paths.
 
 ## What Is Not Yet Built
 
-See `BACKLOG.md` for full specs. Summary of major planned features:
+See `PROGRESS.md` for completed work and `BACKLOG.md` for remaining specs.
 
-- Findings enhancements: pattern enforcement, evidence summary, key quotes
-- Roadmap enhancements: capability statements, economic linkage, dependency mapping
-- Domain maturity scoring (1–5 per domain, computed at report time)
-- Knowledge auto-suggest (detect-review-load for knowledge promotions)
-- PowerPoint export
+**Shipped since this list was first written:** the Findings and Roadmap enhancements,
+Domain Maturity Scoring, the A1–A5 accuracy/review series, the Narrator Output Auditor
+(Session 1), and the full **Post-Assembly QA Stage** (QA-1 through QA-5).
+
+**Remaining:**
+
+- Checkpoint 5 — Dry Run 5 (end-to-end validation of the QA Stage)
 - Editable engagement info (post-creation)
+- PowerPoint export
+- Standardize economic output generation
+- Structured file metadata capture at processing time
+- Knowledge auto-suggest (detect-review-load for knowledge promotions)
 
 ### Phase 3 (future)
 - PostgreSQL migration: swap `_get_connection()` and `?` → `%s` — no other changes required
