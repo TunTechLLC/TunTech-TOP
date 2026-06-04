@@ -429,6 +429,30 @@ def _is_label_context(clause: str, pos: int, matched_text: str) -> bool:
     return bool(re.search(r'[\(\:\,\-\u2014\u2013]$', pre))
 
 
+def _figures_in_labeled_paren(clause: str, label_positions: list[int]) -> set[str]:
+    """Return the set of dollar-strings cited inside a parenthetical that also
+    contains an evidentiary label at one of `label_positions`.
+
+    Used to attribute a prose figure to its label when the agents restate the
+    figure inside its own '(CONFIRMED: $X ...)' citation but the prose copy of
+    the figure sits more than 80 characters from the label. Input figures used
+    in a derivation (e.g. '(INFERRED: ... revenue of $13.75M ...)') appear only
+    inside the paren and never in the prose, so they are never attributed here.
+    """
+    figs: set[str] = set()
+    for p in label_positions:
+        open_idx = clause.rfind('(', 0, p)
+        if open_idx == -1:
+            continue
+        close_idx = clause.find(')', p)
+        if close_idx == -1:
+            close_idx = len(clause)
+        segment = clause[open_idx:close_idx]
+        for m in _DOLLAR_RE.finditer(segment):
+            figs.add(m.group(0))
+    return figs
+
+
 def _dollar_to_float(s: str) -> float | None:
     """Convert a dollar string to a float. Handles K/M suffixes, ~ prefix, commas, ranges.
     Returns None if parsing fails."""
@@ -491,6 +515,10 @@ def _parse_economic_figures(text: str):
         if not conf_positions and not deriv_positions and not inf_positions:
             continue
 
+        conf_paren_figs  = _figures_in_labeled_paren(clause, conf_positions)
+        deriv_paren_figs = _figures_in_labeled_paren(clause, deriv_positions)
+        inf_paren_figs   = _figures_in_labeled_paren(clause, inf_positions)
+
         for m in _DOLLAR_RE.finditer(clause):
             amt       = m.group(0)
             amt_end   = m.end()
@@ -510,6 +538,20 @@ def _parse_economic_figures(text: str):
 
             closest = min(d_conf, d_deriv, d_inf)
             if closest > 80:
+                # Prose figure has no label within 80 chars. Attribute it only
+                # if the same figure is restated inside its own '(LABEL: $X ...)'
+                # citation (precedence CONFIRMED > DERIVED > INFERRED). Derivation
+                # input figures live only inside the paren, never in prose, so
+                # they are not reached by this branch.
+                if amt in conf_paren_figs:
+                    if amt not in confirmed_figures:
+                        confirmed_figures.append(amt)
+                elif amt in deriv_paren_figs:
+                    if amt not in derived_figures:
+                        derived_figures.append(amt)
+                elif amt in inf_paren_figs:
+                    if amt not in inferred_figures:
+                        inferred_figures.append(amt)
                 continue
 
             if d_conf <= d_deriv and d_conf <= d_inf:
