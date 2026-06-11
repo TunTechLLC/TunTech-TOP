@@ -30,6 +30,7 @@ GET_ALL = """
            f.confirmed_figure,
            f.derived_figure,
            f.annual_drag_figure,
+           f.valence,
            p.pattern_name
     FROM   OPDFindings f
     LEFT JOIN Patterns p ON f.pattern_id = p.pattern_id
@@ -46,8 +47,8 @@ INSERT_FINDING = """
         priority, effort, opd_section, created_date,
         evidence_summary, key_quotes,
         display_figure, display_label, figure_type, include_in_executive,
-        confirmed_figure, derived_figure, annual_drag_figure
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        confirmed_figure, derived_figure, annual_drag_figure, valence
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 ACCEPT_PATTERN = """
@@ -76,7 +77,8 @@ UPDATE_FINDING = """
            include_in_executive = COALESCE(?, include_in_executive),
            confirmed_figure     = COALESCE(?, confirmed_figure),
            derived_figure       = COALESCE(?, derived_figure),
-           annual_drag_figure   = COALESCE(?, annual_drag_figure)
+           annual_drag_figure   = COALESCE(?, annual_drag_figure),
+           valence              = COALESCE(?, valence)
     WHERE  finding_id = ?
 """
 
@@ -138,6 +140,7 @@ class FindingRepository(BaseRepository):
                 data.get('confirmed_figure'),
                 data.get('derived_figure'),
                 data.get('annual_drag_figure'),
+                data.get('valence'),
             ))
         ]
 
@@ -172,5 +175,6 @@ class FindingRepository(BaseRepository):
             data.get('confirmed_figure'),
             data.get('derived_figure'),
             data.get('annual_drag_figure'),
+            data.get('valence'),
             finding_id
         ))

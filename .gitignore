@@ -19,3 +19,6 @@ frontend/dist/
 Thumbs.db
 
 ClaudeAPIKey.txt
+# Logs — bounded by RotatingFileHandler (api/main.py); never version-controlled
+top.log
+top.log.*

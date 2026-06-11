@@ -126,6 +126,7 @@ def load_candidates(
             'notes':              signal.get('notes', ''),
             'source_file':        signal.get('source_file'),
             'library_signal_id':  signal.get('library_signal_id'),
+            'valence':            signal.get('valence', 'Neutral'),
         }
         repo.create(signal_payload)
         loaded += 1

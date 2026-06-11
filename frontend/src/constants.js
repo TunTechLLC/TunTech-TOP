@@ -18,6 +18,14 @@ export const DOMAINS = [
 
 export const CONFIDENCE_LEVELS = ['High', 'Medium', 'Hypothesis']
 
+// Signal valence — positive evidence enters the pipeline here.
+// NULL/absent ≡ unset (treated as Neutral).
+export const SIGNAL_VALENCE = ['Strength', 'Risk', 'Neutral']
+
+// Finding valence — Positive → a "Preserve" finding; Dual → strength-under-strain;
+// Negative → today's behavior. NULL/absent ≡ Negative (backward compatible).
+export const FINDING_VALENCE = ['Positive', 'Dual', 'Negative']
+
 export const FINDING_CONFIDENCES = ['High', 'Medium', 'Low']
 
 export const SOURCES = ['Interview', 'Document', 'Observation']

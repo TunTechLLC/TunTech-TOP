@@ -25,6 +25,13 @@ async_client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KE
 
 from config import MODEL, MAX_TOKENS
 
+# Agents — especially the Synthesizer, which integrates all prior outputs and now also
+# assembles the "What to Preserve" strengths — produce long outputs on rich engagements.
+# The global 8000 cap truncated the Synthesizer mid-output on a large engagement. A ceiling
+# costs nothing for short outputs (output is billed by tokens generated, not the cap), so
+# match the narrator's 16000 to prevent truncation. Per-call override available below.
+AGENT_MAX_TOKENS = max(MAX_TOKENS * 2, 16000)
+
 
 def extract_text(message: anthropic.types.Message) -> str:
     """Extract text content from a Claude API response.
@@ -40,23 +47,31 @@ async def call_claude(
     case_packet:   str,
     prior_outputs: list,
     prompt:        str,
+    max_tokens:    int = None,
 ) -> str:
     """Assemble case packet plus prior agent outputs and call Claude API.
-    Uses async client — do not call with synchronous client, it blocks the event loop."""
+    Uses async client — do not call with synchronous client, it blocks the event loop.
+    max_tokens defaults to AGENT_MAX_TOKENS; a truncated response is logged loudly."""
     parts = [f"CASE PACKET:\n\n{case_packet}"]
     if prior_outputs:
         for i, output in enumerate(prior_outputs, 1):
             if output:
                 parts.append(f"PRIOR AGENT OUTPUT {i}:\n\n{output}")
     user_message = "\n\n---\n\n".join(parts)
-    logger.info(f"Calling Claude API — context length: {len(user_message)} chars")
+    cap = max_tokens or AGENT_MAX_TOKENS
+    logger.info(f"Calling Claude API — context length: {len(user_message)} chars, max_tokens={cap}")
     message = await async_client.messages.create(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
+        max_tokens=cap,
         system=prompt,
         messages=[{"role": "user", "content": user_message}],
         timeout=300.0,
     )
+    if getattr(message, 'stop_reason', None) == 'max_tokens':
+        logger.warning(
+            f"call_claude: agent output TRUNCATED at max_tokens={cap} — output is "
+            f"incomplete. Re-run with a higher cap before accepting."
+        )
     response = extract_text(message)
     logger.info(f"Claude API response received — {len(response)} chars")
     return response
@@ -239,7 +254,7 @@ async def generate_report_narrative(
     Uses a higher token ceiling than other Claude calls because the narrator
     produces both prose sections and multiple structured table arrays.
     """
-    NARRATOR_MAX_TOKENS = max(MAX_TOKENS * 2, 16000)
+    NARRATOR_MAX_TOKENS = max(MAX_TOKENS * 3, 24000)
 
     findings_lines = ["ACCEPTED FINDINGS:\n"]
     for f in findings:
@@ -260,6 +275,35 @@ async def generate_report_narrative(
         findings_lines.append("")
 
     findings_by_id = {f.get('finding_id'): f for f in findings if f.get('finding_id')}
+
+    # VALIDATED STRENGTHS — Positive/Dual findings that survived the Skeptic. Feeds the
+    # narrator's executive_summary_strengths field (Track 2). Empty when none exist, in
+    # which case the block is omitted and the narrator returns null for that field, so the
+    # Executive Summary renders byte-identically to a negative-only report.
+    strength_findings = [
+        f for f in findings if (f.get('valence') or '').lower() in ('positive', 'dual')
+    ]
+    strength_lines = []
+    if strength_findings:
+        strength_lines.append(
+            "VALIDATED STRENGTHS (use ONLY these for executive_summary_strengths — each "
+            "survived the Skeptic and is tied to a specific account, metric, or behavior; "
+            "frame as leverage for the transformation, never generic praise):\n"
+        )
+        for f in strength_findings:
+            kind = ('strength-under-strain'
+                    if (f.get('valence') or '').lower() == 'dual' else 'strength')
+            strength_lines.append(
+                f"[{f.get('finding_id', '')}] ({kind}) {f['finding_title']} | "
+                f"Domain: {f.get('domain', '')}"
+            )
+            if f.get('operational_impact'):
+                strength_lines.append(f"  What is working: {f['operational_impact']}")
+            if f.get('root_cause'):
+                strength_lines.append(f"  Why it works: {f['root_cause']}")
+            if f.get('recommendation'):
+                strength_lines.append(f"  How to protect it: {f['recommendation']}")
+            strength_lines.append("")
 
     roadmap_lines = ["ROADMAP ITEMS BY PHASE:\n"]
     for phase in ['Stabilize', 'Optimize', 'Scale']:
@@ -333,8 +377,10 @@ async def generate_report_narrative(
         "\n".join(context_lines),
         "\n".join(file_lines),
         "\n".join(findings_lines),
-        "\n".join(roadmap_lines),
     ])
+    if strength_lines:
+        message_parts.append("\n".join(strength_lines))
+    message_parts.append("\n".join(roadmap_lines))
 
     user_message = "\n\n".join(message_parts)
 
@@ -351,6 +397,12 @@ async def generate_report_narrative(
         messages=[{"role": "user", "content": user_message}],
         timeout=600.0,
     )
+    if getattr(message, 'stop_reason', None) == 'max_tokens':
+        logger.warning(
+            f"generate_report_narrative: narrator output TRUNCATED at "
+            f"max_tokens={NARRATOR_MAX_TOKENS} — report JSON is incomplete and may fail to "
+            f"parse or render. Raise NARRATOR_MAX_TOKENS and regenerate."
+        )
     raw = extract_text(message)
     logger.info(f"Narrator response received — {len(raw)} chars")
 
@@ -359,7 +411,8 @@ async def generate_report_narrative(
 
     exec_keys = [
         k for k in ('executive_summary_opening', 'executive_summary_para1',
-                    'executive_summary_para2', 'executive_summary_para3')
+                    'executive_summary_para2', 'executive_summary_para3',
+                    'executive_summary_strengths')
         if sections.get(k)
     ]
     if exec_keys:
@@ -419,11 +472,17 @@ async def extract_roadmap_from_synthesizer(
     )
     message = await async_client.messages.create(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
+        max_tokens=AGENT_MAX_TOKENS,
         system=ROADMAP_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
         timeout=300.0,
     )
+    if getattr(message, 'stop_reason', None) == 'max_tokens':
+        logger.warning(
+            f"extract_roadmap_from_synthesizer: roadmap JSON TRUNCATED at "
+            f"max_tokens={AGENT_MAX_TOKENS} — the array is cut off and will fail to parse. "
+            f"Raise the cap and re-extract."
+        )
     raw = extract_text(message)
     clean = raw.strip()
     if clean.startswith('```json'):

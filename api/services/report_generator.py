@@ -24,6 +24,7 @@ from api.services.report_sections import (
     _parse_display_figure_to_float,
     _prepopulate_display_figure,   # re-exported — api/routers/findings.py imports from here
     _SECTION_MAP,
+    compute_section_map,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,17 +81,26 @@ class ReportGeneratorService(ReportSectionsMixin):
         total_signals   = len(signals)
         domain_count    = len({s['domain'] for s in signals if s.get('domain')})
 
-        # Build cross-reference strings from _SECTION_MAP — single source of truth.
+        # "What to Preserve" (validated strengths) renders before the roadmap only when
+        # Positive/Dual findings exist; when present it shifts the roadmap block's section
+        # numbers down by one. Compute the render-time map once and use it everywhere so
+        # cross-refs, the reading guide, and the headings all agree.
+        has_preserve = any(
+            (f.get('valence') or '').lower() in ('positive', 'dual') for f in findings
+        )
+        section_map = compute_section_map(has_preserve)
+
+        # Build cross-reference strings from the section map — single source of truth.
         # Passed to the narrator so the prompt never hardcodes section numbers.
         section_refs = {
             'domain_analysis_ref': (
-                f"(see Section {_SECTION_MAP['domain_analysis']} — Domain Analysis for full findings)"
+                f"(see Section {section_map['domain_analysis']} — Domain Analysis for full findings)"
             ),
             'economic_impact_ref': (
-                f"(see Section {_SECTION_MAP['economic_impact']} — Economic Impact Analysis)"
+                f"(see Section {section_map['economic_impact']} — Economic Impact Analysis)"
             ),
             'priority_zero_ref': (
-                f"(see Section {_SECTION_MAP['priority_zero']} — Priority Zero Actions)"
+                f"(see Section {section_map['priority_zero']} — Priority Zero Actions)"
             ),
         }
 
@@ -129,7 +139,7 @@ class ReportGeneratorService(ReportSectionsMixin):
         else:
             logger.warning(f"Template not found at {_TEMPLATE} — using default styles")
             doc = Document()
-        self._build(doc, eng, findings, roadmap, signals, patterns, narrative)
+        self._build(doc, eng, findings, roadmap, signals, patterns, narrative, section_map)
 
         file_path = self._output_path(eng)
         doc.save(file_path)
@@ -158,8 +168,10 @@ class ReportGeneratorService(ReportSectionsMixin):
     # Document assembly
     # ------------------------------------------------------------------
 
-    def _build(self, doc, eng, findings, roadmap, signals, patterns, narrative: dict):
+    def _build(self, doc, eng, findings, roadmap, signals, patterns, narrative: dict,
+               section_map: dict = None):
         firm_name = eng.get('firm_name') or self.engagement_id
+        section_map = section_map or _SECTION_MAP
 
         self._populate_content_controls(doc, firm_name)
         self._add_cover_page_restriction(doc)
@@ -264,12 +276,19 @@ class ReportGeneratorService(ReportSectionsMixin):
             if para_text:
                 self._add_narrative_paragraphs(doc, _resolve_initiative_codes(para_text, roadmap_by_id))
 
+        # Component C2 — "what's working / right to win" thread (Track 2). The narrator
+        # returns null when there are no validated strengths, so this is omitted entirely
+        # and the Executive Summary renders byte-identically to a negative-only report.
+        strengths_text = narrative.get('executive_summary_strengths', '')
+        if strengths_text:
+            self._add_narrative_paragraphs(doc, _resolve_initiative_codes(strengths_text, roadmap_by_id))
+
         doc.add_paragraph()
 
         # How to Read This Document — standalone page between Exec Summary and Engagement Overview.
         # Appears in TOC (heading style) but without a section number (w:numPr stripped).
         # Page break before it ensures it starts on its own page.
-        self._how_to_read_page(doc, findings, firm_name)
+        self._how_to_read_page(doc, findings, firm_name, section_map)
         doc.add_paragraph()
 
         # 2 — Engagement Overview (redesigned — Change 3)
@@ -354,6 +373,12 @@ class ReportGeneratorService(ReportSectionsMixin):
         if future_narrative:
             self._add_narrative_paragraphs(doc, _resolve_initiative_codes(future_narrative, roadmap_by_id))
         doc.add_paragraph()
+
+        # What to Preserve — validated strengths, rendered before the roadmap. Omitted
+        # entirely when there are no Positive/Dual findings, so a negative-only report is
+        # byte-identical to today (no heading, no section-number shift).
+        if 'what_to_preserve' in section_map:
+            self._what_to_preserve(doc, findings)
 
         # 8 — Transformation Roadmap
         doc.add_heading('Transformation Roadmap', level=1)

@@ -9,7 +9,10 @@ from api.db.repositories.pattern import PatternRepository
 from api.db.repositories.signal import SignalRepository
 from api.db.repositories.engagement import EngagementRepository
 from api.models.finding import FindingCreate, FindingUpdate, FindingResponse
-from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_FINDING_CONFIDENCES, VALID_PRIORITIES, VALID_EFFORTS
+from api.utils.domains import (
+    DEFAULT_DOMAIN, VALID_DOMAINS, VALID_FINDING_CONFIDENCES,
+    VALID_PRIORITIES, VALID_EFFORTS, VALID_FINDING_VALENCES,
+)
 from api.services.report_generator import _prepopulate_display_figure
 from api.services.report_sections import (
     _parse_economic_figures, _format_display_figure, _parse_display_figure_to_float,
@@ -83,15 +86,22 @@ def get_engagement_repo() -> EngagementRepository:
 
 
 def _compute_evidence_summary(contributing_ep_ids: list, accepted_patterns: list,
-                               domain: str, domain_signal_counts: dict) -> str:
+                               domain: str, domain_signal_counts: dict,
+                               valence: str = None, strength_count: int = 0) -> str:
     """Build a 1-line evidence summary for a finding.
 
-    Format: "Supported by P06, P08 across Sales-to-Delivery Transition;
+    Negative/Dual format: "Supported by P06, P08 across Sales-to-Delivery Transition;
              6 signals (4 confirmed, 2 inferred)"
+    Positive (Preserve) format: "Backed by 3 strength signals in Sales & Pipeline"
+        — a Preserve finding has no pattern; its evidence is domain Strength signals.
 
     confirmed = High confidence signals in domain
     inferred  = Medium + Hypothesis signals in domain
     """
+    if (valence or '').lower() == 'positive':
+        plural = 's' if strength_count != 1 else ''
+        return f"Backed by {strength_count} strength signal{plural} in {domain}"
+
     # Resolve contributing EP IDs to pattern IDs
     ep_to_pattern = {p['ep_id']: p['pattern_id'] for p in accepted_patterns}
     pattern_ids = sorted({
@@ -113,6 +123,21 @@ def _compute_evidence_summary(contributing_ep_ids: list, accepted_patterns: list
         signal_str = "no signals recorded"
 
     return f"Supported by {pattern_str} across {domain}; {signal_str}"
+
+
+def _signal_chain_entry(s: dict, signal_id: str) -> dict:
+    """Build one evidence-chain signal row: id, name, confidence, verbatim quote
+    (parsed from the 'Quote: … Interpretation: …' notes format), and source file."""
+    parts      = re.split(r'\s+Interpretation:', s.get('notes') or '', maxsplit=1)
+    quote_part = re.sub(r'^Quote:\s*', '', parts[0].strip()).strip("'\" ")
+    quote      = quote_part[:200] + '…' if len(quote_part) > 200 else quote_part
+    return {
+        'signal_id':   signal_id,
+        'signal_name': s.get('signal_name', ''),
+        'confidence':  s.get('signal_confidence', ''),
+        'quote':       quote,
+        'source_file': s.get('source_file', ''),
+    }
 
 
 def _build_evidence_chain(ep_ids: list, ep_by_epid: dict,
@@ -144,17 +169,21 @@ def _build_evidence_chain(ep_ids: list, ep_by_epid: dict,
         s = signals_by_id.get(sid)
         if not s:
             continue
-        parts      = re.split(r'\s+Interpretation:', s.get('notes') or '', maxsplit=1)
-        quote_part = re.sub(r'^Quote:\s*', '', parts[0].strip()).strip("'\" ")
-        quote      = quote_part[:200] + '…' if len(quote_part) > 200 else quote_part
-        chain_signals.append({
-            'signal_id':   sid,
-            'signal_name': s.get('signal_name', ''),
-            'confidence':  s.get('signal_confidence', ''),
-            'quote':       quote,
-            'source_file': s.get('source_file', ''),
-        })
+        chain_signals.append(_signal_chain_entry(s, sid))
     return {'patterns': chain_patterns, 'signals': chain_signals, 'signals_hidden': hidden}
+
+
+def _build_strength_evidence_chain(strength_signals: list, signal_cap: int = 8) -> dict:
+    """Evidence chain for a Positive (Preserve) finding. A Preserve finding has no
+    contributing pattern — the pattern library is a dysfunction catalog — so its
+    evidence is the Strength-valence signals in the finding's domain, each with its
+    verbatim quote. Same shape as _build_evidence_chain so the UI renders it identically."""
+    hidden = max(0, len(strength_signals) - signal_cap)
+    chain_signals = [
+        _signal_chain_entry(s, s.get('signal_id', ''))
+        for s in strength_signals[:signal_cap]
+    ]
+    return {'patterns': [], 'signals': chain_signals, 'signals_hidden': hidden}
 
 
 def _derive_confidence(contributing_ep_ids: list, accepted_patterns: list) -> str:
@@ -274,8 +303,26 @@ def create_finding(
 
     payload = data.model_dump()
     contributing_ep_ids = payload.pop('contributing_ep_ids', [])
+    valence = (payload.get('valence') or '').lower()
+    domain  = payload.get('domain', '')
 
-    if not contributing_ep_ids:
+    # A Preserve (Positive) finding has no dysfunction pattern — the pattern library is a
+    # dysfunction catalog. It must instead be backed by ≥1 Strength signal in its domain.
+    # Dual and Negative findings keep the ≥1-pattern requirement (their strain is a
+    # documented dysfunction).
+    strength_signals = []
+    if valence == 'positive':
+        strength_signals = [
+            s for s in signal_repo.get_for_engagement(engagement_id)
+            if s.get('domain') == domain and s.get('valence') == 'Strength'
+        ]
+        if not strength_signals:
+            raise HTTPException(
+                status_code=422,
+                detail="A Preserve finding requires at least one Strength signal in its "
+                       f"domain ({domain or 'unspecified'}). None were found."
+            )
+    elif not contributing_ep_ids:
         raise HTTPException(
             status_code=422,
             detail="At least one contributing pattern must be selected. "
@@ -298,7 +345,8 @@ def create_finding(
 
         payload['evidence_summary'] = _compute_evidence_summary(
             contributing_ep_ids, accepted_patterns,
-            payload.get('domain', ''), domain_signal_counts
+            domain, domain_signal_counts,
+            valence=valence, strength_count=len(strength_signals),
         )
 
     finding_id = finding_repo.create(engagement_id, payload, contributing_ep_ids)
@@ -369,6 +417,13 @@ async def parse_synthesizer_findings(
 
     signals_by_id = {s['signal_id']: s for s in all_signals}
 
+    # Strength signals per domain — evidence source for Positive (Preserve) findings,
+    # which have no contributing pattern.
+    strength_signals_by_domain: dict = {}
+    for s in all_signals:
+        if s.get('valence') == 'Strength':
+            strength_signals_by_domain.setdefault(s.get('domain', ''), []).append(s)
+
     # Build domain signal counts for evidence summary computation
     domain_summary_rows = signal_repo.get_domain_summary(engagement_id)
     domain_signal_counts: dict = {}
@@ -410,6 +465,16 @@ async def parse_synthesizer_findings(
         if not isinstance(item.get('key_quotes'), list):
             item['key_quotes'] = []
 
+        # Validate/default valence — normalize casing first (LLMs emit 'positive'/'POSITIVE');
+        # NULL or genuinely invalid ≡ Negative (today's behavior).
+        v = (item.get('valence') or '').strip().capitalize()
+        if v not in VALID_FINDING_VALENCES:
+            if item.get('valence'):
+                logger.warning(f"Invalid finding valence '{item.get('valence')}' — defaulting to Negative")
+            v = 'Negative'
+        item['valence'] = v
+        is_positive = item['valence'] == 'Positive'
+
         # Resolve suggested P-IDs to EP IDs for contributing patterns checklist
         ep_ids = [
             pid_to_ep[pid]
@@ -417,24 +482,37 @@ async def parse_synthesizer_findings(
             if pid in pid_to_ep
         ]
 
-        # Derive confidence from contributing pattern confidence levels (deterministic)
-        item['confidence'] = _derive_confidence(ep_ids, accepted_patterns)
-        if item['confidence'] not in VALID_FINDING_CONFIDENCES:
-            item['confidence'] = 'Medium'
-
-        # Compute evidence summary so it's visible on the candidate review card
-        item['evidence_summary'] = _compute_evidence_summary(
-            ep_ids, accepted_patterns,
-            item['domain'], domain_signal_counts
-        )
-
-        # Build evidence chain: contributing patterns + source signals with quotes
-        item['evidence_chain'] = _build_evidence_chain(ep_ids, ep_by_epid, signals_by_id)
+        if is_positive:
+            # Preserve finding: no contributing pattern. Evidence and confidence come
+            # from the domain's Strength signals; keep the model's stated confidence.
+            strength_signals = strength_signals_by_domain.get(item['domain'], [])
+            if item.get('confidence') not in VALID_FINDING_CONFIDENCES:
+                item['confidence'] = 'Medium'
+            item['evidence_summary'] = _compute_evidence_summary(
+                [], accepted_patterns, item['domain'], domain_signal_counts,
+                valence='positive', strength_count=len(strength_signals),
+            )
+            item['evidence_chain'] = _build_strength_evidence_chain(strength_signals)
+        else:
+            # Negative / Dual: derive confidence from contributing patterns (deterministic)
+            item['confidence'] = _derive_confidence(ep_ids, accepted_patterns)
+            if item['confidence'] not in VALID_FINDING_CONFIDENCES:
+                item['confidence'] = 'Medium'
+            item['evidence_summary'] = _compute_evidence_summary(
+                ep_ids, accepted_patterns,
+                item['domain'], domain_signal_counts
+            )
+            item['evidence_chain'] = _build_evidence_chain(ep_ids, ep_by_epid, signals_by_id)
 
         # Serialise key_quotes to JSON string for storage
         item['key_quotes'] = json_lib.dumps(item['key_quotes'])
 
         cleaned.append(item)
 
-    logger.info(f"parse-synthesizer: {len(cleaned)} candidates for {engagement_id}")
+    positive_count = sum(1 for c in cleaned if c.get('valence') == 'Positive')
+    dual_count     = sum(1 for c in cleaned if c.get('valence') == 'Dual')
+    logger.info(
+        f"parse-synthesizer: {len(cleaned)} candidates for {engagement_id} "
+        f"({positive_count} Positive, {dual_count} Dual)"
+    )
     return {'candidates': cleaned}

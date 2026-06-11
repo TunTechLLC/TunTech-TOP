@@ -39,7 +39,7 @@ GET_BY_AGENT = """
     FROM   AgentRuns
     WHERE  engagement_id = ?
     AND    agent_name = ?
-    ORDER  BY created_date DESC
+    ORDER  BY created_date DESC, run_id DESC
     LIMIT  1
 """
 
@@ -49,7 +49,7 @@ GET_ACCEPTED_OUTPUT = """
     WHERE  engagement_id = ?
     AND    agent_name = ?
     AND    accepted = 1
-    ORDER  BY created_date DESC
+    ORDER  BY created_date DESC, run_id DESC
     LIMIT  1
 """
 
@@ -60,7 +60,7 @@ GET_ACCEPTED_WITH_CORRECTION = """
     WHERE  engagement_id = ?
     AND    agent_name = ?
     AND    accepted = 1
-    ORDER  BY created_date DESC
+    ORDER  BY created_date DESC, run_id DESC
     LIMIT  1
 """
 
@@ -77,6 +77,17 @@ ACCEPT_RUN = """
     UPDATE AgentRuns
     SET    accepted = 1
     WHERE  run_id = ?
+"""
+
+# Enforce one accepted run per (engagement, agent): un-accept any sibling run before
+# accepting the target. Without this, re-running and re-accepting an agent leaves two
+# accepted runs, and get_accepted_output becomes non-deterministic on same-day ties.
+UNACCEPT_SIBLINGS = """
+    UPDATE AgentRuns
+    SET    accepted = 0
+    WHERE  engagement_id = (SELECT engagement_id FROM AgentRuns WHERE run_id = ?)
+    AND    agent_name    = (SELECT agent_name    FROM AgentRuns WHERE run_id = ?)
+    AND    run_id <> ?
 """
 
 DELETE_RUN = """
@@ -159,9 +170,15 @@ class AgentRunRepository(BaseRepository):
         return run_id
 
     def accept(self, run_id: str) -> None:
-        """Mark an agent run as accepted. Unlocks the next agent."""
+        """Mark an agent run as accepted and un-accept any prior accepted run of the same
+        agent on the same engagement — exactly one accepted run per agent per engagement.
+        Unlocks the next agent. Re-running and re-accepting now cleanly replaces the prior
+        output instead of leaving two accepted runs."""
         logger.info(f"Accepting agent run: {run_id}")
-        self._write(ACCEPT_RUN, (run_id,))
+        self._write_transaction([
+            (UNACCEPT_SIBLINGS, (run_id, run_id, run_id)),
+            (ACCEPT_RUN, (run_id,)),
+        ])
 
     def reject(self, run_id: str) -> None:
         """Delete an agent run. Removes the output so the agent can be re-run cleanly.

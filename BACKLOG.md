@@ -3,15 +3,54 @@
 
 ---
 
+## NEXT SESSION — RESUME HERE (paused 2026-06-11)
+
+**Where we are:** The Strengths & Value-Case Reframe (Tracks 1–3) is BUILT, 110 tests pass,
+and it is **uncommitted**. A **Cobalt Data Partners (E006)** dry run is **in progress,
+paused after report v1 was generated.** Cobalt is a purpose-built test client (answer key:
+`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`)
+that exercises both the value-case reframe and the QA-stage traps — it doubles as Checkpoint 5.
+
+**Validated so far this run:** 15 Strength signals extracted (9 domains); 1 Positive
+("Preserve") finding loaded; v1 generated. Narrator audit: 8 pass / 4 flagged (punch list below).
+
+**Do next, in order:**
+1. **Judge v1 substance** against the answer key — value-case checks (leads with the prize,
+   "What to Preserve" before the roadmap, strengths thread in the Exec Summary, roadmap value
+   spine) and findings F1–F9.
+2. **Run the QA stage** (QA-1/2/3 → QA-4 revision → v2) on v1 — confirm it catches the planted
+   traps: C1–C4 contradictions, A1–A2 attribution errors, the margin-compression false trail.
+   This is the Checkpoint 5 validation.
+3. **Build one prompt punch list.** Known from the v1 narrator audit:
+   - **Executive-snapshot brevity** — sentences ran 26/25/21 words; the value-first reframe
+     packs in more, so push the prompt to hold ≤20 words/sentence (the snapshot is NOT in the
+     compress pass). *This is the one real audit flag worth fixing.*
+   - economic_impact_narrative ran 3 sentences (max 2) — minor narrator discipline.
+   - Accept: the ungrounded-figure flags are correct unlabeled summary figures (match the key);
+     the Rule-1 "diversification in Scale" flag is a defensible placement.
+   - Add whatever the substance read + QA surface.
+4. **Apply all prompt fixes at once → one clean narrator regen** → re-run QA on the regen.
+5. **Review and COMMIT** the full body of work (large + uncommitted — see PROGRESS.md
+   "Strengths"/"Cobalt fixes" rows). Suggested: branch, commit Tracks 1–3 + the bug-fix bundle
+   together. Run the byte-identity diff gate (E004 negatives unchanged) before commit — logic
+   is unit-tested but the full doc-level diff was deferred.
+
+**Checkpoint scripts:** `python scripts/valence_state.py E006` reports strength-signal and
+Positive/Dual-finding counts (run after extraction/load to fail cheap). Watch `top.log` for
+`TRUNCATED at max_tokens` during roadmap/narrator.
+
+---
+
 
 ## Technical Debt — Address Before Next Major Feature
 
 ### Build Sequence — current
 
-The Post-Assembly QA Stage is COMPLETE: QA-1/2/3 shipped 2026-05-30; QA-4 shipped
-2026-05-31 (in-place edit-list architecture, Opus 4.7, reconciliation); QA-5
-integrated QA Tab UI shipped 2026-06-01 (see PROGRESS.md). **Checkpoint 5 is the
-next work.** Work top to bottom.
+The Post-Assembly QA Stage is COMPLETE (QA-1/2/3/4/5 — see PROGRESS.md), and the
+**Strengths & Value-Case Reframe (Tracks 1–3)** is now BUILT and in **Cobalt E006**
+validation (the dry run that doubles as Checkpoint 5). 110 tests pass; the work is
+**not yet committed**. See "NEXT SESSION — RESUME HERE" at the top of this file. Work top
+to bottom.
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
@@ -21,7 +60,7 @@ next work.** Work top to bottom.
 | 3 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
 | 4 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
 | 5 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
-| 6 | Strengths & Value-Case Reframe | multi | Design captured below ("What to Preserve"). Three-track plan; brief reframe gated on first client pilot |
+| 6 | Strengths & Value-Case Reframe | — | ✅ BUILT (Tracks 1–3) — in Cobalt E006 validation. Deferred: brief *restructure* (vs reframe) to first pilot; pattern-level valence |
 
 ---
 
@@ -38,218 +77,38 @@ remain available as regression-test reference data for Checkpoint 5.
 
 ---
 
-## Strengths & Value-Case Reframe — "What to Preserve" (DESIGN CAPTURED — NOT STARTED)
+## Strengths & Value-Case Reframe — "What to Preserve" (BUILT — IN VALIDATION)
 
-**Status:** Phase 1 design only. No code written. Stopped at the design gate by request.
-Resume from these notes another day.
+**Status:** Tracks 1–3 BUILT 2026-06-11 (110 tests pass, **uncommitted**); in Cobalt E006
+validation. Full implementation record is in PROGRESS.md; the original design rationale is in
+git history (commit "Capture Strengths & Value-Case Reframe design") and embodied in the code.
+This section now lists only what shipped and what remains.
 
-### Why this exists (commercial context)
-TOP today produces an all-problems deliverable. That is a hard sell — a founder-led
-consulting firm hears "your governance is broken" as "you are a bad leader," and gets
-defensive. Clients also need to hear what they are doing **right**. The deeper reframe:
-stop shipping a deficiency **audit** and start shipping a **value case** — same honest
-findings, re-spined so the document sizes a recoverable prize and shows a winnable path,
-instead of reading like a verdict.
+### Shipped (Tracks 1–3)
+- **Track 1** — valence on signals + findings (`Strength/Risk/Neutral`, `Positive/Dual/Negative`,
+  NULL≡Negative); Skeptic challenges unsupported strengths; Synthesizer assembles "What to
+  Preserve"; 422 relaxed for Positive findings (≥1 domain Strength signal instead of a pattern);
+  strength-signal evidence chain; scorecard no longer subtracts for strengths; new "What to
+  Preserve" report section before the roadmap (omitted when empty → negatives byte-identical);
+  `migrate_valence.py`.
+- **Track 2** — `executive_summary_strengths` narrator field ("right to win" thread), omittable.
+- **Track 3** — Executive Brief value reframe: value-first snapshot (prize → cause → recoverable
+  value → first move), whole-brief value-case posture, "Three Gaps to Close", roadmap value
+  spine. **Reframe only — page restructure intentionally NOT done.**
+- Skill: strengths evidence rule + Preserve-finding pattern exception. QA-2 `weak_grounding`
+  catches generic praise.
 
-**Commercial model that drives the brief design:** The plan is to sell the interviews +
-the **Executive Brief** for ~$5k, presented live to the CEO. The brief is **page 1 of the
-finished report** (after the TOC). If the CEO says yes in the room, Victor turns the page
-into the full roadmap (already generated — TOP always builds the whole report; QA runs on
-the full roadmap after it is built). So the brief is the **conversion artifact** and must
-sell the rest. **Not yet piloted with a real client** — every design choice here, current
-and proposed, is a hypothesis until there is client signal.
-
-### Core design decision — valence as a field, NOT a strengths agent
-Do **not** add a "strengths agent" — an agent incentivized to find strengths would fight
-the Skeptic. Instead add **valence** as a dimension to the existing
-signal → pattern → finding → synthesis pipeline:
-- **Signal valence** (`Strength` / `Risk` / `Neutral`): tagged by the domain agent that
-  already extracts the signal. A field, not a new pass. This is the SOURCE — positive
-  evidence does not exist anywhere in the pipeline today, so it must enter here.
-- **Finding valence**: `Positive` → a "Preserve" finding; `Dual` → strength-under-strain
-  (strength + strain that share one root cause, e.g. a healthy win-rate trend AND an
-  architect-contingent pipeline skew → one root → a "move" that protects the strength
-  while fixing the strain); `Negative` → unchanged from today.
-- **The Skeptic's mandate extends to strengths** — a strength that can't be traced to a
-  named account, metric, or behavior dies exactly like an unsupported problem finding.
-  This is the load-bearing guardrail against flattery-by-construction.
-- **The Synthesizer ASSEMBLES "What to Preserve"** from validated positive/dual findings —
-  it does not DERIVE praise. Sourcing and validation happen upstream.
-
-### Where valence enters — the SEAM (differs from the original sketch; this is the verified-correct version)
-Original sketch said "valence on signal → pattern → finding, minimum = push to the
-pattern layer." **Code investigation showed the pattern layer is the wrong seam.** Two
-findings forced the change:
-
-1. **A "healthy" scorecard score is the ABSENCE of dysfunction, not the PRESENCE of
-   strength.** `_compute_domain_scores` (`api/services/report_sections.py:28`) starts at
-   5.0 and only ever **subtracts** (accepted pattern High −1.0 / Med −0.5 / Hyp −0.25;
-   finding High −0.5 / Med −0.25). A domain scores 4.2 because *almost nothing was
-   extracted from it* — there are no "positive patterns behind the score" to trigger a
-   Preserve finding from. So positive evidence must be created upstream (signal
-   extraction); the scorecard can't be its source.
-2. **Patterns are constrained to a fixed dysfunction library (P01–P60).**
-   `PatternDetectionResult` (`api/models/pattern.py`) validates `pattern_id` against the
-   `Patterns` library; the agent **cannot invent a pattern**, and the library is a
-   dysfunction catalog. A healthy domain has **zero** pattern instances, so "push valence
-   to the pattern layer for healthy domains" produces nothing. A DUAL "strength-under-
-   strain" cannot be a library entry.
-
-**Verified-correct seam:** put valence on the **SIGNAL** (true source) and the **FINDING**
-(carrier to the report). Make **DUAL a finding type assembled by the Synthesizer**, not a
-pattern-library type. **Leave the pattern library untouched.** Pattern-level valence is
-deferred and non-load-bearing (it only buys per-pattern analytics).
-
-### Code investigation findings (verified 2026-06-08 against current code)
-- **Signals**: `Signals` table has **no valence column**. 7 extraction prompts, all
-  dysfunction-framed: `SIGNAL_EXTRACTION_PROMPT` (interview/other) in
-  `api/services/prompts.py`; 6 doc prompts (financial/portfolio/sow/status/resource/
-  delivery) in `api/services/document_processor.py`. Insert path:
-  `SignalRepository.create` / `bulk_create`.
-- **Findings**: `OPDFindings` has **no valence column**. `create_finding`
-  (`api/routers/findings.py`) **enforces ≥1 contributing pattern (422)** — this blocks a
-  Preserve finding for a healthy domain (no patterns to link). Must relax for
-  `valence='positive'` (require ≥1 referenced Strength **signal** instead). Findings
-  extracted from Synthesizer via `FINDINGS_EXTRACTION_PROMPT`; `_build_evidence_chain`
-  walks pattern notes only — needs a strength-signal path for Preserve findings.
-- **Scorecard latent bug**: every finding subtracts regardless of valence — a Preserve
-  finding with a priority would WRONGLY lower a healthy domain's score. Fix:
-  Positive/Dual findings do not subtract; optionally ADD a small increment for a validated
-  strength so a Healthy score is *backed* by a Preserve finding instead of dead-ending.
-- **Report**: `report_generator._build` renders the brief as page 1
-  (`_build_executive_briefing`); `_findings_by_domain` renders ALL findings (Positive
-  findings must be EXCLUDED here — they belong in "What to Preserve"). "What to Preserve"
-  section goes **before the Transformation Roadmap** (`report_generator.py:359`).
-  `_SECTION_MAP` numbers shift by one when a numbered section is inserted before the
-  roadmap — must update the map (drives reader-guide cross-refs).
-- **Migration pattern**: nullable `ALTER TABLE` + `schema_migrations` record; see
-  `migrations/migrate_qa_revision.py` for the template. Add `valence` to the two
-  `CREATE TABLE`s in `tests/test_repositories.py`.
-
-### THE ROLLOUT PLAN — three tracks split by risk (this is the key decision)
-Reasoning: the Executive Brief and Executive Summary are Victor's heavily-invested,
-**unpiloted** design. The real risk is not "a change breaks the design" — it's that we
-guess wrong about what converts a CEO with zero client data and reshape the one tuned
-conversion artifact blind. So split by risk:
-
-**Track 1 — DO NOW. Safe. Never touches the brief or summary.**
-The capability itself: valence on signals + findings; the Skeptic mandate extension; the
-Synthesizer/findings-extraction emitting Preserve/Dual; a dedicated **"What to Preserve"
-section in the report body, before the roadmap**; the scorecard fix (strengths stop
-subtracting, optionally add). This gives the system the capability and a real home for
-strengths without risking the conversion page.
-
-**Track 2 — Reversible, additive. Extends the existing Executive Summary (Victor invited
-additions here).** Add a "what's working / where you have the right to win" thread plus
-strengths-as-leverage ("your strong client relationships let you reprice without churn")
-and the current→future climb. Note the summary ALREADY carries trajectory (margin trend,
-18-month target, aggregate "Revenue at Risk") — EXTEND it, don't bolt on a duplicate.
-
-**Track 3 — DEFER TO THE PILOT. The one-page Executive Brief reframe.**
-Do not redesign the one-pager blind. It is the exact thing that needs real client signal
-before reshaping. After the first pilot, tune it against evidence as a redline approved
-line by line. See the brief-reframe guidance below for what that change will be.
-
-### Brief-reframe guidance (Track 3 — what a McKinsey partner would do)
-Observed on the real E005 brief: it is a **full page, 100% problem/risk-framed** — zero
-strengths, numbers framed as exposure/loss ($550K / $435K / $378K). The page has no free
-space; anything added displaces something tuned. BUT the brief already has the **best,
-hardest part**: a *challenger reframe* ("your margin problem is not a tooling/PM problem —
-it's a structural operating-model failure"). Keep that.
-
-A partner would NOT say "open with strengths" (flattery on page 1 reads soft and gets
-discounted) and would NOT say "beat them down." The diagnosis: the brief is negative
-**without a prize and without signaling the fight is winnable**. Three surgical, mostly-
-**reframe** (not restructure) moves:
-1. **Reframe loss → recoverable value — same numbers, opposite valence.** "$378K annual
-   margin erosion cost" → "$378K/yr recoverable margin"; "Revenue at risk" → "value at
-   stake". Adds nothing; relabels what exists.
-2. **Anchor the insight to a prize + target up front** (sized, in the first 3 lines).
-3. **Use the strength as the reason it's winnable, not as praise** — "this is a structural
-   governance gap, not a talent or client problem — which is exactly why it's fixable."
-Posture shift: "we're on the same side of the table" — honesty in the *diagnosis*, warmth
-in the *posture*; keep every hard fact.
-
-Illustrative before/after (NOT a spec — uses E005 content, which is a defect-test
-engagement):
-> **Now:** "Stratum's margin problem is not a tooling or PM-capacity problem. It is a
-> structural operating model failure… Gross margin has fallen from 41% to 33.1%…"
->
-> **Reframe:** "Stratum has the delivery talent and client relationships to run at 37%+
-> margin. Today it runs at 33.1%, down from 41% in 24 months — and the cause is not
-> tooling or PM capacity. It's one structural gap: Sales commits scope and price before
-> Delivery ever sees the deal. That's the most fixable kind of problem, and closing it
-> puts an estimated $378K a year back in the business."
-
-Same insight, same numbers, same candor — opens on a prize and a winnable fight instead of
-a wound, with **zero new blocks**. **Reframe now (low-risk, reversible, strong prior);
-restructure (reorder/cut blocks) only after pilot signal.** The direction (value-framed,
-answer-first, "winnable prize") is a decades-established executive-communication prior, not
-a coin flip — pilot *from* it.
-
-### Skill + QA changes
-- Add a **strengths evidence rule** to the `top-deliverable-quality` skill: every strength
-  names an account, metric, or behavior; no generic praise ("strong team"); mirror the
-  existing "documented pattern" / "CONFIRMED opportunity" evidence rules.
-- Keep the line clean: **sourcing** strengths is upstream (extraction prompts + Synthesizer
-  + the Skeptic as generation-time gate); **enforcing** "no strength without specific
-  evidence" is the QA stage — extend QA-2 Coherence's existing `weak_grounding` category to
-  catch generic praise in the rendered "What to Preserve" section. QA can kill a bad
-  strength; it cannot generate a good one.
-
-### Backward compatibility
-- New `valence` columns nullable; NULL ≡ today's negative behavior. Existing negative
-  findings must stay **byte-for-byte behavior-identical**.
-- Zero positive/dual findings ⇒ **OMIT** the "What to Preserve" section entirely
-  (byte-identical to today's deliverable). Do NOT print "no preservable strengths
-  surfaced." A Healthy domain with no Preserve finding becomes a **QA flag**, not a report
-  line — keeps the dead-end visible to the consultant without polluting a clean
-  negative-only deliverable.
-
-### Blast radius (Track 1 minimum)
-Migration (`migrate_valence.py`: ALTER Signals + OPDFindings, schema_migrations records) ·
-`models/signal.py` · `models/finding.py` · `db/repositories/signal.py` ·
-`db/repositories/finding.py` · `document_processor.py` (extraction prompts — minimum:
-interview + financial/status/portfolio; full: all 7) · `prompts.py`
-(`SIGNAL_EXTRACTION_PROMPT`, `SKEPTIC_PROMPT`, `SYNTHESIZER_PROMPT`,
-`FINDINGS_EXTRACTION_PROMPT` — all **holistic rewrites**, never spliced) ·
-`case_packet.py` (`_section_2_signals` surfaces valence to agents) ·
-`routers/findings.py` (relax 422 for `valence='positive'`; parse-synthesizer
-default/validate valence; strength-signal evidence path) · `report_sections.py`
-(`_compute_domain_scores` fix, new `_what_to_preserve` renderer, exclude Positive from
-`_findings_by_domain`, `_SECTION_MAP` renumber) · `report_generator.py` (call
-`_what_to_preserve` before the roadmap) · frontend (`SignalPanel.jsx` valence badge/edit,
-`FindingsPanel.jsx` Preserve/Dual rendering, `constants.js` VALENCE list) · skill ·
-`tests/test_repositories.py` schema + new tests.
-**Untouched / must stay identical:** negative-finding create/update/render, pattern
-detection (minimum), roadmap extraction, narrator prompt (the "What to Preserve" section is
-rendered deterministically from finding fields — deliberately avoids touching the ~700-line
-narrator prompt).
-
-### Open decisions to confirm before coding
-1. Seam relocation: valence on **signal + finding**, DUAL as a finding type, pattern
-   library untouched (vs. the original "valence to the pattern layer"). **Recommended.**
-2. Relax the ≥1-pattern 422 guard for Positive findings (require ≥1 Strength signal
-   instead). **Required**, or strengths can't become findings.
-3. Empty section ⇒ **omit** (byte-identical); Healthy-domain gap caught by QA. **Recommended.**
-4. Scope for the pilot: ship **Track 1 + Track 2**; hold **Track 3 (brief reframe)** for
-   first-pilot signal. **Recommended.**
-
-### Test plan
-Migration idempotency + `--verify` · repo round-trip (signal + finding valence persists /
-NULL defaults) · `_compute_domain_scores`: Preserve finding does NOT lower the score
-(golden assertion on E004 numbers proving negatives unchanged) · `_what_to_preserve`
-renders only Positive/Dual, empty ⇒ section omitted (doc byte-identical) · **diff harness**:
-generate pre-change vs post-change on E004/E005 with zero strength findings → negative
-findings byte-for-byte identical · E005-style dry run: a Healthy domain emits a Preserve
-finding, a Dual finding renders strength/strain/move, negatives diff clean.
-
-### Separate small defect found during this design (fix independently)
-On the Executive Brief, the **"Competitive AI Capability Gap"** block renders as loose
-paragraphs BETWEEN the "Three Critical Problems" heading and the 3-problem table, instead
-of inside the table — confirmed unintentional. Likely a 4th problem the narrator emitted
-that didn't land in the table structure. Discrete bug on the conversion artifact; fix on
-its own, separate from the reframe work above.
+### Remaining / deferred
+1. **Finish the Cobalt E006 validation** + the prompt punch list — see "NEXT SESSION — RESUME
+   HERE" at the top of this file (esp. the executive-snapshot ≤20-word brevity fix).
+2. **Track 3 brief _restructure_** (reorder/cut/add page-1 blocks) — DEFERRED to first real
+   client pilot. Only the reversible *reframe* was built; restructuring needs client signal.
+3. **Pattern-level valence** — deferred (non-load-bearing; only buys per-pattern analytics).
+4. **Discrete defect (open):** on the Executive Brief, the "Competitive AI Capability Gap" block
+   renders as loose paragraphs between the problems heading and the 3-problem table instead of
+   inside it. Fix independently of the reframe.
+5. **Pre-commit:** run the byte-identity diff gate on E004 (negatives unchanged) — logic is
+   unit-tested; the full doc-level diff was deferred.
 
 ---
 

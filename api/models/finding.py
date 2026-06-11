@@ -15,6 +15,7 @@ class FindingCreate(BaseModel):
     effort:              Optional[str] = "Medium"
     opd_section:         Optional[int] = None
     pattern_id:          Optional[str] = None
+    valence:             Optional[str] = None   # Positive | Dual | Negative (NULL ≡ Negative)
     contributing_ep_ids: list[str] = []
     evidence_summary:    Optional[str] = None
     key_quotes:          Optional[str] = None   # JSON array of quote strings
@@ -39,6 +40,7 @@ class FindingUpdate(BaseModel):
     priority:           Optional[str] = None
     effort:             Optional[str] = None
     opd_section:        Optional[int] = None
+    valence:            Optional[str] = None   # Positive | Dual | Negative
     evidence_summary:   Optional[str] = None
     key_quotes:         Optional[str] = None
     display_figure:     Optional[str] = None
@@ -65,6 +67,7 @@ class FindingResponse(BaseModel):
     priority:           Optional[str] = None
     effort:             Optional[str] = None
     opd_section:        Optional[int] = None
+    valence:            Optional[str] = None   # Positive | Dual | Negative
     created_date:       str
     evidence_summary:   Optional[str] = None
     key_quotes:         Optional[str] = None

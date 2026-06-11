@@ -49,7 +49,10 @@ def test_db(monkeypatch, tmp_path):
             economic_relevance TEXT,
             source TEXT,
             notes TEXT,
-            created_date TEXT NOT NULL
+            created_date TEXT NOT NULL,
+            source_file TEXT,
+            library_signal_id TEXT,
+            valence TEXT
         );
         CREATE TABLE IF NOT EXISTS Patterns (
             pattern_id TEXT PRIMARY KEY,
@@ -95,7 +98,8 @@ def test_db(monkeypatch, tmp_path):
             include_in_executive INTEGER DEFAULT 0,
             confirmed_figure REAL,
             derived_figure REAL,
-            annual_drag_figure REAL
+            annual_drag_figure REAL,
+            valence TEXT
         );
         CREATE TABLE IF NOT EXISTS RoadmapItems (
             item_id TEXT PRIMARY KEY,
@@ -136,7 +140,8 @@ def test_db(monkeypatch, tmp_path):
             output_full TEXT,
             output_doc_link TEXT,
             accepted INTEGER DEFAULT 0,
-            created_date TEXT NOT NULL
+            created_date TEXT NOT NULL,
+            consultant_correction TEXT
         );
         CREATE TABLE IF NOT EXISTS ProcessedFiles (
             file_id TEXT PRIMARY KEY,
@@ -287,6 +292,242 @@ def test_finding_repository_atomic_transaction():
     findings = finding_repo.get_all('E_TEST')
     assert len(findings) == 1
     assert findings[0]['finding_title'] == 'Test Finding'
+
+
+# ---------------------------------------------------------------------------
+# Valence round-trip (Strengths & Value-Case Reframe — Track 1)
+# ---------------------------------------------------------------------------
+
+def test_signal_valence_round_trips_and_defaults_null():
+    """A signal's valence persists; absent valence defaults to NULL (unset)."""
+    from api.db.repositories.signal import SignalRepository
+
+    signal_repo = SignalRepository()
+    base_signal = {
+        'engagement_id':    'E_VAL',
+        'signal_name':      'Strong win-rate trend',
+        'domain':           'Sales & Pipeline',
+        'observed_value':   '38% close rate',
+        'normalized_band':  'Above benchmark',
+        'signal_confidence': 'High',
+        'source':           'Interview',
+    }
+    signal_repo.create({**base_signal, 'valence': 'Strength'})
+    signal_repo.create({**base_signal, 'signal_name': 'Unlabeled signal'})  # no valence
+
+    signals = {s['signal_name']: s for s in signal_repo.get_for_engagement('E_VAL')}
+    assert signals['Strong win-rate trend']['valence'] == 'Strength'
+    assert signals['Unlabeled signal']['valence'] is None
+
+
+def test_finding_valence_round_trips_and_defaults_null():
+    """A finding's valence persists; absent valence defaults to NULL (≡ Negative)."""
+    from api.db.repositories.finding import FindingRepository
+
+    finding_repo = FindingRepository()
+    base = {
+        'finding_title':      'Preserve Finding',
+        'domain':             'Sales & Pipeline',
+        'confidence':         'High',
+        'operational_impact': 'x',
+        'economic_impact':    'x',
+        'root_cause':         'x',
+        'recommendation':     'x',
+        'valence':            'Positive',
+    }
+    # Positive findings have no contributing patterns — empty list is valid at the repo layer.
+    finding_repo.create('E_VAL', base, [])
+    finding_repo.create('E_VAL', {**base, 'finding_title': 'Plain Finding', 'valence': None}, [])
+
+    findings = {f['finding_title']: f for f in finding_repo.get_all('E_VAL')}
+    assert findings['Preserve Finding']['valence'] == 'Positive'
+    assert findings['Plain Finding']['valence'] is None
+
+
+def test_strength_evidence_chain_builds_from_domain_signals():
+    """A Preserve finding's evidence chain has no patterns and carries the domain's
+    Strength signals with verbatim quotes parsed from the notes format."""
+    from api.routers.findings import _build_strength_evidence_chain
+
+    strength_signals = [
+        {
+            'signal_id':        'S101',
+            'signal_name':      'Repeat-client retention',
+            'signal_confidence': 'High',
+            'source_file':      'Interview_CEO.txt',
+            'notes':            "Quote: 'seven of our top ten have renewed three years running' "
+                                "— Interpretation: strong retention.",
+        },
+    ]
+    chain = _build_strength_evidence_chain(strength_signals)
+    assert chain['patterns'] == []
+    assert chain['signals_hidden'] == 0
+    assert len(chain['signals']) == 1
+    entry = chain['signals'][0]
+    assert entry['signal_id'] == 'S101'
+    assert entry['signal_name'] == 'Repeat-client retention'
+    assert 'seven of our top ten have renewed three years running' in entry['quote']
+    assert 'Interpretation' not in entry['quote']  # interpretation stripped off the quote
+
+
+def test_evidence_summary_positive_valence_reads_strength_backed():
+    """Positive valence produces a strength-backed summary, not a pattern summary."""
+    from api.routers.findings import _compute_evidence_summary
+
+    summary = _compute_evidence_summary(
+        [], [], 'Customer Experience', {},
+        valence='positive', strength_count=3,
+    )
+    assert summary == 'Backed by 3 strength signals in Customer Experience'
+    # singular
+    one = _compute_evidence_summary([], [], 'Sales & Pipeline', {},
+                                    valence='positive', strength_count=1)
+    assert one == 'Backed by 1 strength signal in Sales & Pipeline'
+
+
+def test_section_map_byte_identical_without_strengths():
+    """With no Positive/Dual findings the section map equals the base map exactly —
+    a negative-only deliverable keeps today's section numbering."""
+    from api.services.report_sections import compute_section_map, _SECTION_MAP
+    assert compute_section_map(False) == _SECTION_MAP
+    assert 'what_to_preserve' not in compute_section_map(False)
+
+
+def test_section_map_shifts_when_what_to_preserve_renders():
+    """When strengths exist, 'What to Preserve' takes section 10 and the roadmap block
+    shifts down by one; sections before it are untouched."""
+    from api.services.report_sections import compute_section_map
+    sm = compute_section_map(True)
+    assert sm['what_to_preserve'] == 10
+    assert sm['roadmap'] == 11
+    assert sm['priority_zero'] == '11.1'
+    assert sm['risks'] == '11.8'
+    assert sm['what_happens_next'] == 12
+    # Sections before the insertion point do not move.
+    assert sm['domain_analysis'] == 6
+    assert sm['economic_impact'] == 8
+    assert sm['future_state'] == 9
+
+
+def test_domain_score_positive_finding_does_not_subtract():
+    """A Positive (Preserve) finding must not lower a domain's maturity score; a Negative
+    finding subtracts exactly as before (backward-compatible)."""
+    from api.services.report_sections import _compute_domain_scores
+    sigs = [{'domain': 'Delivery Operations'}]
+    neg = _compute_domain_scores(
+        sigs, [], [{'domain': 'Delivery Operations', 'priority': 'High', 'valence': 'Negative'}]
+    )
+    pos = _compute_domain_scores(
+        sigs, [], [{'domain': 'Delivery Operations', 'priority': 'High', 'valence': 'Positive'}]
+    )
+    assert neg['Delivery Operations'] == 4.5   # 5.0 - 0.5 for a High negative finding
+    assert pos['Delivery Operations'] == 5.0   # strength does not deduct
+    # NULL valence behaves like Negative (today's behavior)
+    null = _compute_domain_scores(
+        sigs, [], [{'domain': 'Delivery Operations', 'priority': 'High'}]
+    )
+    assert null['Delivery Operations'] == 4.5
+
+
+def _render_finding(title, valence, domain='Delivery Operations'):
+    return {
+        'domain': domain, 'finding_title': title, 'confidence': 'High',
+        'priority': 'High', 'effort': 'Medium', 'operational_impact': 'op',
+        'economic_impact': 'econ', 'root_cause': 'root', 'recommendation': 'rec',
+        'valence': valence, 'evidence_summary': '', 'key_quotes': '',
+    }
+
+
+def test_findings_by_domain_excludes_strength_findings():
+    """Domain Analysis renders Negative findings only; Positive/Dual go to What to Preserve."""
+    from docx import Document
+    from api.services.report_generator import ReportGeneratorService
+    svc = ReportGeneratorService('E_TEST')
+    doc = Document()
+    svc._findings_by_domain(doc, [
+        _render_finding('Chronic Overruns', 'Negative'),
+        _render_finding('Strong Retention', 'Positive', 'Customer Experience'),
+        _render_finding('Win Rate Under Strain', 'Dual', 'Sales & Pipeline'),
+    ], narrative={})
+    text = '\n'.join(p.text for p in doc.paragraphs)
+    assert 'Chronic Overruns' in text
+    assert 'Strong Retention' not in text
+    assert 'Win Rate Under Strain' not in text
+
+
+def test_what_to_preserve_renders_strengths_and_omits_when_negative_only():
+    """_what_to_preserve renders Positive + Dual findings; renders nothing for negatives."""
+    from docx import Document
+    from api.services.report_generator import ReportGeneratorService
+    svc = ReportGeneratorService('E_TEST')
+
+    doc = Document()
+    svc._what_to_preserve(doc, [
+        _render_finding('Strong Retention', 'Positive', 'Customer Experience'),
+        _render_finding('Win Rate Under Strain', 'Dual', 'Sales & Pipeline'),
+        _render_finding('Chronic Overruns', 'Negative'),  # ignored here
+    ])
+    text = '\n'.join(p.text for p in doc.paragraphs)
+    assert 'What to Preserve' in text
+    assert 'Strong Retention' in text
+    assert 'Win Rate Under Strain' in text
+    assert 'Chronic Overruns' not in text
+
+    # Negative-only → section omitted entirely (byte-identical to today)
+    doc2 = Document()
+    before = len(doc2.paragraphs)
+    svc._what_to_preserve(doc2, [_render_finding('Chronic Overruns', 'Negative')])
+    assert 'What to Preserve' not in '\n'.join(p.text for p in doc2.paragraphs)
+    assert len(doc2.paragraphs) == before  # nothing added
+
+
+def test_domain_cap_reserves_slots_for_strengths():
+    """A risk-dominated domain must not crowd out its Strength signals — the cap reserves
+    up to 2 strength slots so positive evidence reaches candidate review."""
+    from api.services.document_processor import _apply_domain_cap
+    cands = (
+        [{'domain': 'Delivery Operations', 'signal_name': f'risk{i}',
+          'signal_confidence': 'High', 'valence': 'Risk'} for i in range(5)]
+        + [{'domain': 'Delivery Operations', 'signal_name': f'str{i}',
+            'signal_confidence': 'Medium', 'valence': 'Strength'} for i in range(2)]
+    )
+    capped, removed = _apply_domain_cap(cands, cap=5)
+    assert len(capped) == 5                       # cap total preserved
+    assert removed == 2
+    assert sum(1 for c in capped if c['valence'] == 'Strength') == 2   # both strengths kept
+
+
+def test_accept_enforces_single_accepted_run_per_agent():
+    """Re-running and re-accepting an agent must leave exactly one accepted run — the
+    latest — so get_accepted_output is deterministic. Regression for the bug where a
+    re-run left two accepted runs and the truncated one could be read downstream."""
+    from api.db.repositories.agent_run import AgentRunRepository
+    repo = AgentRunRepository()
+
+    first  = repo.create({'engagement_id': 'E_ACC', 'agent_name': 'Synthesizer',
+                          'output_full': 'FIRST run output (truncated)'})
+    second = repo.create({'engagement_id': 'E_ACC', 'agent_name': 'Synthesizer',
+                          'output_full': 'SECOND run output (complete)'})
+
+    repo.accept(first)
+    repo.accept(second)   # should un-accept `first`
+
+    runs = [r for r in repo.get_for_engagement('E_ACC') if r['agent_name'] == 'Synthesizer']
+    accepted = [r for r in runs if r['accepted'] == 1]
+    assert len(accepted) == 1, f"expected exactly one accepted run, got {len(accepted)}"
+    assert accepted[0]['run_id'] == second
+    assert repo.get_accepted_output('E_ACC', 'Synthesizer') == 'SECOND run output (complete)'
+
+
+def test_domain_cap_unchanged_without_strengths():
+    """With no Strength signals the cap behaves exactly as before — top N by confidence."""
+    from api.services.document_processor import _apply_domain_cap
+    cands = [{'domain': 'Sales & Pipeline', 'signal_name': f's{i}',
+              'signal_confidence': 'High', 'valence': 'Risk'} for i in range(7)]
+    capped, removed = _apply_domain_cap(cands, cap=5)
+    assert len(capped) == 5
+    assert removed == 2
+    assert all(c['valence'] == 'Risk' for c in capped)
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,8 @@ GET_FOR_ENGAGEMENT = """
            s.notes,
            s.source_file,
            s.created_date,
-           s.library_signal_id
+           s.library_signal_id,
+           s.valence
     FROM   Signals s
     WHERE  s.engagement_id = ?
     ORDER  BY s.domain, s.signal_confidence DESC
@@ -42,8 +43,8 @@ INSERT_SIGNAL = """
         signal_name, domain, observed_value,
         normalized_band, signal_confidence,
         economic_relevance, source, notes, created_date, source_file,
-        library_signal_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        library_signal_id, valence
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 DELETE_BY_SOURCE_FILE = """
@@ -112,6 +113,7 @@ class SignalRepository(BaseRepository):
             today,
             data.get('source_file'),
             data.get('library_signal_id'),
+            data.get('valence'),
         ))
 
         return signal_id
@@ -152,6 +154,7 @@ class SignalRepository(BaseRepository):
                 today,
                 row.get('source_file'),
                 row.get('library_signal_id'),
+                row.get('valence'),
             ))
 
         logger.info(f"Bulk creating {len(params)} signals")

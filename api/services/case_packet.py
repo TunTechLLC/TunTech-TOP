@@ -82,6 +82,8 @@ CONSULTANT NOTES:
                 f"Band: {s['normalized_band']} | "
                 f"Source: {s['source']}"
             )
+            if s.get('valence'):
+                line += f" | Valence: {s['valence']}"
             if s.get('source_file'):
                 line += f" | File: {s['source_file']}"
             if s.get('economic_relevance'):

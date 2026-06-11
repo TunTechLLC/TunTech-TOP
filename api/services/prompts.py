@@ -96,6 +96,12 @@ A Skeptic that agrees with everything produces no value.
 Produce these required sections:
 1. Challenged Claims — list every significant claim from prior agents that is not
    directly supported by confirmed signal evidence. Be specific about what is missing.
+   This applies equally to STRENGTH claims: a stated strength — something the firm does
+   well, a "preserve" — that cannot be traced to a specific named account, metric, or
+   behavior is unsupported and must be challenged exactly like an unsupported problem.
+   Generic praise ("strong team", "good culture", "great clients") with no specific
+   evidence behind it is a challenged claim. A flattering diagnostic is as useless as a
+   purely punitive one.
 2. Evidence Gaps — what data would materially change the diagnostic if obtained?
    Prioritize by importance to the intervention design.
 3. Downgrade Recommendations — which pattern confidences should be lowered and why?
@@ -343,7 +349,7 @@ For each issue you identify, produce a record with exactly these fields:
 CATEGORY DEFINITIONS:
 - contradiction: two parts of the document make incompatible factual claims — a number mislabeled, an arithmetic error, two sections giving different figures for the same metric, a classification that conflicts between Executive Summary and detail tables.
 - priority_mismatch: a finding rates priority/effort one way but the corresponding initiative table rates the same recommendation differently; or a recommendation's stated urgency is incompatible with its phase placement.
-- weak_grounding: a recommendation is presented without the arithmetic, evidence, or causal chain that would support it; a metric is asserted without the math connecting it to upstream factors; a quantified target is named without the components that sum to it.
+- weak_grounding: a recommendation is presented without the arithmetic, evidence, or causal chain that would support it; a metric is asserted without the math connecting it to upstream factors; a quantified target is named without the components that sum to it; OR a strength in the "What to Preserve" section is generic praise ("strong team", "good culture", "great clients", "talented people") not anchored to a specific named account, metric, or behavior — a strength must earn its place with evidence exactly as a problem finding does.
 - missing_root_cause: a governance recommendation describes the mechanism without naming the behavioral pattern it must change; an action is assigned without addressing why the responsible party would behave differently this time than they have historically.
 
 TIER RUBRIC — assign exactly one tier per item:
@@ -571,6 +577,19 @@ Required sections:
    do not apply the CONFIRMED label. Instead, compute the dollar impact, label it DERIVED,
    and show the calculation inline. Do not apply CONFIRMED to rate card values, bill rate
    targets, or gap percentages under any circumstance.
+
+   What to Preserve — strengths assembly: not every finding is a problem. When the case
+   packet contains Strength-valence signals that survived the Skeptic's challenge —
+   traceable to a specific named account, metric, or behavior — ASSEMBLE them as findings
+   the client should preserve. A standalone validated strength becomes a "preserve"
+   finding. Where a strength and a strain share a single root cause (e.g. a healthy
+   win-rate trend AND an architect-contingent pipeline skew rooted in "growth depends on
+   one person"), assemble a strength-under-strain finding whose recommendation is the one
+   move that protects the strength while fixing the strain. ASSEMBLE only from validated
+   strength evidence — do NOT derive praise, and never include a strength that is generic
+   or unsupported (the Skeptic will have already challenged it). Most findings remain
+   problems; an engagement with no validated strengths simply produces none — do not
+   manufacture strengths to balance the report.
 3. Priority Zero Items — findings that must be addressed before any other work begins.
    These are blockers, not just high priorities.
 4. Unresolved Dependencies — what remains uncertain and how it affects the recommendations.
@@ -624,6 +643,8 @@ SIGNAL_EXTRACTION_PROMPT = f"""You are analyzing an interview transcript from a 
 
 Extract signals that are directly supported by evidence in the transcript. A signal is a specific, observable indicator of operational health or dysfunction.
 
+Extract both kinds. A well-run area produces strengths (evidence of operational health — a capability, metric, or behavior that is working well) just as a struggling one produces risks (evidence of dysfunction). Do not extract only problems — a genuine, evidence-backed strength is as important to capture as a genuine weakness.
+
 Extract between 5 and 10 found signals per transcript. If you identify more than 10, keep only
 the 10 most operationally significant. Only include signals where the evidence is clear
 and specific. Do not extract speculative signals to reach a minimum count.
@@ -642,6 +663,11 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Interview"
 - economic_relevance: string — one short phrase (e.g. "Delivery margin", "Revenue stability") or empty string
 - notes: string — include the VERBATIM quote from the transcript that supports this signal, followed by your brief interpretation. Format: "Quote: '[exact words]' — Interpretation: [your note]"
+- valence: string — the signal's directional meaning, exactly one of:
+    - "Strength": evidence of operational health — a capability, metric, or behavior working well and worth preserving (e.g. a rising win rate, strong client retention, a disciplined process)
+    - "Risk": evidence of dysfunction, weakness, or a negative indicator (e.g. chronic overruns, no governance, margin erosion)
+    - "Neutral": a contextual fact that is neither clearly positive nor negative
+  When the evidence is genuinely ambiguous, use "Neutral". Do not label something a Strength without specific evidence — an unsupported strength is as invalid as an unsupported problem.
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-17"). Omit for freely-extracted signals.
 
 Only extract signals with direct transcript evidence. Do not invent signals.
@@ -673,6 +699,7 @@ Return format example:
       "source": "Interview",
       "economic_relevance": "Delivery margin",
       "notes": "Quote: 'eight of our fourteen active projects are on track, the rest are in some kind of trouble' — Interpretation: 57% on-schedule rate confirmed directly by CEO.",
+      "valence": "Risk",
       "library_signal_id": "SL-18"
     }}
   ],
@@ -718,6 +745,20 @@ The input contains the Synthesizer's integrated output and the list of accepted 
 
 Extract between 5 and 10 findings. Findings must be distinct — do not split one finding into multiple overlapping records.
 
+FINDING VALENCE — every finding carries a directional type:
+- "Negative": a problem or dysfunction. This is the default and describes almost every finding. Built from the dysfunction patterns and Risk signals. Requires at least one supporting pattern (suggested_pattern_ids non-empty).
+- "Positive": a validated strength worth preserving — a "Preserve" finding. Built ENTIRELY from Strength signals in one domain. A Preserve finding has NO supporting pattern (the pattern library is a dysfunction catalog), so its suggested_pattern_ids MUST be an empty list. Emit a Positive finding ONLY when the Synthesizer output and domain signals contain specific, named evidence of a strength (an account, a metric, a behavior) — never generic praise like "strong team" or "good culture".
+- "Dual": a strength under strain — one strength and one strain that share a single root cause (e.g. a healthy win-rate trend AND an architect-contingent pipeline skew that share the root "growth depends on one person"). A Dual finding HAS a supporting pattern for its strain side — include it in suggested_pattern_ids.
+
+For Positive and Dual findings, fill the standard fields with this meaning:
+- operational_impact: state the strength plainly; for Dual, add a second sentence stating the strain.
+- root_cause: for Positive, the behavior or capability that produces the strength (why it works); for Dual, the shared root linking strength and strain.
+- recommendation: for Positive, how to protect or institutionalize the strength; for Dual, the single MOVE that protects the strength while fixing the strain.
+- economic_impact: for Positive, the value at stake if the strength erodes, or "Not separately quantified" if none; for Dual, the strain's cost using the rules below.
+- priority: Positive findings are usually "Low" unless the strength is actively eroding.
+
+Most findings are Negative. Do not invent strengths to balance the report — an unsupported strength is as invalid as an unsupported problem.
+
 ECONOMIC IMPACT REQUIREMENT:
 Every economic_impact value must show the reasoning, not just the conclusion. A CFO must be able to follow the logic and argue with the assumptions. Format:
   "$[figure] ([CONFIRMED, DERIVED, or INFERRED]: [calculation] — [source of each input])"
@@ -735,6 +776,7 @@ Each item must have exactly these fields:
 - finding_title: string — concise title (e.g. "Chronic Project Overruns")
 - domain: string — must be exactly one of: "Sales & Pipeline", "Sales-to-Delivery Transition", "Delivery Operations", "Resource Management", "Project Governance / PMO", "Consulting Economics", "Customer Experience", "AI Readiness", "Human Resources", "Finance and Commercial"
 - confidence: string — exactly "High", "Medium", or "Low"
+- valence: string — exactly "Negative", "Positive", or "Dual" (see FINDING VALENCE above). Default to "Negative".
 - operational_impact: string — 1-3 sentences describing the operational consequence
 - economic_impact: string — quantified where possible, with inline reasoning as described above. If genuinely unquantifiable, state why in one sentence.
 - root_cause: string — one sentence root cause statement
@@ -749,7 +791,7 @@ Each item must have exactly these fields:
   4 = Domain Analysis, 5 = Root Cause Analysis, 6 = Economic Impact Analysis,
   7 = Future State, 8 = Transformation Roadmap, 9 = What Happens Next.
   Most findings belong in section 4 or 5.
-- suggested_pattern_ids: list of strings — pattern IDs from the ACCEPTED PATTERNS list that directly support this finding (e.g. ["P12", "P15"]). Only include IDs that appear in the accepted patterns list provided. Do not invent pattern IDs.
+- suggested_pattern_ids: list of strings — pattern IDs from the ACCEPTED PATTERNS list that directly support this finding (e.g. ["P12", "P15"]). Only include IDs that appear in the accepted patterns list provided. Do not invent pattern IDs. For a "Positive" finding this MUST be an empty list.
 - key_quotes: list of 2–3 strings — verbatim quotes selected from the DOMAIN SIGNALS provided for this finding's domain. Each quote must appear word-for-word in the signal notes provided. Do not paraphrase, summarise, or fabricate quotes. If fewer than 2 quotes are available for the domain, include what exists. If no signal notes are provided for the domain, return an empty list.
 
 CRITICAL OUTPUT FORMAT:
@@ -764,6 +806,7 @@ Return format:
     "finding_title": "Chronic Project Overruns",
     "domain": "Delivery Operations",
     "confidence": "High",
+    "valence": "Negative",
     "operational_impact": "Eight of fourteen active projects are delayed, consuming unplanned delivery capacity and eroding client confidence.",
     "economic_impact": "$130K–$280K/year in direct overrun cost (INFERRED: 14 active projects × 30% average overrun rate × $67K average project value — overrun rate estimated from CEO interview; project value from pipeline document)",
     "root_cause": "Projects are scoped without delivery input, producing commitments that cannot be met at current staffing levels.",
@@ -775,6 +818,23 @@ Return format:
     "key_quotes": [
       "We sign the SOW and then tell delivery what we sold them — by then it's too late to push back.",
       "I've never once seen a delivery lead in the room during a proposal."
+    ]
+  },
+  {
+    "finding_title": "Strong Repeat-Client Retention",
+    "domain": "Customer Experience",
+    "confidence": "High",
+    "valence": "Positive",
+    "operational_impact": "Seven of the firm's top ten accounts have renewed for three or more consecutive years, providing a stable revenue base and reference pipeline.",
+    "economic_impact": "Not separately quantified — represents the retained-revenue base the transformation must not disrupt.",
+    "root_cause": "Senior consultants stay on accounts across engagements, building trust and institutional knowledge the client values.",
+    "recommendation": "Codify the relationship-continuity model into account-staffing policy so it survives growth and turnover.",
+    "priority": "Low",
+    "effort": "Low",
+    "opd_section": 4,
+    "suggested_pattern_ids": [],
+    "key_quotes": [
+      "We've worked with the same lead consultant for four years — they know our business better than some of our own people."
     ]
   }
 ]"""
@@ -910,7 +970,7 @@ JSON SCHEMA — return exactly these keys:
 
 {
   "executive_briefing": {
-    "executive_snapshot": "<EXACTLY THREE SENTENCES. Sentence 1: primary diagnosis in plain language. Sentence 2: most urgent active risk with dollar figure if one is confirmed. Sentence 3: what must happen this week and who owns it. No qualifications. Readable in under 30 seconds.>",
+    "executive_snapshot": "<EXACTLY THREE SENTENCES, value-first. Open on the PRIZE, not the wound. Across the three sentences cover: (a) where this firm can be plus the ONE structural cause of the gap — and, if a validated strength exists, why that makes it winnable; (b) the single most important figure framed as recoverable value or value at stake, never a sunk 'loss'; (c) the first move that starts capturing it. Same hard facts as a problem framing — opposite posture. No labels. Each sentence ≤20 words. Readable in under 30 seconds.>",
     "problems": [
       {
         "finding_id": "<exact finding_id from ACCEPTED FINDINGS — e.g. F001>",
@@ -929,6 +989,7 @@ JSON SCHEMA — return exactly these keys:
   "executive_summary_para1": "<2-3 sentences. Client hypothesis vs diagnostic reality. Direct. No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'domain_analysis_ref' from the SECTION REFERENCES block.>",
   "executive_summary_para2": "<2-3 sentences. Economic stakes in plain language. Exactly two figures only: the largest confirmed or derived acute exposure (immediate or one-time risk) and the largest confirmed or derived annual drag (ongoing structural loss). No CONFIRMED/DERIVED/INFERRED labels. End with exactly the text labeled 'economic_impact_ref' from the SECTION REFERENCES block.>",
   "executive_summary_para3": "<2-3 sentences. Why sequencing matters — what must happen first and why the order is not optional. No labels. End with exactly the text labeled 'priority_zero_ref' from the SECTION REFERENCES block.>",
+  "executive_summary_strengths": "<2-3 sentences, or null. The 'what's working / where you have the right to win' thread. Name 1-2 VALIDATED strengths from the VALIDATED STRENGTHS block — each tied to a specific account, metric, or behavior — and frame them as leverage for the transformation (e.g. 'the client relationships that drive 70% repeat revenue are exactly what let you reprice without churn'). Do NOT introduce any new dollar figure (the ANCHOR NUMBER CONSTRAINT applies). Return null if the VALIDATED STRENGTHS block is empty or absent — never invent strengths and never use generic praise.>",
   "margin_trend_brief": "<one line — current gross margin % to prior gross margin % over X years with direction, e.g. '42% → 35% over 3 years (declining)'. Derive from Consulting Economics finding or Synthesizer output. Return null if not determinable from the data.>",
   "engagement_overview_paragraph": "<4-6 sentences. Who was interviewed by role. What documents were reviewed by type. Engagement objective. Signal count. Derive roles and document types only from the PROCESSED FILES list — do not fabricate.>",
   "root_cause_narrative": "<exactly 4 paragraphs separated by \\n\\n>",
@@ -1004,29 +1065,41 @@ JSON SCHEMA — return exactly these keys:
 SECTION INSTRUCTIONS:
 
 executive_briefing — structured object for the one-page CEO teaser:
-  This page is shown to a CEO before they decide whether to pay for the full report.
+  This page is shown to a CEO before they decide whether to pay for the full report. It is
+  the conversion artifact — its job is to make the CEO want the roadmap.
   Every field must be specific to this engagement. Generic language is a failure here.
 
-  executive_snapshot: exactly three sentences. The Executive Snapshot opens the Executive
-    Briefing page. It is the first thing a reader sees. Sentence 1: primary diagnosis in
-    plain language. Sentence 2: most urgent active risk with a dollar figure if one is
-    confirmed. Sentence 3: what must happen this week and who owns it. No headers, no
-    sub-bullets, no qualifications. Readable in under 30 seconds.
-    Do not use CONFIRMED, DERIVED, or INFERRED labels anywhere in this field. State
-    figures directly without qualification labels.
-    PROSE STYLE: Write in short declarative sentences. Each sentence expresses exactly one
-    idea. No sentence should exceed 20 words. Do not embed the key insight inside a
-    subordinate clause — pull it out as its own sentence. The reader must feel the weight
-    of the problem after reading the snapshot, not need to parse compound logic to find it.
-    Wrong: "Northstar's margin problem is not a PM execution problem — it is a pricing and
-    governance problem: gross margin has compressed from 40% to 31% over four years because
-    the CEO retains unilateral authority over pricing, SOW execution, and change order
-    acceptance with no governance gates, and that authority has been used in ways that lock
-    in losses before delivery begins."
-    Right: "Northstar's margin problem is not a PM execution problem. It is a pricing and
-    governance problem. Gross margin has fallen from 40% to 31% in four years. The cause
-    is not delivery failure — it is a decision structure that locks in losses before
-    delivery begins."
+  VALUE-CASE POSTURE — applies to the whole briefing:
+  Ship a VALUE CASE, not a deficiency audit. Lead with the prize — what the firm can be and
+  what is recoverable — then name the gaps in the way. Keep every hard fact and every
+  figure; change the posture, not the honesty. "We're on the same side of the table":
+  candor in the diagnosis, warmth in the framing. Frame each problem as the distance between
+  today and a winnable target, and frame the firm's validated strengths as the reason the
+  target is reachable. Never open on the wound.
+
+  executive_snapshot: exactly three sentences, value-first. It is the first thing the CEO
+    sees and it decides whether they read on, so it opens on the PRIZE, not the problem.
+    Across the three sentences, cover these three things in this order:
+    (1) The prize and why it is winnable — where this firm can be (a sized target or a clear
+        better state) and the ONE structural cause of the gap. State plainly the cause is
+        NOT talent, demand, or effort — it is a structural / operating-model gap, the most
+        fixable kind. If the VALIDATED STRENGTHS block names a strength, use it here as the
+        reason it is winnable ("the margin and client loyalty are already there").
+    (2) The recoverable value — the single most important figure, framed as value that is
+        recoverable or at stake, NEVER as a sunk "loss." Same figure as the economics,
+        opposite valence. An exposure is "value at risk," not a realized loss.
+    (3) The first move — what must happen now to start capturing it.
+    No CONFIRMED/DERIVED/INFERRED labels. State figures directly.
+    PROSE STYLE: short declarative sentences, one idea each, none over 20 words. Do not bury
+    the point in a subordinate clause. If there are no validated strengths, still lead with
+    the recoverable prize and the single structural cause — never open on the wound.
+    Wrong (deficiency audit — leads with the wound): "Cobalt's margin problem is a pricing
+    and governance problem. Gross margin has compressed from 41% to 33%. Three retainers
+    are underwater and the Helix renewal is unsigned."
+    Right (value case — leads with the prize): "Cobalt has the talent and client loyalty to
+    run at 37% margin. Today it runs at 33%, and the cause is one structural gap, not talent
+    or demand. Closing it returns an estimated $378K a year — start with a delivery gate on
+    new SOWs."
 
   problems: exactly 3 entries (or fewer if fewer than 3 findings exist).
     finding_id: must be an ID that appears in the ACCEPTED FINDINGS list — e.g. F001.
@@ -1108,6 +1181,21 @@ executive_summary_para3 — 2-3 sentences:
   Focus on the Priority Zero items — not a summary of the full roadmap.
   Close the paragraph with exactly the text labeled 'priority_zero_ref' from the SECTION
   REFERENCES block in the input. Copy it verbatim — do not alter the section number or wording.
+
+executive_summary_strengths — 2-3 sentences or null:
+  The "what's working / where you have the right to win" thread. The diagnostic is honest
+  about problems; this is where it is equally honest about what the firm is doing right.
+  Use ONLY the VALIDATED STRENGTHS block in the input — these are strengths that survived
+  the Skeptic and are tied to a specific named account, metric, or behavior. Name one or
+  two and frame them as LEVERAGE for the transformation, not as praise: a strength is the
+  reason the fix is winnable ("the senior-consultant continuity that retains your top ten
+  accounts is the same asset that lets you raise rates without losing them"). This extends
+  the trajectory already carried by margin_trend_brief and the future state — do not
+  duplicate those.
+  Carry NO dollar figure here — the ANCHOR NUMBER CONSTRAINT covers this field too.
+  Return null if the VALIDATED STRENGTHS block is empty or absent. Never manufacture a
+  strength to balance the report, and never use generic praise ("strong team", "good
+  culture") — an unsupported strength is as invalid as an unsupported problem.
 
 margin_trend_brief — one line or null:
   Derive from the Consulting Economics finding's economic_impact field or from the
@@ -1236,6 +1324,12 @@ roadmap_rationale — one entry per phase that has items.
   Stabilize: why these items are sequenced first — what active damage stops, what gets unblocked.
   Optimize: what foundation Stabilize created, what becomes possible now.
   Scale: what the payoff looks like — what the firm can do when Scale work is complete.
+  VALUE SPINE: the roadmap captures a prize, it does not just fix failures. Where a phase
+  protects or compounds a validated strength (from the VALIDATED STRENGTHS block), say so in
+  functional terms — e.g. "this phase protects the client loyalty that drives repeat
+  revenue" or "builds the bench the principals' depth makes possible." Frame each phase as
+  moving the firm toward the target state, not only away from a problem. This is functional
+  accomplishment, not praise — one phrase, no re-listing of findings.
   If economic linkage data exists for items in a phase, you may include one forward-looking
   economic reference per phase in the format 'This phase stops [figure] in [label]' or
   'This phase protects [figure] in [label].' No sourcing detail. No evidentiary label on
@@ -1591,9 +1685,9 @@ Correct:   "the governance policy initiative must precede the methodology develo
 Incorrect: "the governance policy (R063) must precede the methodology development (R072)"
 
 This applies to every prose field: executive_snapshot, executive_summary_opening,
-executive_summary_para1/2/3, root_cause_narrative, economic_impact_narrative,
-future_state_narrative, roadmap_rationale, domain_analysis opening/closing paragraphs,
-and all initiative_details prose fields.
+executive_summary_para1/2/3, executive_summary_strengths, root_cause_narrative,
+economic_impact_narrative, future_state_narrative, roadmap_rationale,
+domain_analysis opening/closing paragraphs, and all initiative_details prose fields.
 
 ---
 

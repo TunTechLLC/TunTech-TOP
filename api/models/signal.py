@@ -13,6 +13,7 @@ class SignalCreate(BaseModel):
     interview_id:      Optional[str] = None
     economic_relevance: Optional[str] = None
     notes:             Optional[str] = None
+    valence:           Optional[str] = None   # Strength | Risk | Neutral
 
 
 class SignalResponse(BaseModel):
@@ -28,6 +29,7 @@ class SignalResponse(BaseModel):
     interview_id:      Optional[str] = None
     economic_relevance: Optional[str] = None
     notes:             Optional[str] = None
+    valence:           Optional[str] = None   # Strength | Risk | Neutral
     created_date:      str
 
 

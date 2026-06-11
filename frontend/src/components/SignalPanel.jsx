@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { DEFAULT_DOMAIN, DOMAINS, CONFIDENCE_LEVELS, SOURCES } from '../constants'
+import { DEFAULT_DOMAIN, DOMAINS, CONFIDENCE_LEVELS, SOURCES, SIGNAL_VALENCE } from '../constants'
 
 const confidenceColors = {
   High:       'bg-red-100 text-red-800',
@@ -11,6 +11,12 @@ const confidenceColors = {
 const sourceColors = {
   Interview: 'bg-blue-100 text-blue-700',
   Document:  'bg-purple-100 text-purple-700',
+}
+
+const valenceColors = {
+  Strength: 'bg-green-100 text-green-800',
+  Risk:     'bg-red-100 text-red-700',
+  Neutral:  'bg-gray-100 text-gray-500',
 }
 
 const EMPTY_FORM = {
@@ -403,6 +409,16 @@ export default function SignalPanel({ engagementId, onRefresh }) {
                         </select>
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Valence</label>
+                        <select
+                          value={c.valence || 'Neutral'}
+                          onChange={e => handleCandidateChange(idx, 'valence', e.target.value)}
+                          className={sel}
+                        >
+                          {SIGNAL_VALENCE.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                      <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Observed value</label>
                         <input
                           value={c.observed_value || ''}
@@ -605,6 +621,12 @@ export default function SignalPanel({ engagementId, onRefresh }) {
                     (sourceColors[signal.source] || 'bg-gray-100 text-gray-600')}>
                     {signal.source}
                   </span>
+                  {signal.valence && signal.valence !== 'Neutral' && (
+                    <span className={'px-2 py-0.5 rounded text-xs font-medium ' +
+                      (valenceColors[signal.valence] || 'bg-gray-100 text-gray-600')}>
+                      {signal.valence}
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">{signal.observed_value}</span>

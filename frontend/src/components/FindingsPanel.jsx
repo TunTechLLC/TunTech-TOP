@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { DEFAULT_DOMAIN, DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS } from '../constants'
+import { DEFAULT_DOMAIN, DOMAINS, FINDING_CONFIDENCES, PRIORITIES, EFFORTS, FINDING_VALENCE } from '../constants'
 
 function parseDollarToFloat(s) {
   if (!s) return null
@@ -38,6 +38,13 @@ const priorityColors = {
   Low:    'bg-gray-50 border-gray-200',
 }
 
+// Positive (Preserve) and Dual (strength-under-strain) get a badge; Negative is the
+// implicit default and shows none.
+const valenceColors = {
+  Positive: 'bg-green-100 text-green-800',
+  Dual:     'bg-indigo-100 text-indigo-800',
+}
+
 const FIGURE_TYPES = [
   { value: 'direct_exposure',    label: 'Direct Exposure' },
   { value: 'annual_drag',        label: 'Annual Drag' },
@@ -52,6 +59,7 @@ const EMPTY_FORM = {
   confidence:          'High',
   priority:            'High',
   effort:              'Medium',
+  valence:             'Negative',
   opd_section:         '',
   operational_impact:  '',
   economic_impact:     '',
@@ -236,9 +244,15 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       setParseError('Select at least one finding to load.')
       return
     }
-    const missingPatterns = approvedList.filter(f => !f.contributing_ep_ids || f.contributing_ep_ids.length === 0)
+    // Positive (Preserve) findings are exempt — the pattern library is a dysfunction
+    // catalog, so a strength has no pattern to link. The backend validates these against a
+    // Strength signal in their domain instead. Negative/Dual still require >=1 pattern.
+    const missingPatterns = approvedList.filter(f =>
+      (f.valence || 'Negative') !== 'Positive' &&
+      (!f.contributing_ep_ids || f.contributing_ep_ids.length === 0)
+    )
     if (missingPatterns.length > 0) {
-      setParseError(`${missingPatterns.length} selected finding(s) have no contributing patterns. Select at least one pattern for each approved finding.`)
+      setParseError(`${missingPatterns.length} selected problem finding(s) have no contributing patterns. Select at least one pattern for each (Preserve findings are exempt).`)
       return
     }
     setLoadingFindings(true)
@@ -256,6 +270,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
           priority:            finding.priority,
           effort:              finding.effort,
           opd_section:         finding.opd_section ? parseInt(finding.opd_section, 10) : null,
+          valence:             finding.valence || 'Negative',
           contributing_ep_ids: finding.contributing_ep_ids || [],
         })
       }
@@ -465,6 +480,16 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                           className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
                         >
                           {FINDING_CONFIDENCES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-0.5">Valence</div>
+                        <select
+                          value={c.valence || 'Negative'}
+                          onChange={e => handleSynthCandidateChange(idx, 'valence', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                        >
+                          {FINDING_VALENCE.map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
                       </div>
                     </div>
@@ -701,6 +726,12 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                 {FINDING_CONFIDENCES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Valence *</label>
+              <select name="valence" value={form.valence} onChange={handleChange} className={sel}>
+                {FINDING_VALENCE.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
 
             {/* Priority, effort, OPD section */}
             <div>
@@ -849,6 +880,11 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${confidenceColors[f.confidence] || 'bg-gray-100'}`}>
                         Confidence: {f.confidence}
                       </span>
+                      {valenceColors[f.valence] && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${valenceColors[f.valence]}`}>
+                          {f.valence === 'Positive' ? 'Preserve' : f.valence}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-600 font-medium">
                         Priority: {f.priority}
                       </span>

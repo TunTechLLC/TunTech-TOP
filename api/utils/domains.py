@@ -31,3 +31,10 @@ VALID_EFFORTS = {'High', 'Medium', 'Low'}
 VALID_PHASES = {'Stabilize', 'Optimize', 'Scale'}
 
 VALID_FINDING_CONFIDENCES = {'High', 'Medium', 'Low'}
+
+# Valence — positive evidence flows through the pipeline.
+# Signal valence is the source; finding valence is the carrier to the report.
+# NULL/absent finding valence ≡ 'Negative' (today's behavior — backward compatible).
+VALID_SIGNAL_VALENCES = {'Strength', 'Risk', 'Neutral'}
+
+VALID_FINDING_VALENCES = {'Positive', 'Dual', 'Negative'}

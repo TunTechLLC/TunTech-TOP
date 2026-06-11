@@ -58,6 +58,11 @@ def _compute_domain_scores(signals: list, patterns: list, findings: list) -> dic
             elif conf == 'Hypothesis':
                 score -= 0.25
         for f in finds:
+            # Positive/Dual (strength) findings do not lower the score — a strength worth
+            # preserving is not a deduction. NULL/Negative valence subtracts exactly as
+            # before, so negative-only deliverables score byte-identically to today.
+            if (f.get('valence') or '').lower() in ('positive', 'dual'):
+                continue
             pri = f.get('priority', '')
             if pri == 'High':
                 score -= 0.5
@@ -193,6 +198,35 @@ _SECTION_MAP = {
     'risks':             '10.8',
     'what_happens_next': 11,
 }
+
+# "What to Preserve" (Track 1 strengths section) is inserted before the Transformation
+# Roadmap ONLY when Positive/Dual findings exist. When present it occupies section 10 and
+# shifts the roadmap and everything after it down by one. When absent, section numbers are
+# byte-identical to a negative-only deliverable. These keys shift when it renders:
+_ROADMAP_AND_AFTER = (
+    'roadmap', 'priority_zero', 'roadmap_overview', 'quick_wins',
+    'stabilize', 'optimize', 'scale', 'dependencies', 'risks', 'what_happens_next',
+)
+
+
+def _bump_section(val):
+    """Increment a section number by one, preserving the 'N.M' sub-section form."""
+    if isinstance(val, int):
+        return val + 1
+    head, dot, tail = str(val).partition('.')
+    return f"{int(head) + 1}{dot}{tail}" if dot else str(int(head) + 1)
+
+
+def compute_section_map(has_preserve: bool) -> dict:
+    """Return the section-number map for this render. With no Positive/Dual findings the
+    map equals _SECTION_MAP exactly (byte-identical numbering to today). With strengths,
+    'What to Preserve' takes section 10 and the roadmap block shifts down by one."""
+    m = dict(_SECTION_MAP)
+    if has_preserve:
+        for key in _ROADMAP_AND_AFTER:
+            m[key] = _bump_section(m[key])
+        m['what_to_preserve'] = 10
+    return m
 
 # -------------------------------------------------------------------
 # Reader guide — priority/detail are format strings resolved against
@@ -807,7 +841,7 @@ class ReportSectionsMixin:
             problem_rows.append((plain_title, impact_brief))
 
         if problem_rows:
-            self._briefing_block_header(doc, 'Three Critical Problems')
+            self._briefing_block_header(doc, 'Three Gaps to Close')
             tbl = doc.add_table(rows=0, cols=1)
             tbl.style = 'Table Grid'
             for plain_title, impact_brief in problem_rows:
@@ -964,8 +998,10 @@ class ReportSectionsMixin:
         _set_col_widths(table, [1.6, 4.9])
         _left_align_table(table)
 
-    def _how_to_read_page(self, doc, findings: list, firm_name: str):
+    def _how_to_read_page(self, doc, findings: list, firm_name: str,
+                          section_map: dict = None):
         """Prefatory 'How to Read This Document' page."""
+        section_map = section_map or _SECTION_MAP
         heading_para = doc.add_heading('How to Read This Document', level=1)
         pPr = heading_para._p.get_or_add_pPr()
         numPr = pPr.find(qn('w:numPr'))
@@ -1012,8 +1048,8 @@ class ReportSectionsMixin:
 
             row = table.add_row()
             row.cells[0].text = entry['role']
-            row.cells[1].text = entry['priority'].format(s=_SECTION_MAP, domain_clause=domain_clause)
-            row.cells[2].text = entry['detail'].format(s=_SECTION_MAP, domain_clause=domain_clause)
+            row.cells[1].text = entry['priority'].format(s=section_map, domain_clause=domain_clause)
+            row.cells[2].text = entry['detail'].format(s=section_map, domain_clause=domain_clause)
         _left_align_table(table)
 
     def _signal_table(self, doc, signals: list):
@@ -1118,7 +1154,13 @@ class ReportSectionsMixin:
 
     def _findings_by_domain(self, doc, findings: list, narrative: dict,
                             roadmap_by_id: dict | None = None):
-        """Findings grouped by domain."""
+        """Findings grouped by domain. Positive/Dual (strength) findings are excluded —
+        they render in 'What to Preserve' before the roadmap. With no strength findings
+        this filter is a no-op, so a negative-only report renders byte-identically."""
+        findings = [
+            f for f in findings
+            if (f.get('valence') or '').lower() not in ('positive', 'dual')
+        ]
         if not findings:
             doc.add_paragraph('No findings recorded.')
             return
@@ -1182,6 +1224,73 @@ class ReportSectionsMixin:
                         q_run.font.size = Pt(9)
 
                 doc.add_paragraph()
+
+
+    def _what_to_preserve(self, doc, findings: list):
+        """Render the 'What to Preserve' section from validated Positive/Dual findings.
+        Positive → a strength to protect; Dual → strength-under-strain with the single move
+        that protects it. The caller renders this only when such findings exist, so a
+        negative-only deliverable never reaches this method (section omitted entirely)."""
+        preserve = [f for f in findings if (f.get('valence') or '').lower() == 'positive']
+        dual     = [f for f in findings if (f.get('valence') or '').lower() == 'dual']
+        if not preserve and not dual:
+            return
+
+        doc.add_heading('What to Preserve', level=1)
+        doc.add_paragraph(
+            'Not everything in this diagnostic is a problem to fix. The items below are '
+            'validated strengths — capabilities, relationships, and results the '
+            'transformation must protect, not disrupt.'
+        )
+        doc.add_paragraph()
+
+        for f in preserve:
+            doc.add_heading(f.get('finding_title', ''), level=2)
+            self._kv_table(doc, [
+                ('Domain',            f.get('domain') or ''),
+                ('What is working',   f.get('operational_impact') or ''),
+                ('Why it works',      f.get('root_cause') or ''),
+                ('How to protect it', f.get('recommendation') or ''),
+            ])
+            self._render_finding_evidence(doc, f)
+            doc.add_paragraph()
+
+        for f in dual:
+            doc.add_heading(f.get('finding_title', ''), level=2)
+            self._kv_table(doc, [
+                ('Domain',                    f.get('domain') or ''),
+                ('Strength under strain',     f.get('operational_impact') or ''),
+                ('Shared root cause',         f.get('root_cause') or ''),
+                ('The move that protects it', f.get('recommendation') or ''),
+                ('Economic stake',           _strip_economic_source_detail(f.get('economic_impact') or '')),
+            ])
+            self._render_finding_evidence(doc, f)
+            doc.add_paragraph()
+
+    def _render_finding_evidence(self, doc, f: dict):
+        """Render a finding's evidence summary (grey italic) and key quotes.
+        Shared by the 'What to Preserve' section."""
+        evidence = _client_facing_evidence(f.get('evidence_summary') or '')
+        if evidence:
+            ev_para = doc.add_paragraph()
+            ev_run  = ev_para.add_run(evidence)
+            ev_run.italic         = True
+            ev_run.font.size      = Pt(9)
+            ev_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+        raw_quotes = f.get('key_quotes') or ''
+        if raw_quotes:
+            try:
+                quotes = json.loads(raw_quotes)
+            except (json.JSONDecodeError, TypeError):
+                quotes = []
+            for quote in quotes:
+                if not quote:
+                    continue
+                q_para = doc.add_paragraph(style='Quote')
+                q_run  = q_para.add_run(f'"{quote}"')
+                q_run.italic    = True
+                q_run.font.size = Pt(9)
 
 
     # ------------------------------------------------------------------

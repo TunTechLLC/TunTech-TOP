@@ -91,6 +91,7 @@ _TOP_LEVEL_PROSE = (
     'executive_summary_para1',
     'executive_summary_para2',
     'executive_summary_para3',
+    'executive_summary_strengths',
     'engagement_overview_paragraph',
     'root_cause_narrative',
     'economic_impact_narrative',

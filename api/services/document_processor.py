@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import date
 
 from api.db.repositories.processed_files import ProcessedFilesRepository
-from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_CONFIDENCES
+from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_CONFIDENCES, VALID_SIGNAL_VALENCES
 from api.services.claude import extract_text
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,15 @@ Your response must follow this structure exactly:
 The "found" array contains extracted signal objects following all rules above.
 The "not_observed" array contains signal_ids from the SIGNAL LIBRARY block that you actively checked and could not find evidence for."""
 
+# Shared valence field spec — positive evidence enters the pipeline at extraction.
+# Inserted into every document extraction prompt's field list so a healthy metric is
+# captured as a Strength, not only problems as Risks.
+_VALENCE_FIELD = """- valence: string — the signal's directional meaning, exactly one of:
+    - "Strength": evidence of operational health — a metric, capability, or behavior working well and worth preserving (e.g. margin above benchmark, strong retention, a disciplined process)
+    - "Risk": evidence of dysfunction, weakness, or a negative indicator (e.g. margin erosion, missed milestones, unmitigated risks)
+    - "Neutral": a contextual fact that is neither clearly positive nor negative
+  When the evidence is genuinely ambiguous, use "Neutral". Do not label something a Strength without specific evidence — an unsupported strength is as invalid as an unsupported problem."""
+
 FINANCIAL_EXTRACTION_PROMPT = f"""You are analyzing a financial document from a consulting firm diagnostic engagement.
 
 Extract signals that are directly supported by data in the document. Focus on economics, margin, utilization, revenue, pricing, and financial health indicators.
@@ -73,6 +82,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document that supports this signal
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-38"). Omit for freely-extracted signals.
 
 Only extract signals with direct document evidence.
@@ -105,6 +115,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific data point from the document
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-17"). Omit for freely-extracted signals.
 
 Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
@@ -136,6 +147,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string
 - notes: string — include the specific language from the SOW that supports this signal
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-13"). Omit for freely-extracted signals.
 
 Extract no more than 10 found signals. If you identify more, keep only the 10 most operationally significant.
@@ -171,6 +183,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct quote or specific reference from the document
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-36"). Omit for freely-extracted signals.
 
 """ + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
@@ -203,6 +216,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference from the document
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-25"). Omit for freely-extracted signals.
 
 """ + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
@@ -253,6 +267,7 @@ Each item in "found" must have exactly these fields:
 - source: string — always "Document"
 - economic_relevance: string — brief note on economic impact, or empty string
 - notes: string — direct reference or quote from the document that supports this signal
+{_VALENCE_FIELD}
 - library_signal_id: string — ONLY include when this signal matches an entry from the SIGNAL LIBRARY block. Use the exact signal_id (e.g. "SL-19"). Omit for freely-extracted signals.
 
 """ + _LIBRARY_INSTRUCTION + _OUTPUT_FORMAT_OBJECT
@@ -629,6 +644,14 @@ async def process_file(file_info: dict, engagement_id: str,
         if item.get('signal_confidence') not in VALID_CONFIDENCES:
             logger.warning(f"Invalid confidence '{item.get('signal_confidence')}' in {file_name} — defaulting to Medium")
             item['signal_confidence'] = 'Medium'
+        # Normalize casing first — LLMs often emit 'strength'/'STRENGTH'. Title-case maps
+        # those to the canonical value; only genuinely unmappable values are coerced + logged.
+        v = (item.get('valence') or '').strip().capitalize()
+        if v not in VALID_SIGNAL_VALENCES:
+            if item.get('valence'):
+                logger.warning(f"Invalid valence '{item.get('valence')}' in {file_name} — defaulting to Neutral")
+            v = 'Neutral'
+        item['valence'] = v
         item['interview_id'] = None
         item['source_file'] = file_name
         cleaned.append(item)
@@ -660,9 +683,16 @@ async def process_file(file_info: dict, engagement_id: str,
     }
 
 
-def _apply_domain_cap(candidates: list[dict], cap: int = 5) -> tuple[list[dict], int]:
+def _apply_domain_cap(candidates: list[dict], cap: int = 5,
+                      strength_reserve: int = 2) -> tuple[list[dict], int]:
     """Cap candidates per domain, keeping highest-confidence entries first.
     Confidence order: High > Medium > Hypothesis.
+
+    Strength reserve: a domain dominated by Risk signals would otherwise crowd out its
+    Strength signals (which feed Preserve findings and the value case). Within each
+    domain, guarantee up to `strength_reserve` Strength-valence signals survive the cap by
+    swapping in the highest-confidence overflow strengths for the lowest-confidence kept
+    non-strengths. The cap total is unchanged.
     Returns (capped_list, count_removed)."""
     CONFIDENCE_RANK = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
     by_domain: dict[str, list[dict]] = {}
@@ -676,7 +706,22 @@ def _apply_domain_cap(candidates: list[dict], cap: int = 5) -> tuple[list[dict],
             key=lambda c: CONFIDENCE_RANK.get(c.get('signal_confidence', ''), 0),
             reverse=True,
         )
-        capped.extend(sorted_dc[:cap])
+        if len(sorted_dc) <= cap:
+            capped.extend(sorted_dc)
+            continue
+        kept = sorted_dc[:cap]
+        kept_strengths = sum(1 for c in kept if c.get('valence') == 'Strength')
+        if kept_strengths < strength_reserve:
+            overflow_strengths = [c for c in sorted_dc[cap:] if c.get('valence') == 'Strength']
+            slots = min(strength_reserve - kept_strengths, len(overflow_strengths))
+            if slots > 0:
+                # Drop the lowest-confidence kept non-strengths to make room (cap preserved).
+                non_strength_positions = [i for i, c in enumerate(kept)
+                                          if c.get('valence') != 'Strength']
+                drop = set(non_strength_positions[-slots:])
+                kept = [c for i, c in enumerate(kept) if i not in drop]
+                kept.extend(overflow_strengths[:slots])
+        capped.extend(kept)
     return capped, len(candidates) - len(capped)
 
 
@@ -796,10 +841,12 @@ async def process_engagement_files(engagement_id: str,
             'not_observed':          final_not_observed,
         }, f, indent=2)
 
+    strength_count = sum(1 for c in capped if c.get('valence') == 'Strength')
     logger.info(
         f"Merged candidates for {engagement_id}: "
         f"{len(main_candidates)} main, {hypothesis_count} hypothesis, "
-        f"{dedup_count} duplicates removed, {domain_cap_count} removed by domain cap"
+        f"{dedup_count} duplicates removed, {domain_cap_count} removed by domain cap, "
+        f"{strength_count} Strength signal(s) survived"
     )
 
     total_candidates = sum(r.get('candidate_count', 0) for r in results)
