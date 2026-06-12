@@ -31,11 +31,23 @@ _ANNUAL_DRAG_DOMAINS = frozenset({
 
 
 def _suggest_economic_figures(economic_impact: str, domain: str,
-                               confirmed_rev: float | None) -> dict:
+                               confirmed_rev: float | None,
+                               valence: str | None = None) -> dict:
     """Suggest confirmed_figure, derived_figure, annual_drag_figure from
     economic_impact text. Returns dict with three suggested_* keys.
     Values are None when no parseable figure exists or field not applicable.
-    Prepends ⚠ prefix if suggested value exceeds confirmed_rev."""
+    Prepends ⚠ prefix if suggested value exceeds confirmed_rev.
+
+    A strength (Positive/Dual valence) has no exposure/drag breakdown — its figure is
+    funding capacity, carried in display_figure, not in these exposure columns. Suggest
+    nothing for it, so the review UI shows empty exposure fields rather than a strength
+    masquerading as a derived exposure / annual drag."""
+    if (valence or '').lower() in ('positive', 'dual'):
+        return {
+            'suggested_confirmed_figure':   None,
+            'suggested_derived_figure':     None,
+            'suggested_annual_drag_figure': None,
+        }
     conf_str, deriv_str, _ = _parse_economic_figures(economic_impact)
 
     def _build(raw_str: str):
@@ -234,6 +246,7 @@ async def list_findings(
                 row.get('domain') or '',
                 confirmed_rev,
                 None,   # title-based label skipped — Claude generates it below
+                row.get('valence'),
             )
             row['suggested_figure']      = fig
             row['suggested_label']       = None   # filled in Phase 2
@@ -250,6 +263,7 @@ async def list_findings(
             row.get('economic_impact') or '',
             row.get('domain') or '',
             confirmed_rev,
+            row.get('valence'),
         )
         row['suggested_confirmed_figure']   = (suggestions['suggested_confirmed_figure']
                                                 if row.get('confirmed_figure')   is None else None)

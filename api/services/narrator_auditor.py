@@ -195,6 +195,15 @@ def _truncate(s: str, n: int) -> str:
     return s if len(s) <= n else s[:n] + '…'
 
 
+def _fmt_dollar(v: float) -> str:
+    """Format a float as a short dollar string for evidence messages."""
+    if v >= 1_000_000:
+        return f'${v / 1_000_000:.1f}M'
+    if v >= 1_000:
+        return f'${v / 1_000:.0f}K'
+    return f'${v:.0f}'
+
+
 # ------------------------------------------------------------------
 # Checks
 # ------------------------------------------------------------------
@@ -516,6 +525,64 @@ def check_no_individual_names(narrator: dict, ctx: AuditContext) -> AuditResult:
     return AuditResult(dim, STATUS_FAIL, preview)
 
 
+def check_revenue_at_risk_coherence(narrator: dict, ctx: AuditContext) -> AuditResult:
+    """The executive 'Revenue at Risk' headline must be the largest exposure on the page.
+
+    The renderer (report_generator) selects the 'Revenue at Risk' headline from findings
+    tagged ``figure_type == 'direct_exposure'``. If a materially larger non-strength
+    executive figure exists, the headline is understating the firm's risk — almost always
+    a figure_type mis-tag, where the true existential exposure is tagged 'annual_drag'
+    while a smaller cost is tagged 'direct_exposure'. This is the class behind the E006
+    "$127K vs $2.8M Helix exposure" and E004 "$186K" headline errors — a real DB figure
+    landing in the wrong executive slot, which check_economic_figures_grounded cannot catch
+    (the number IS grounded, just mis-placed).
+
+    Strengths (Positive/Dual valence) are excluded — a strength figure is not an exposure.
+    Dimension marked 'potential' — a review prompt, not a categorical violation.
+    """
+    dim = 'Revenue-at-risk headline is the largest executive exposure (potential mis-tag)'
+
+    exec_figs: list[tuple[dict, float]] = []
+    for f in ctx.findings:
+        if not f.get('include_in_executive'):
+            continue
+        if (f.get('valence') or '').lower() in ('positive', 'dual'):
+            continue
+        val = _normalize_dollar(f.get('display_figure') or '')
+        if val is not None:
+            exec_figs.append((f, val))
+
+    direct = [(f, v) for (f, v) in exec_figs if f.get('figure_type') == 'direct_exposure']
+    if not direct:
+        # No direct_exposure finding → the renderer does not emit a "Revenue at Risk"
+        # headline (it falls back to the largest figure under a different label).
+        return AuditResult(dim, STATUS_NA,
+                           "No direct_exposure finding — no 'Revenue at Risk' headline produced")
+
+    headline_val = sum(v for (_, v) in direct)  # renderer sums when more than one
+    others = [(f, v) for (f, v) in exec_figs if f.get('figure_type') != 'direct_exposure']
+    if not others:
+        return AuditResult(dim, STATUS_PASS,
+                           f'Headline revenue-at-risk ({_fmt_dollar(headline_val)}) is the only executive exposure')
+
+    big_f, big_v = max(others, key=lambda fv: fv[1])
+    direct_label = '; '.join(
+        (f.get('display_label') or f.get('finding_title') or '?') for f, _ in direct
+    )
+    # Require a 1.5x material gap so near-ties from rounding do not flag.
+    if big_v >= headline_val * 1.5:
+        return AuditResult(
+            dim, STATUS_FAIL,
+            f"Headline 'Revenue at Risk' is {_fmt_dollar(headline_val)} "
+            f"({_truncate(direct_label, 50)}), but a larger executive figure "
+            f"{_fmt_dollar(big_v)} (\"{_truncate(big_f.get('display_label') or big_f.get('finding_title') or '?', 50)}\", "
+            f"tagged {big_f.get('figure_type') or 'untyped'}) suggests the headline understates "
+            f"the risk — verify figure_type tags."
+        )
+    return AuditResult(dim, STATUS_PASS,
+                       f'Headline revenue-at-risk ({_fmt_dollar(headline_val)}) is the largest executive exposure')
+
+
 # ------------------------------------------------------------------
 # Registry and orchestrator
 # ------------------------------------------------------------------
@@ -533,6 +600,7 @@ AUDIT_CHECKS: tuple[Callable[[dict, AuditContext], AuditResult], ...] = (
     check_coverage_completeness,
     check_rule1_concentration,
     check_no_individual_names,
+    check_revenue_at_risk_coherence,
 )
 
 

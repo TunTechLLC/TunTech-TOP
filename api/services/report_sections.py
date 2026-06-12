@@ -449,6 +449,19 @@ _CONFIRMED_RE = re.compile(r'\bCONFIRMED(?:-\w+)?', re.IGNORECASE)
 _DERIVED_RE   = re.compile(r'\bDERIVED(?:-\w+)?',   re.IGNORECASE)
 _INFERRED_RE  = re.compile(r'\bINFERRED(?:-\w+)?',  re.IGNORECASE)
 
+# Figures that are unit rates or sub-$1K references are not engagement-level economic
+# magnitudes — skip them in extraction so they never become the primary display figure
+# (e.g. the "$100 per violation" HIPAA penalty floor that produced a $100 executive figure).
+# Time-period suffixes (per year/month/quarter/annum) are intentionally NOT skipped — those
+# are the annualized drag figures findings legitimately surface.
+_FINDING_FIGURE_MIN = 1000.0
+_UNIT_RATE_RE = re.compile(
+    r'^\s*(?:per\s+(?:violation|hour|hr|incident|seat|head|unit|fte|employee|'
+    r'candidate|requisition|req|license|user|transaction|call|ticket)'
+    r'|/\s*(?:hr|hour))\b',
+    re.IGNORECASE,
+)
+
 
 def _is_label_context(clause: str, pos: int, matched_text: str) -> bool:
     """Return True only when a CONFIRMED/DERIVED/INFERRED label at `pos` is being
@@ -558,6 +571,13 @@ def _parse_economic_figures(text: str):
             amt_end   = m.end()
             amt_start = m.start()
 
+            # Skip unit rates and sub-$1K references — not engagement-level magnitudes
+            # (e.g. "$100 per violation"). Keeps the primary display figure meaningful.
+            _amt_val = _dollar_to_float(amt)
+            if ((_amt_val is not None and _amt_val < _FINDING_FIGURE_MIN)
+                    or _UNIT_RATE_RE.match(clause[amt_end:amt_end + 30])):
+                continue
+
             pre_text = clause[:amt_start]
             if pre_text.count('(') > pre_text.count(')'):
                 continue
@@ -617,7 +637,10 @@ def _parse_economic_figures(text: str):
     return confirmed, derived, inferred
 
 
-# Domain → figure_type mapping for display figure pre-population
+# Domain → figure_type FALLBACK mapping. Used only when the economic_impact text carries
+# no signal about the figure's nature (see _classify_figure_type). Domain is a weak proxy
+# for figure_type — a single domain hosts acute exposures, annual drags, and recoverable
+# upside — so this is a last resort, never the primary source.
 _DOMAIN_TO_FIGURE_TYPE = {
     'Consulting Economics':         'annual_drag',
     'Finance and Commercial':       'annual_drag',
@@ -630,6 +653,74 @@ _DOMAIN_TO_FIGURE_TYPE = {
     'AI Readiness':                 'opportunity',
     'Human Resources':              'replacement_cost',
 }
+
+# Figure-type classification signals — read the figure's economic NATURE from the
+# economic_impact text the Consulting Economics agent already wrote, rather than guessing
+# from the finding's domain. Checked in priority order (highest-stakes first); the first
+# class whose signal appears wins.
+#
+# direct_exposure deliberately keys on revenue/contract-loss phrasing ("revenue at risk",
+# "non-renewal"), NOT bare "exposure" — so "regulatory exposure" / "compliance exposure"
+# do not falsely capture the acute revenue-at-risk headline slot.
+_FT_DIRECT_EXPOSURE_RE = re.compile(
+    r'revenue at risk|at risk in a|non-?renewal|does not renew|if\b[^.]{0,40}\brenew'
+    r'|loss if|one-time loss|single-event|existential|revenue loss|lose[^.]{0,30}revenue',
+    re.IGNORECASE,
+)
+_FT_REPLACEMENT_RE = re.compile(
+    r'replacement cost|turnover cost|to replace|re-?hire|backfill',
+    re.IGNORECASE,
+)
+_FT_OPPORTUNITY_RE = re.compile(
+    r'foregone|opportunity cost|left on table|recoverabl|under-?utiliz',
+    re.IGNORECASE,
+)
+_FT_ANNUAL_DRAG_RE = re.compile(
+    r'per year|per annum|/\s*yr\b|annual|annually|per month|ongoing|each year',
+    re.IGNORECASE,
+)
+_FT_DOLLAR_RE = re.compile(r'\$\d[\d,]*(?:\.\d+)?(?:\s*[KMB])?', re.IGNORECASE)
+
+
+def _classify_figure_type(economic_impact_text: str, domain: str, valence: str = None) -> str:
+    """Classify a finding's primary economic figure by its NATURE, read from the
+    economic_impact text the economics agent already wrote — not from the domain.
+
+    Priority (highest-stakes first):
+      funding_capacity — a strength (Positive/Dual valence): preserved value, NOT a loss
+      direct_exposure  — acute/one-time revenue at risk (drives the 'Revenue at Risk' headline)
+      replacement_cost — turnover / rehire cost
+      opportunity      — foregone / recoverable upside not yet realized
+      annual_drag      — ongoing per-period cost drag
+
+    An economic_impact may describe several figures of different natures. Classify by the
+    PRIMARY figure — the one that becomes display_figure (the first dollar amount) — using
+    its lead-in plus a short trailing qualifier, so a secondary figure's wording (e.g. a
+    "turnover cost" mentioned three sentences later) cannot capture the type.
+
+    Falls back to the domain default ONLY when the window carries no signal, so this never
+    regresses a finding whose economics are unphrased — it only corrects ones whose nature
+    is stated. (The domain map was previously the sole source; it is now the last resort.)
+    """
+    # A strength figure is funding capacity, never an exposure or a drag. Type it as such so
+    # it never enters an exposure slot (headline, exposure table, chart) and the review UI
+    # labels it honestly instead of inheriting a domain-default "Annual Drag". Checked first
+    # because a strength's prose carries no exposure/drag signal — it would otherwise fall
+    # through to the domain default, which is the exact bug this closes.
+    if (valence or '').lower() in ('positive', 'dual'):
+        return 'funding_capacity'
+    text = economic_impact_text or ''
+    m = _FT_DOLLAR_RE.search(text)
+    window = text[:m.end() + 80] if m else text
+    if _FT_DIRECT_EXPOSURE_RE.search(window):
+        return 'direct_exposure'
+    if _FT_REPLACEMENT_RE.search(window):
+        return 'replacement_cost'
+    if _FT_OPPORTUNITY_RE.search(window):
+        return 'opportunity'
+    if _FT_ANNUAL_DRAG_RE.search(window):
+        return 'annual_drag'
+    return _DOMAIN_TO_FIGURE_TYPE.get(domain, 'direct_exposure')
 
 
 def _format_display_figure(raw: str) -> str:
@@ -668,6 +759,7 @@ def _prepopulate_display_figure(
     domain: str,
     confirmed_revenue: float | None,
     finding_title: str | None = None,
+    valence: str | None = None,
 ) -> tuple[str | None, str | None, str | None]:
     """Extract a suggested display_figure, display_label, and figure_type
     from economic_impact text.
@@ -699,7 +791,7 @@ def _prepopulate_display_figure(
         if numeric is not None and numeric > confirmed_revenue:
             display_figure = f'\u26a0 {display_figure}'
 
-    figure_type   = _DOMAIN_TO_FIGURE_TYPE.get(domain, 'direct_exposure')
+    figure_type   = _classify_figure_type(economic_impact_text, domain, valence)
     display_label = ' '.join(finding_title.split()[:6]) if finding_title else None
 
     return display_figure, display_label, figure_type
@@ -1316,6 +1408,9 @@ class ReportSectionsMixin:
                             key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2)):
                 if not f.get('include_in_executive') or not f.get('display_figure'):
                     continue
+                # Strengths are not exposures — exclude Positive/Dual from the exposure chart.
+                if (f.get('valence') or '').lower() in ('positive', 'dual'):
+                    continue
                 val = _parse_display_figure_to_float(f['display_figure'])
                 if val is None:
                     continue
@@ -1532,6 +1627,10 @@ class ReportSectionsMixin:
         rows_with_impact = [
             f for f in sorted(findings, key=lambda x: PRIORITY_ORDER.get(x.get('priority'), 2))
             if f.get('economic_impact')
+            # Strengths (Positive/Dual valence) are not exposures — they belong in
+            # "What to Preserve", never in the Exposure/Drag columns. Same valence
+            # exclusion the scorecard (_compute_domain_scores) and Domain Analysis use.
+            and (f.get('valence') or '').lower() not in ('positive', 'dual')
         ]
         if not rows_with_impact:
             doc.add_paragraph('No economic impact data recorded for this engagement.')
@@ -1598,6 +1697,7 @@ class ReportSectionsMixin:
             if f.get('include_in_executive')
             and f.get('display_figure')
             and f.get('figure_type') in ('direct_exposure', 'annual_drag')
+            and (f.get('valence') or '').lower() not in ('positive', 'dual')
         ]
         _dedup: dict = {}
         for _f in _qualifying:

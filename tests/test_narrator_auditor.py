@@ -13,6 +13,7 @@ from api.services.narrator_auditor import (
     check_rule1_concentration,
     check_economic_figures_grounded,
     check_no_individual_names,
+    check_revenue_at_risk_coherence,
     STATUS_PASS,
     STATUS_FAIL,
     STATUS_NA,
@@ -405,7 +406,7 @@ def test_orchestrator_returns_summary_and_results():
     assert 'summary' in report
     assert 'results' in report
     assert {'pass', 'fail', 'na'} <= report['summary'].keys()
-    assert len(report['results']) >= 10  # we have 12 checks
+    assert len(report['results']) >= 10  # we have 13 checks
     # Every result has the three required keys
     for r in report['results']:
         assert {'dimension', 'status', 'evidence'} <= r.keys()
@@ -418,3 +419,63 @@ def test_orchestrator_catches_check_exceptions():
     report = audit_narrator_output(narrator, _empty_ctx())
     assert isinstance(report['results'], list)
     assert len(report['results']) > 0
+
+
+# ---------- check_revenue_at_risk_coherence ----------
+
+def _exec_finding(label, figure, ftype, valence='Negative'):
+    return {
+        'include_in_executive': 1,
+        'valence': valence,
+        'display_figure': figure,
+        'figure_type': ftype,
+        'display_label': label,
+    }
+
+
+def test_rar_fails_when_headline_dwarfed_by_larger_exposure():
+    """The real E006 bug: the only direct_exposure finding is the $127K PMO opportunity
+    cost, while the $2.8M Helix existential exposure is mis-tagged annual_drag. The headline
+    'Revenue at Risk' understates the risk 22x — must flag."""
+    findings = [
+        _exec_finding('Ungoverned delivery management opportunity cost', '$127K', 'direct_exposure'),
+        _exec_finding('Helix non-renewal revenue exposure', '$2.8M', 'annual_drag'),
+        _exec_finding('Recoverable revenue left on table', '$980K', 'replacement_cost'),
+    ]
+    ctx = AuditContext('E006', findings, [], [], [], [])
+    result = check_revenue_at_risk_coherence({}, ctx)
+    assert result.status == STATUS_FAIL
+    assert '$127K' in result.evidence
+    assert '$2.8M' in result.evidence
+
+
+def test_rar_passes_when_headline_is_largest_exposure():
+    """Correctly tagged: the Helix exposure is the direct_exposure and is the largest figure."""
+    findings = [
+        _exec_finding('Helix non-renewal revenue exposure', '$2.8M', 'direct_exposure'),
+        _exec_finding('Ungoverned delivery management opportunity cost', '$127K', 'annual_drag'),
+        _exec_finding('Recoverable revenue left on table', '$980K', 'replacement_cost'),
+    ]
+    ctx = AuditContext('E006', findings, [], [], [], [])
+    assert check_revenue_at_risk_coherence({}, ctx).status == STATUS_PASS
+
+
+def test_rar_na_when_no_direct_exposure():
+    """No direct_exposure finding → renderer emits no 'Revenue at Risk' headline → NA."""
+    findings = [
+        _exec_finding('Annual overrun drag', '$2.8M', 'annual_drag'),
+        _exec_finding('Recoverable revenue', '$980K', 'replacement_cost'),
+    ]
+    ctx = AuditContext('E006', findings, [], [], [], [])
+    assert check_revenue_at_risk_coherence({}, ctx).status == STATUS_NA
+
+
+def test_rar_ignores_strength_findings():
+    """A Positive-valence strength ($3.7M funding capacity) is not an exposure — it must not
+    count as the 'larger figure' and trigger a false flag against a correct headline."""
+    findings = [
+        _exec_finding('Helix non-renewal revenue exposure', '$2.8M', 'direct_exposure'),
+        _exec_finding('Gross profit funding capacity retained', '$3.7M', 'annual_drag', valence='Positive'),
+    ]
+    ctx = AuditContext('E006', findings, [], [], [], [])
+    assert check_revenue_at_risk_coherence({}, ctx).status == STATUS_PASS

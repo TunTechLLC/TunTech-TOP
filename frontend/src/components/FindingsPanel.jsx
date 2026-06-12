@@ -51,6 +51,7 @@ const FIGURE_TYPES = [
   { value: 'concentration_risk', label: 'Concentration Risk' },
   { value: 'opportunity',        label: 'Opportunity' },
   { value: 'replacement_cost',   label: 'Replacement Cost' },
+  { value: 'funding_capacity',   label: 'Funding Capacity (Strength)' },
 ]
 
 const EMPTY_FORM = {
@@ -95,6 +96,12 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
     const stripWarn = (s) => (typeof s === 'string' && s.startsWith('\u26a0 ')) ? s.slice(2) : s
     const isWarn    = (s) => typeof s === 'string' && s.startsWith('\u26a0 ')
 
+    // A strength (Positive/Dual) figure is funding capacity, not an exposure — so an unset
+    // Type defaults to funding_capacity for strengths, never direct_exposure. Covers the case
+    // where no figure was extracted, so the backend suggested no figure_type at all.
+    const _isStrength  = f.valence === 'Positive' || f.valence === 'Dual'
+    const _defaultType = _isStrength ? 'funding_capacity' : 'direct_exposure'
+
     // Confirmed Exposure
     const confVal = f.confirmed_figure != null
       ? formatFloat(f.confirmed_figure)
@@ -112,7 +119,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       return {
         display_figure:       f.display_figure,
         display_label:        f.display_label  || '',
-        figure_type:          f.figure_type    || 'direct_exposure',
+        figure_type:          f.figure_type    || _defaultType,
         include_in_executive: !!f.include_in_executive,
         isDirty:              true,
         hasWarning:           false,
@@ -131,7 +138,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       return {
         display_figure:       hasWarning ? f.suggested_figure.slice(2) : f.suggested_figure,
         display_label:        f.suggested_label       || '',
-        figure_type:          f.suggested_figure_type || 'direct_exposure',
+        figure_type:          f.suggested_figure_type || _defaultType,
         include_in_executive: false,
         isDirty:              false,
         hasWarning,
@@ -147,7 +154,7 @@ export default function FindingsPanel({ engagementId, onRefresh }) {
       }
     }
     return {
-      display_figure: '', display_label: '', figure_type: 'direct_exposure',
+      display_figure: '', display_label: '', figure_type: _defaultType,
       include_in_executive: false, isDirty: false, hasWarning: false,
       confirmed_figure: confVal, derived_figure: derivVal, annual_drag_figure: dragVal,
       confirmedSuggested:  f.confirmed_figure   == null && !!stripWarn(f.suggested_confirmed_figure),
