@@ -1,114 +1,77 @@
 # TOP — Backlog
 ## Build order: work top to bottom. Checkpoints are end-to-end dry runs with a new client.
 
----
-
-## NEXT SESSION — RESUME HERE (paused 2026-06-11)
-
-**Where we are:** The Strengths & Value-Case Reframe (Tracks 1–3) is BUILT, 110 tests pass,
-and it is **uncommitted**. A **Cobalt Data Partners (E006)** dry run is **in progress,
-paused after report v1 was generated.** Cobalt is a purpose-built test client (answer key:
-`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`)
-that exercises both the value-case reframe and the QA-stage traps — it doubles as Checkpoint 5.
-
-**Validated so far this run:** 15 Strength signals extracted (9 domains); 1 Positive
-("Preserve") finding loaded; v1 generated. Narrator audit: 8 pass / 4 flagged (punch list below).
-
-**Do next, in order:**
-1. **Judge v1 substance** against the answer key — value-case checks (leads with the prize,
-   "What to Preserve" before the roadmap, strengths thread in the Exec Summary, roadmap value
-   spine) and findings F1–F9.
-2. **Run the QA stage** (QA-1/2/3 → QA-4 revision → v2) on v1 — confirm it catches the planted
-   traps: C1–C4 contradictions, A1–A2 attribution errors, the margin-compression false trail.
-   This is the Checkpoint 5 validation.
-3. **Build one prompt punch list.** Known from the v1 narrator audit:
-   - **Executive-snapshot brevity** — sentences ran 26/25/21 words; the value-first reframe
-     packs in more, so push the prompt to hold ≤20 words/sentence (the snapshot is NOT in the
-     compress pass). *This is the one real audit flag worth fixing.*
-   - economic_impact_narrative ran 3 sentences (max 2) — minor narrator discipline.
-   - Accept: the ungrounded-figure flags are correct unlabeled summary figures (match the key);
-     the Rule-1 "diversification in Scale" flag is a defensible placement.
-   - Add whatever the substance read + QA surface.
-4. **Apply all prompt fixes at once → one clean narrator regen** → re-run QA on the regen.
-5. **Review and COMMIT** the full body of work (large + uncommitted — see PROGRESS.md
-   "Strengths"/"Cobalt fixes" rows). Suggested: branch, commit Tracks 1–3 + the bug-fix bundle
-   together. Run the byte-identity diff gate (E004 negatives unchanged) before commit — logic
-   is unit-tested but the full doc-level diff was deferred.
-
-**Checkpoint scripts:** `python scripts/valence_state.py E006` reports strength-signal and
-Positive/Dual-finding counts (run after extraction/load to fail cheap). Watch `top.log` for
-`TRUNCATED at max_tokens` during roadmap/narrator.
+**This file holds only remaining work.** Completed work lives in `PROGRESS.md`.
 
 ---
 
+## CURRENT — Checkpoint 5 validation in progress (Cobalt E006)
 
-## Technical Debt — Address Before Next Major Feature
+The Post-Assembly QA Stage (QA-1 through QA-5), the Strengths & Value-Case Reframe
+(Tracks 1–3), and the economic-figure-classification fix are all **built, tested, and
+committed**. The remaining active work is **Checkpoint 5** — the end-to-end Cobalt Data
+Partners (E006) dry run that validates the QA stage and the value-case reframe against a
+purpose-built answer key
+(`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`).
 
-### Build Sequence — current
+**State (2026-06-12):** v1 generated and graded against the answer key. The
+economic-figure fix is confirmed in a real document — the Revenue-at-Risk headline is
+**$2.8M** (Helix), not $127K; the margin strength is excluded from the exposure table and
+renders correctly in "What to Preserve."
 
-The Post-Assembly QA Stage is COMPLETE (QA-1/2/3/4/5 — see PROGRESS.md), and the
-**Strengths & Value-Case Reframe (Tracks 1–3)** is now BUILT and in **Cobalt E006**
-validation (the dry run that doubles as Checkpoint 5). 110 tests pass; the work is
-**not yet committed**. See "NEXT SESSION — RESUME HERE" at the top of this file. Work top
-to bottom.
+**Next steps, in order:**
+1. Fix the one strength `display_label` ("Hidden margin cost from overtime" → "Gross profit
+   funding capacity"), confirm the executive-display selections, regenerate v1.
+2. Run the QA stage (Coverage → Coherence → Editorial → Revision → v2) and confirm it catches
+   the v1 coverage/coherence gaps: **C1** (Jan-15 vs Oct-31 SOW date conflict), **C4**
+   (Cardinal MedGroup prospect-vs-active), **C3** (68% vs ~72% on-time), **A2** (SOW
+   "approved by D. Cho" contradiction), and the **$461K–$1.49M run-rate sum** inconsistency.
+3. Confirm v2 is delivery-ready; close Checkpoint 5 against the pass criteria below.
+
+---
+
+## Remaining features — build order
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| — | Checkpoint 5 — Dry Run 5 | milestone | Validates QA Stage end-to-end |
-| 1 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
-| 2 | PowerPoint Export | 1 | Ships with audit checks |
-| 3 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
-| 4 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
-| 5 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
-| 6 | Strengths & Value-Case Reframe | — | ✅ BUILT (Tracks 1–3) — in Cobalt E006 validation. Deferred: brief *restructure* (vs reframe) to first pilot; pattern-level valence |
+| 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | NEW — highest-value next capability. See below. |
+| 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
+| 3 | PowerPoint Export | 1 | Ships with audit checks |
+| 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |
+| 5 | Structured File Metadata Capture | 1 | Medium — convention works as workaround |
+| 6 | Auto-Suggest Knowledge | 1 | Lowest — current manual flow works |
 
 ---
 
-## Post-Assembly QA Stage — COMPLETE
+## Decision Surfacing — turn forks into pre-reasoned decisions (NEW)
 
-QA-1 (Coverage), QA-2 (Coherence), QA-3 (Editorial split) shipped 2026-05-30,
-QA-4 (Revision) shipped 2026-05-31, and QA-5 (integrated QA Tab UI) shipped
-2026-06-01 — see PROGRESS.md for full implementation details. The entire
-Post-Assembly QA Stage is now built. Remaining QA work is validation only:
-**Checkpoint 5** (below).
+**Problem:** TOP sometimes leaves a genuine judgment fork as a *silent field* the consultant
+must discover by reading the weeds, instead of surfacing it as an explicit, pre-reasoned
+decision. Example from E006: two findings both reference Helix risk — F001's $2.82M–$3.48M
+concentration exposure and F002's $1.25M engagement-at-risk. The F002 finding text already
+says "captured in the Helix concentration exposure … not separately additive," yet TOP still
+presents $1.2M as a stand-alone Direct Exposure field, leaving the consultant to *notice* the
+overlap and avoid a double-counted executive total. A good junior would surface it: "F002's
+$1.2M overlaps F001 (the finding says so) — recommend not counting it separately; confirm?"
 
-Cowork QA prompt artifacts at `C:\001-cowork-projects\Northstar-working`
-remain available as regression-test reference data for Checkpoint 5.
+**Principle (consultant-stated):** TOP should do the weeds correctly and turn every real fork
+into a pre-reasoned "this OR that, because X" decision — the consultant reviews flagged
+judgment, never re-checks the arithmetic. The signals are already in the data: the agents
+write "not separately additive," "cross-reference Finding N," and the C1/C2/C3 cross-document
+conflicts.
 
----
+**Design (to scope deliberately, built once on the committed base — not a reactive patch):**
+- Detect overlap/conflict signals the agents already emit (additivity language,
+  cross-references, the cross-document conflicts).
+- Where a safe default exists, apply it and note it (e.g. exclude an overlapping figure from
+  the executive sum, with a one-line rationale).
+- Where genuine judgment is required, surface a compact decision card — "this or that,
+  because X" plus a recommendation — instead of a silent field.
+- Extend the narrator-auditor / QA guard family rather than inventing a parallel mechanism
+  (the `check_revenue_at_risk_coherence` guard is the first instance of this shape).
 
-## Strengths & Value-Case Reframe — "What to Preserve" (BUILT — IN VALIDATION)
-
-**Status:** Tracks 1–3 BUILT 2026-06-11 (110 tests pass, **uncommitted**); in Cobalt E006
-validation. Full implementation record is in PROGRESS.md; the original design rationale is in
-git history (commit "Capture Strengths & Value-Case Reframe design") and embodied in the code.
-This section now lists only what shipped and what remains.
-
-### Shipped (Tracks 1–3)
-- **Track 1** — valence on signals + findings (`Strength/Risk/Neutral`, `Positive/Dual/Negative`,
-  NULL≡Negative); Skeptic challenges unsupported strengths; Synthesizer assembles "What to
-  Preserve"; 422 relaxed for Positive findings (≥1 domain Strength signal instead of a pattern);
-  strength-signal evidence chain; scorecard no longer subtracts for strengths; new "What to
-  Preserve" report section before the roadmap (omitted when empty → negatives byte-identical);
-  `migrate_valence.py`.
-- **Track 2** — `executive_summary_strengths` narrator field ("right to win" thread), omittable.
-- **Track 3** — Executive Brief value reframe: value-first snapshot (prize → cause → recoverable
-  value → first move), whole-brief value-case posture, "Three Gaps to Close", roadmap value
-  spine. **Reframe only — page restructure intentionally NOT done.**
-- Skill: strengths evidence rule + Preserve-finding pattern exception. QA-2 `weak_grounding`
-  catches generic praise.
-
-### Remaining / deferred
-1. **Finish the Cobalt E006 validation** + the prompt punch list — see "NEXT SESSION — RESUME
-   HERE" at the top of this file (esp. the executive-snapshot ≤20-word brevity fix).
-2. **Track 3 brief _restructure_** (reorder/cut/add page-1 blocks) — DEFERRED to first real
-   client pilot. Only the reversible *reframe* was built; restructuring needs client signal.
-3. **Pattern-level valence** — deferred (non-load-bearing; only buys per-pattern analytics).
-4. **Discrete defect (open):** on the Executive Brief, the "Competitive AI Capability Gap" block
-   renders as loose paragraphs between the problems heading and the 3-problem table instead of
-   inside it. Fix independently of the reframe.
-5. **Pre-commit:** run the byte-identity diff gate on E004 (negatives unchanged) — logic is
-   unit-tested; the full doc-level diff was deferred.
+**Why now / why not yet:** This is the right north star, but it is a designed feature. Scope
+it as its own session after Checkpoint 5 closes.
 
 ---
 
@@ -269,12 +232,28 @@ ProcessedFiles migration, `signals.py` router update, `SignalPanel.jsx` form add
 
 ---
 
+## Deferred slices (parent features built; these pieces intentionally not done)
+
+- **Track 3 brief _restructure_** (reorder/cut/add page-1 blocks) — deferred to first real
+  client pilot. Only the reversible *reframe* was built; restructuring needs client signal.
+- **Pattern-level valence** — deferred (non-load-bearing; only buys per-pattern analytics).
+- **Executive Brief "Competitive AI Capability Gap" block** renders as loose paragraphs
+  between the problems heading and the 3-problem table instead of inside it. Discrete defect;
+  fix independently of the reframe.
+- **Executive `display_label` suggestion quality** — the strength's label was mis-suggested as
+  "Hidden margin cost from overtime" for a $3.7M funding-capacity figure (figure/label
+  mismatch, surfaced in the E006 v1 review). Improve the label suggestion, or leave it to the
+  consultant edit. Candidate for folding into the Decision Surfacing work.
+
+---
+
 ## Checkpoint 5 — Dry Run 5 (Post-Assembly QA Stage Validation)
 
 **Goal:** End-to-end run with a new fictional client validating the Post-Assembly
 QA Stage (QA-1 through QA-5) and the Narrator Output Auditor Session 1. Also
 validates that all features shipped since Checkpoint 4 (Findings enhancements, Roadmap
-enhancements, Domain Maturity Scoring, A1–A5 accuracy items) continue to work end-to-end.
+enhancements, Domain Maturity Scoring, A1–A5 accuracy items, the value-case reframe, and
+the economic-figure-classification fix) continue to work end-to-end.
 
 **Pre-run setup:**
 - New fictional client with 3–4 interview transcripts and 1–2 supporting documents
@@ -318,6 +297,14 @@ enhancements, Domain Maturity Scoring, A1–A5 accuracy items) continue to work 
 - Quick wins section appears in Section 10.3 (if qualifying items exist)
 - Domain maturity scorecard appears in Section 2 — "No data" shown for unexamined domains
 - All Checkpoint 4 pass criteria still met
+
+**Pass criteria — Value-case reframe + economic-figure fix (added 2026-06-12):**
+- Deliverable leads with strengths and reads as a value case, not a deficiency audit
+- "What to Preserve" section renders before the roadmap; strengths are not shown as
+  exposures/drags in the economic table or chart
+- The executive "Revenue at Risk" headline is the firm's largest exposure (no small
+  mis-tagged figure captures the slot); `check_revenue_at_risk_coherence` passes
+- Strength findings carry `funding_capacity` type, not an exposure/drag type
 
 ---
 
@@ -374,3 +361,7 @@ No code changes — driven by `VITE_API_URL` build env var.
 - **Do not add global state** — all data must be scoped to `engagement_id`.
   Cross-engagement reporting queries across all engagements by design — that is intentional.
   Any new feature should be scoped to an engagement, not global.
+- **Classify economic figures by nature, not domain** — `figure_type` (and the
+  confirmed/derived/annual-drag suggestions) are read from the figure's economic nature
+  (the agent's `economic_impact` text + valence), with the domain map only as a fallback.
+  Do not reintroduce domain-only classification — it mis-routes the executive headline.
