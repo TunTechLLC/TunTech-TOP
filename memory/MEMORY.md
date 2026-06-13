@@ -6,3 +6,4 @@
 - [Build order — Post-Assembly QA Stage COMPLETE](project_build_order.md) — QA-1/2/3/4/5 all shipped (QA-5 = integrated QA tab wrapping the 3 detection panels + verify-after revision edit-list comparison, 2026-06-01). Checkpoint 5 dry run is next.
 - [Check skills directory for custom skills](feedback_skills_check.md) — Always ls ~/.claude/skills/ when asked about available skills; custom skills don't appear in system-reminder
 - [Completed items move OUT of BACKLOG into PROGRESS](feedback_completed_items_move_to_progress.md) — When an item ships, DELETE its spec from BACKLOG; don't leave a "done" banner. Stated numerous times.
+- [Signal-layer remediation plan in progress](project_signal_layer_remediation.md) — Evidence-tagged plan written (no code yet); systemic signal defects (silent JSON loss, ~60% cull, derived-as-Hypothesis). Resume from SIGNAL_LAYER_REMEDIATION_PLAN.md. Phase 1 = Defect E next.
