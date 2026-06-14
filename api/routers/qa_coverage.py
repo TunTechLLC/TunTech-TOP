@@ -56,7 +56,14 @@ async def run_qa_coverage(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
-    items = await detect_coverage_gaps(source_block, roadmap_v1_text)
+    try:
+        items = await detect_coverage_gaps(source_block, roadmap_v1_text)
+    except Exception as exc:
+        logger.error(f"QA-1 coverage check failed for {engagement_id}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Coverage check failed (invalid model response) — try again",
+        )
 
     # Re-detection replaces — delete then bulk insert
     repo.delete_for_engagement(engagement_id)

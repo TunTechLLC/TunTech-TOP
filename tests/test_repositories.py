@@ -1228,3 +1228,34 @@ def test_qa_revision_delete_for_engagement_clears_prior_run():
     deleted = repo.delete_for_engagement(engagement_id)
     assert deleted == 2
     assert repo.get_for_engagement(engagement_id) == []
+
+
+# --- Defect A2: QA JSON parser raises on failure, never masks it as an empty result ---
+
+def test_parse_json_array_empty_array_is_valid_not_failure():
+    """A legitimately-empty model result '[]' parses to [] — distinct from a failure."""
+    from api.services.claude import _parse_json_array
+    assert _parse_json_array("[]", "ctx") == []
+
+
+def test_parse_json_array_parses_valid_and_fenced():
+    from api.services.claude import _parse_json_array
+    assert _parse_json_array('[{"a": 1}]', "ctx") == [{"a": 1}]
+    assert _parse_json_array('```[{"a": 1}]```', "ctx") == [{"a": 1}]  # fence stripped
+
+
+def test_parse_json_array_raises_on_no_array():
+    """No JSON array present (e.g. model returned prose) RAISES — never returns []."""
+    import pytest
+    from api.services.claude import _parse_json_array
+    with pytest.raises(ValueError):
+        _parse_json_array("there were no issues found", "ctx")
+
+
+def test_parse_json_array_raises_on_malformed():
+    """Malformed JSON inside the brackets RAISES — a failed QA check can't read as clean."""
+    import json
+    import pytest
+    from api.services.claude import _parse_json_array
+    with pytest.raises(json.JSONDecodeError):
+        _parse_json_array('[ {"a":1} {"b":2} ]', "ctx")  # missing comma

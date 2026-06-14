@@ -264,8 +264,12 @@ def _parse_narrator_json(raw: str) -> dict:
     try:
         return _json.loads(clean)
     except _json.JSONDecodeError as exc:
+        # Raise, don't return {} — an empty narrative renders a broken/empty report.
+        # RuntimeError (not ValueError) on purpose: the /report/generate endpoint maps
+        # ValueError -> 404 (not-found); a narrator parse failure is a 500 generation
+        # failure, so it must fall through to the endpoint's generic Exception -> 500.
         logger.error(f"Narrator JSON parse failed: {exc} — raw excerpt: {raw[:300]}")
-        return {}
+        raise RuntimeError(f"Narrator returned invalid JSON: {exc}")
 
 
 async def generate_report_narrative(
@@ -626,6 +630,23 @@ QA_COVERAGE_MODEL = "claude-opus-4-7"
 QA_COVERAGE_MAX_TOKENS = 16000
 
 
+def _parse_json_array(raw: str, context: str) -> list:
+    """Extract and parse a JSON array from a model response. RAISES on a genuine parse
+    failure (no array present, or malformed JSON) — it never returns [] to mask a
+    failure, so a failed QA check can't read as 'all clean'. A model that legitimately
+    found nothing returns a valid empty array '[]', which parses to []; that is distinct
+    from a failure. Callers let the error propagate; the QA routers surface it."""
+    text = raw.strip()
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:json)?\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+    start = text.find('[')
+    end = text.rfind(']')
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(f"{context}: no JSON array in model response")
+    return json.loads(text[start:end + 1])  # raises json.JSONDecodeError on malformed JSON
+
+
 async def detect_coverage_gaps(
     source_documents_block: str,
     roadmap_v1_text: str,
@@ -645,8 +666,8 @@ async def detect_coverage_gaps(
 
     Returns:
         Validated list of item dicts. Items with invalid tier or appears_in_roadmap
-        values are dropped with a warning. Returns [] on API failure, parse failure,
-        or empty response — never raises.
+        values are dropped with a warning. Raises on API or parse failure (the
+        router surfaces it); a legitimately-empty result returns [].
     """
     user_message = (
         f"SOURCE DOCUMENTS:\n\n{source_documents_block}"
@@ -660,28 +681,14 @@ async def detect_coverage_gaps(
     # Streaming required — per Anthropic guidance, long requests (large input +
     # large output) must stream or the server cuts the connection mid-flight.
     # See https://docs.anthropic.com/en/api/errors#long-requests
-    try:
-        async with async_client.messages.stream(
-            model=model,
-            max_tokens=QA_COVERAGE_MAX_TOKENS,
-            system=QA_COVERAGE_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
-        ) as stream:
-            message = await stream.get_final_message()
-        raw = extract_text(message).strip()
-        if raw.startswith('```'):
-            raw = re.sub(r'^```(?:json)?\s*', '', raw)
-            raw = re.sub(r'\s*```$', '', raw)
-        start = raw.find('[')
-        end   = raw.rfind(']')
-        if start == -1 or end == -1 or end <= start:
-            logger.warning("detect_coverage_gaps: no JSON array in response")
-            return []
-        raw = raw[start:end + 1]
-        items = json.loads(raw)
-    except Exception as exc:
-        logger.warning(f"detect_coverage_gaps failed: {exc}")
-        return []
+    async with async_client.messages.stream(
+        model=model,
+        max_tokens=QA_COVERAGE_MAX_TOKENS,
+        system=QA_COVERAGE_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        message = await stream.get_final_message()
+    items = _parse_json_array(extract_text(message), "detect_coverage_gaps")
 
     valid_tiers = {1, 2, 3}
     valid_roadmap_states = {0, 1}
@@ -752,35 +759,22 @@ async def detect_coherence_issues(
 
     Returns:
         Validated list of item dicts. Items with invalid category, tier, or
-        sections_involved are dropped with warnings. Returns [] on any failure.
+        sections_involved are dropped with warnings. Raises on API/parse failure
+        (the router surfaces it); a legitimately-empty result returns [].
     """
     user_message = f"ROADMAP V1:\n\n{roadmap_v1_text}"
     logger.info(
         f"detect_coherence_issues: roadmap {len(roadmap_v1_text)} chars, model={model}"
     )
     # Streaming required for long outputs — same reasoning as QA-1.
-    try:
-        async with async_client.messages.stream(
-            model=model,
-            max_tokens=QA_COHERENCE_MAX_TOKENS,
-            system=QA_COHERENCE_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
-        ) as stream:
-            message = await stream.get_final_message()
-        raw = extract_text(message).strip()
-        if raw.startswith('```'):
-            raw = re.sub(r'^```(?:json)?\s*', '', raw)
-            raw = re.sub(r'\s*```$', '', raw)
-        start = raw.find('[')
-        end   = raw.rfind(']')
-        if start == -1 or end == -1 or end <= start:
-            logger.warning("detect_coherence_issues: no JSON array in response")
-            return []
-        raw = raw[start:end + 1]
-        items = json.loads(raw)
-    except Exception as exc:
-        logger.warning(f"detect_coherence_issues failed: {exc}")
-        return []
+    async with async_client.messages.stream(
+        model=model,
+        max_tokens=QA_COHERENCE_MAX_TOKENS,
+        system=QA_COHERENCE_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        message = await stream.get_final_message()
+    items = _parse_json_array(extract_text(message), "detect_coherence_issues")
 
     valid_tiers = {1, 2, 3}
     required_str_fields = ('issue', 'category', 'recommended_fix')
@@ -844,35 +838,21 @@ async def detect_editorial_voice(
 
     Returns:
         Validated list of item dicts with source='claude' attached. Items
-        with invalid category or tier are dropped with warnings. Returns []
-        on any failure — never raises.
+        with invalid category or tier are dropped with warnings. Raises on
+        API/parse failure (the router surfaces it); an empty result returns [].
     """
     user_message = f"ROADMAP V1:\n\n{roadmap_v1_text}"
     logger.info(
         f"detect_editorial_voice: roadmap {len(roadmap_v1_text)} chars, model={model}"
     )
-    try:
-        async with async_client.messages.stream(
-            model=model,
-            max_tokens=QA_EDITORIAL_VOICE_MAX_TOKENS,
-            system=QA_EDITORIAL_VOICE_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
-        ) as stream:
-            message = await stream.get_final_message()
-        raw = extract_text(message).strip()
-        if raw.startswith('```'):
-            raw = re.sub(r'^```(?:json)?\s*', '', raw)
-            raw = re.sub(r'\s*```$', '', raw)
-        start = raw.find('[')
-        end   = raw.rfind(']')
-        if start == -1 or end == -1 or end <= start:
-            logger.warning("detect_editorial_voice: no JSON array in response")
-            return []
-        raw = raw[start:end + 1]
-        items = json.loads(raw)
-    except Exception as exc:
-        logger.warning(f"detect_editorial_voice failed: {exc}")
-        return []
+    async with async_client.messages.stream(
+        model=model,
+        max_tokens=QA_EDITORIAL_VOICE_MAX_TOKENS,
+        system=QA_EDITORIAL_VOICE_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        message = await stream.get_final_message()
+    items = _parse_json_array(extract_text(message), "detect_editorial_voice")
 
     valid_tiers = {1, 2, 3}
     required_str_fields = ('issue', 'category', 'location', 'recommended_fix')
@@ -944,7 +924,7 @@ async def generate_revision_edits(
     Returns:
         Validated list of edit dicts, each with keys: type, anchor,
         context_before, new_text, qa_source, reason. Malformed edits are
-        dropped with a warning. Returns [] on API/parse failure — never raises.
+        dropped with a warning. Raises on API/parse failure; an empty result returns [].
         Outcome and match_method are NOT set here — the applier assigns them.
     """
     user_message = (
@@ -958,32 +938,19 @@ async def generate_revision_edits(
     )
     # Streaming required — long input + long output. Non-streaming requests are
     # cut server-side on long generations (see detect_coverage_gaps note).
-    try:
-        async with async_client.messages.stream(
-            model=model,
-            max_tokens=QA_REVISION_MAX_TOKENS,
-            system=QA_REVISION_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
-        ) as stream:
-            message = await stream.get_final_message()
-        if message.stop_reason == "max_tokens":
-            logger.warning(
-                "generate_revision_edits: response truncated at max_tokens — "
-                "edit list may be incomplete"
-            )
-        raw = extract_text(message).strip()
-        if raw.startswith('```'):
-            raw = re.sub(r'^```(?:json)?\s*', '', raw)
-            raw = re.sub(r'\s*```$', '', raw)
-        start = raw.find('[')
-        end   = raw.rfind(']')
-        if start == -1 or end == -1 or end <= start:
-            logger.warning("generate_revision_edits: no JSON array in response")
-            return []
-        edits = json.loads(raw[start:end + 1])
-    except Exception as exc:
-        logger.warning(f"generate_revision_edits failed: {exc}")
-        return []
+    async with async_client.messages.stream(
+        model=model,
+        max_tokens=QA_REVISION_MAX_TOKENS,
+        system=QA_REVISION_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        message = await stream.get_final_message()
+    if message.stop_reason == "max_tokens":
+        logger.warning(
+            "generate_revision_edits: response truncated at max_tokens — "
+            "edit list may be incomplete"
+        )
+    edits = _parse_json_array(extract_text(message), "generate_revision_edits")
 
     result = []
     for edit in edits:

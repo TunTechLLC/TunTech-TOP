@@ -46,7 +46,14 @@ async def run_qa_coherence(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
-    items = await detect_coherence_issues(roadmap_v1_text)
+    try:
+        items = await detect_coherence_issues(roadmap_v1_text)
+    except Exception as exc:
+        logger.error(f"QA-2 coherence check failed for {engagement_id}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Coherence check failed (invalid model response) — try again",
+        )
 
     repo.delete_for_engagement(engagement_id)
     count = repo.bulk_create(engagement_id, items)

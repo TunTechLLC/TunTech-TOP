@@ -59,7 +59,14 @@ async def run_qa_editorial(
     logger.info(f"QA-3 Python pipeline: {len(python_items)} items")
 
     # Claude voice/audience pipeline — network call
-    claude_items = await detect_editorial_voice(roadmap_v1_text)
+    try:
+        claude_items = await detect_editorial_voice(roadmap_v1_text)
+    except Exception as exc:
+        logger.error(f"QA-3 editorial voice check failed for {engagement_id}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Editorial voice check failed (invalid model response) — try again",
+        )
     logger.info(f"QA-3 Claude pipeline: {len(claude_items)} items")
 
     items = python_items + claude_items
