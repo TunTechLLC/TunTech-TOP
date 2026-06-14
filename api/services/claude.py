@@ -121,6 +121,26 @@ async def extract_signals_from_transcript(transcript: str, library_block: str = 
     return clean
 
 
+async def extract_signals_from_document(content: str, system_prompt: str,
+                                        library_block: str = '') -> str:
+    """Extract signal candidates from a non-interview document (financial, portfolio,
+    SOW, status, etc.). system_prompt is the file-type-specific extraction prompt.
+    Mirrors extract_signals_from_transcript but with document framing and a
+    caller-supplied prompt. Returns raw model text — fence stripping handled by caller.
+    Streamed (see _stream_final_message) so large documents don't hit the Opus timeout."""
+    logger.info(f"Extracting signals from document — {len(content)} chars")
+    user_content = f"DOCUMENT:\n\n{content}"
+    if library_block:
+        user_content += f"\n\n---\n\n{library_block}"
+    message = await _stream_final_message(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_content}],
+    )
+    return extract_text(message)
+
+
 async def extract_findings_from_synthesizer(synthesizer_output: str,
                                             accepted_patterns: list,
                                             signals_by_domain: dict | None = None) -> str:

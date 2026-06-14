@@ -8,7 +8,6 @@ from datetime import date
 
 from api.db.repositories.processed_files import ProcessedFilesRepository
 from api.utils.domains import DEFAULT_DOMAIN, VALID_DOMAINS, VALID_CONFIDENCES, VALID_SIGNAL_VALENCES
-from api.services.claude import extract_text
 
 logger = logging.getLogger(__name__)
 
@@ -582,9 +581,7 @@ async def process_file(file_info: dict, engagement_id: str,
     Returns summary dict with file name, candidate count, and candidate file path."""
     from api.services.claude import (
         extract_signals_from_transcript,
-        async_client,
-        MODEL,
-        MAX_TOKENS,
+        extract_signals_from_document,
     )
 
     file_type = file_info['type']
@@ -605,16 +602,7 @@ async def process_file(file_info: dict, engagement_id: str,
         # interview, other — use SIGNAL_EXTRACTION_PROMPT via extract_signals_from_transcript
         raw = await extract_signals_from_transcript(content, library_block)
     else:
-        user_content = f"DOCUMENT:\n\n{content}"
-        if library_block:
-            user_content += f"\n\n---\n\n{library_block}"
-        message = await async_client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=prompt,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        raw = extract_text(message)
+        raw = await extract_signals_from_document(content, prompt, library_block)
 
     clean = strip_json_fences(raw)
 
