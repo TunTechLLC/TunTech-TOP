@@ -43,6 +43,24 @@ def extract_text(message: anthropic.types.Message) -> str:
     raise ValueError("No text block found in Claude API response")
 
 
+async def _stream_final_message(*, model, max_tokens, messages, system=None):
+    """Call Claude via streaming and return the final Message.
+
+    Streaming (not messages.create) is required for long Opus calls: a non-streaming
+    request holds the connection open for the whole response and hits the client
+    read-timeout on large input+output, so the server cuts it mid-flight. Proven
+    empirically — a 142s Synthesizer streamed cleanly where the non-streaming path
+    raised APITimeoutError. Returns the same Message shape as messages.create, so
+    callers' extract_text()/stop_reason logic is unchanged.
+    See https://docs.anthropic.com/en/api/errors#long-requests
+    """
+    params = {"model": model, "max_tokens": max_tokens, "messages": messages}
+    if system is not None:
+        params["system"] = system
+    async with async_client.messages.stream(**params) as stream:
+        return await stream.get_final_message()
+
+
 async def call_claude(
     case_packet:   str,
     prior_outputs: list,
@@ -60,12 +78,11 @@ async def call_claude(
     user_message = "\n\n---\n\n".join(parts)
     cap = max_tokens or AGENT_MAX_TOKENS
     logger.info(f"Calling Claude API — context length: {len(user_message)} chars, max_tokens={cap}")
-    message = await async_client.messages.create(
+    message = await _stream_final_message(
         model=MODEL,
         max_tokens=cap,
         system=prompt,
         messages=[{"role": "user", "content": user_message}],
-        timeout=300.0,
     )
     if getattr(message, 'stop_reason', None) == 'max_tokens':
         logger.warning(
@@ -85,12 +102,11 @@ async def extract_signals_from_transcript(transcript: str, library_block: str = 
     user_content = f"INTERVIEW TRANSCRIPT:\n\n{transcript}"
     if library_block:
         user_content += f"\n\n---\n\n{library_block}"
-    message = await async_client.messages.create(
+    message = await _stream_final_message(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SIGNAL_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_content}],
-        timeout=300.0,
     )
     raw = extract_text(message)
     clean = raw.strip()
@@ -143,12 +159,11 @@ async def extract_findings_from_synthesizer(synthesizer_output: str,
         f"{len(accepted_patterns)} accepted patterns, "
         f"{sum(len(v) for v in (signals_by_domain or {}).values())} signal notes"
     )
-    message = await async_client.messages.create(
+    message = await _stream_final_message(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=FINDINGS_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
-        timeout=300.0,
     )
     raw = extract_text(message)
     clean = raw.strip()
@@ -178,12 +193,11 @@ async def compress_narrative(text: str, section_name: str) -> str:
     if not text or not text.strip():
         return text
     try:
-        message = await async_client.messages.create(
+        message = await _stream_final_message(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=COMPRESSION_PROMPT,
             messages=[{"role": "user", "content": text}],
-            timeout=300.0,
         )
         compressed = extract_text(message).strip()
         if not compressed:
@@ -390,12 +404,11 @@ async def generate_report_narrative(
         f"max_tokens={NARRATOR_MAX_TOKENS}"
     )
 
-    message = await async_client.messages.create(
+    message = await _stream_final_message(
         model=MODEL,
         max_tokens=NARRATOR_MAX_TOKENS,
         system=REPORT_NARRATOR_PROMPT,
         messages=[{"role": "user", "content": user_message}],
-        timeout=600.0,
     )
     if getattr(message, 'stop_reason', None) == 'max_tokens':
         logger.warning(
@@ -470,12 +483,11 @@ async def extract_roadmap_from_synthesizer(
         f"Extracting roadmap from synthesizer — {len(synthesizer_output)} chars, "
         f"{len(findings)} findings"
     )
-    message = await async_client.messages.create(
+    message = await _stream_final_message(
         model=MODEL,
         max_tokens=AGENT_MAX_TOKENS,
         system=ROADMAP_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
-        timeout=300.0,
     )
     if getattr(message, 'stop_reason', None) == 'max_tokens':
         logger.warning(

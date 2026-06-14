@@ -12,8 +12,11 @@ LOG_PATH = os.environ.get(
     r"C:\Dev\TunTech\TOP\top.log"
 )
 
-# Claude model — change here or via environment variable
-MODEL = os.environ.get("TOP_MODEL", "claude-sonnet-4-6")
+# Claude model — change here or via environment variable.
+# Standardized on Opus 4.7 (2026-06-14). The 4 QA constants in claude.py are also
+# 4.7, so the whole system runs 4.7. Requires streaming in the long Claude calls
+# (see _stream_final_message in claude.py) — Opus exceeds the non-streaming timeout.
+MODEL = os.environ.get("TOP_MODEL", "claude-opus-4-7")
 
 # Max tokens per Claude call
 MAX_TOKENS = int(os.environ.get("TOP_MAX_TOKENS", "8000"))
