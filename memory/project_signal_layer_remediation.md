@@ -1,6 +1,6 @@
 ---
 name: Signal-layer remediation plan in progress
-description: Investigated signal-quality defects (silent JSON loss, ~60% cull, derived-as-Hypothesis); evidence-tagged plan written; no code changes yet — Phase 1 Defect E next
+description: Signal-layer remediation — Phase 1 (Defects E, A, A2, D) SHIPPED & pushed 2026-06-14, 136 tests pass. Next: re-baseline on fresh engagement, then Phase 2 (B+C dedup + cap/confidence)
 metadata:
   type: project
 ---
@@ -22,7 +22,12 @@ the economics gap (missing E1/E2) is one symptom of systemic signal-layer defect
 - **Defect E** — pipeline runs on Sonnet; standardize to Opus 4.7 via `config.py` + make
   `call_claude` stream. **Do first.**
 
-**Agreed sequence:** Phase 1 = E → A → D (small, test-gated), then re-run Cobalt and re-baseline.
+**Phase 1 SHIPPED & pushed 2026-06-14:** E (`4c0b058` + doc-path fix) = Opus 4.7 + streaming
+helper for all 7 long calls; A (`3d45cce`) = JSON robustness (pure parser raises + retry +
+fail-loud, never silent file loss); A2 (`1ec8329`) = QA agents + narrator fail loud (shared
+`_parse_json_array`, never mask a parse failure as "0 issues clean"); D (`13b1093`) =
+ECONOMICS_PROMPT precedence/labeling (exposure DERIVED not CONFIRMED; fixes E3). 136 tests pass.
+**Next:** re-baseline on a FRESH engagement (Victor creates; do NOT wipe E006), then
 Phase 2 = B + C (the design-heavy dedup + cap/confidence redesign), done deliberately on Opus.
 
 **Working method agreed this session (load-bearing for trust):** evidence first; every fix gets a

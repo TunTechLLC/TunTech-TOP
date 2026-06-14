@@ -1,7 +1,30 @@
 # Signal-Layer Remediation Plan — Handoff Doc
 
-**Status:** Investigation complete, plan agreed in principle, **no code changes made yet.**
-**Created:** 2026-06-13. **Next action:** Phase 1, Defect E (model + streaming) — test-gated.
+**Status:** **PHASE 1 COMPLETE & PUSHED (2026-06-14).** Defects E, A, A2, D shipped,
+each test-gated, 136 tests pass. **Next:** re-baseline on a FRESH engagement (Victor
+creates it — do NOT wipe E006), then Phase 2 = B + C (semantic dedup + cap/confidence).
+**Created:** 2026-06-13.
+
+### Phase 1 — shipped record
+- **E** (`4c0b058`, completed by the doc-path fix in same series) — model → Opus 4.7 in
+  `config.py`; `_stream_final_message` helper; all 7 long Claude calls stream (6 in
+  `claude.py` + the document-extraction path moved out of `document_processor.py` into
+  `claude.py`'s `extract_signals_from_document`, fixing a CLAUDE.md violation). The 2 tiny
+  calls stay non-streaming. Proven: Synthesizer 142s streams clean (would've timed out).
+- **A** (`3d45cce`) — JSON robustness. `_parse_extraction_response` (pure, raises) +
+  `_extract_signals_with_retry` (one regenerate-retry, then raise). Failed file is NOT
+  marked processed → re-attempted next run. `SignalPanel.jsx` surfaces failed files.
+- **A2** (`1ec8329`) — same anti-pattern in the QA layer. Shared `_parse_json_array`
+  (raises on failure, `[]` only for legitimately-empty). 4 QA functions + narrator stop
+  swallowing; narrator raises RuntimeError (→500 not 404). QA routers surface clean 500;
+  QA panels already render the error.
+- **D** (`13b1093`) — `ECONOMICS_PROMPT` precedence/labeling block: preserve source labels;
+  computed/exposure figures are DERIVED not CONFIRMED, exposure is "risk not loss". Fixes
+  E3 mislabel. Verified on real E006 input: $3.48M → DERIVED, "risk, not realized".
+
+### Carried into Phase 2 / follow-ons
+- **B + C** still to do (the core signal-quality redesign — see §3 below).
+- D's full effect (E1/E2 reaching the agent) depends on B+C delivering the figures.
 **How we work now (agreed):** every problem claim cites evidence; every fix gets a
 **pre-registered, reversible test that runs BEFORE any production change** (the standard set
 by the economics proof). Tag each item verified / inferred / unchecked. Do not get ahead of
