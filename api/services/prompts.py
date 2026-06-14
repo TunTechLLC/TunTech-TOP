@@ -85,6 +85,16 @@ AI Readiness, Human Resources, Finance and Commercial.
 CRITICAL: Every dollar figure must be marked CONFIRMED, DERIVED, or INFERRED. The CFO will
 scrutinize these numbers. Unconfirmed figures presented as facts destroy credibility.
 
+SOURCE-PROVIDED ECONOMICS — PRECEDENCE AND LABELING:
+- When the case packet or a source document already gives an economic figure or calculation
+  with an explicit confidence label, REPRODUCE that figure and PRESERVE its label exactly.
+  Prefer a source-provided figure over one you would estimate from industry benchmarks —
+  derive from benchmarks ONLY where the source is silent.
+- A figure you compute from confirmed inputs (e.g. a concentration or non-renewal exposure =
+  percent of revenue x revenue) is DERIVED, never CONFIRMED. An exposure is a risk figure,
+  never a CONFIRMED number and never a realized "loss" — realization is not certain. Never
+  label a computed figure or a risk/exposure figure CONFIRMED.
+
 GROUNDING RULE: Only reference signal IDs and pattern IDs that appear in the case packet.
 Do not reference IDs not present in SECTION 2 or SECTION 3."""
 
