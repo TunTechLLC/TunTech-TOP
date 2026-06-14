@@ -1,9 +1,26 @@
 # Signal-Layer Remediation Plan — Handoff Doc
 
 **Status:** **PHASE 1 COMPLETE & PUSHED (2026-06-14).** Defects E, A, A2, D shipped,
-each test-gated, 136 tests pass. **Next:** re-baseline on a FRESH engagement (Victor
-creates it — do NOT wipe E006), then Phase 2 = B + C (semantic dedup + cap/confidence).
-**Created:** 2026-06-13.
+each test-gated, 136 tests pass. **Created:** 2026-06-13.
+
+### ▶ RESUME HERE (paused 2026-06-14 EOD) — OPEN DECISION
+Phase 1 is done. The next move is an unmade decision for Victor:
+- **(1) Interim re-baseline now** — Victor creates a FRESH engagement, runs it end-to-end,
+  to measure what Phase 1 *alone* recovered. CAVEAT: partial — E1/E2 economics won't fully
+  appear until B+C deliver figures to the agent; you'd mainly see Opus quality + fail-loud +
+  the E3 label fix.
+- **(2) [RECOMMENDED] Go straight to Phase 2 = B + C**, then ONE comprehensive re-baseline.
+  Rationale: the interim re-baseline wouldn't change that B+C are needed (the ~60% cull is
+  structural, not model-fixable), it costs a full manual run, and it's incomplete on the
+  headline economics.
+- Either way: **create a FRESH engagement; do NOT wipe E006** (it's the documented "before").
+- **B + C is the design-heavy core** (semantic dedup: Claude-assisted vs normalized-key;
+  cap/confidence: raise cap modestly + stop demoting derived figures to cull-first Hypothesis).
+  Approach it **design-first + pre-registered test**, same method as Phase 1. Details in §3.
+
+**Working method (load-bearing):** evidence first; pre-registered reversible test before any
+production change; tag claims verified/inferred/unchecked; surface own gaps proactively;
+commit + push each piece. Throwaway verification scripts live in `scripts/` (deletable).
 
 ### Phase 1 — shipped record
 - **E** (`4c0b058`, completed by the doc-path fix in same series) — model → Opus 4.7 in
