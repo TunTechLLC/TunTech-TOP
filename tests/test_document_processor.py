@@ -313,3 +313,73 @@ def test_archive_candidate_files_new_convention():
         assert not os.path.exists(merged)
         assert not os.path.exists(interview_file)
         assert not os.path.exists(doc_file)
+
+
+# --- Defect A: JSON robustness (pure parser raises, retry recovers, never silent-empty) ---
+
+def test_parse_extraction_response_valid_dict():
+    """New {found, not_observed} shape parses to (candidates, not_observed)."""
+    from api.services.document_processor import _parse_extraction_response
+    raw = '{"found": [{"signal_name": "x"}], "not_observed": ["SL-1"]}'
+    candidates, not_observed = _parse_extraction_response(raw, "f.txt")
+    assert len(candidates) == 1 and not_observed == ["SL-1"]
+
+
+def test_parse_extraction_response_legacy_list():
+    """Legacy bare-array shape parses to (list, [])."""
+    from api.services.document_processor import _parse_extraction_response
+    candidates, not_observed = _parse_extraction_response('[{"signal_name": "y"}]', "f.txt")
+    assert len(candidates) == 1 and not_observed == []
+
+
+def test_parse_extraction_response_raises_on_malformed_not_silent():
+    """Core Defect A guarantee: malformed JSON RAISES — never returns empty silently."""
+    import json
+    from api.services.document_processor import _parse_extraction_response
+    with pytest.raises(json.JSONDecodeError):
+        _parse_extraction_response('{"found": [ {"a":1} {"b":2} ]}', "f.txt")  # missing comma
+    with pytest.raises(json.JSONDecodeError):
+        _parse_extraction_response('not json at all', "f.txt")
+
+
+def test_parse_extraction_response_raises_on_unexpected_shape():
+    """A valid-JSON-but-wrong-shape response (e.g. a bare number) raises ValueError."""
+    from api.services.document_processor import _parse_extraction_response
+    with pytest.raises(ValueError):
+        _parse_extraction_response('42', "f.txt")
+
+
+def test_extract_signals_with_retry_recovers_on_second_attempt(monkeypatch):
+    """A transient malformed response is recovered by the single retry (regeneration)."""
+    import asyncio
+    from api.services import document_processor as dp
+    import api.services.claude as claude_mod
+
+    calls = {"n": 0}
+    async def fake(content, library_block):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return '{"found": [ {"a":1} {"b":2} ]}'   # malformed first
+        return '{"found": [{"signal_name": "ok"}], "not_observed": []}'  # valid on retry
+    monkeypatch.setattr(claude_mod, "extract_signals_from_transcript", fake)
+
+    candidates, not_observed = asyncio.run(
+        dp._extract_signals_with_retry("interview", "text", None, "", "f.txt")
+    )
+    assert calls["n"] == 2          # it retried
+    assert len(candidates) == 1     # and recovered
+
+
+def test_extract_signals_with_retry_raises_after_all_attempts(monkeypatch):
+    """When every attempt is unparseable, it RAISES (surfaces) — never silent-empty.
+    The caller records the file failed and leaves it unprocessed for re-attempt."""
+    import asyncio
+    from api.services import document_processor as dp
+    import api.services.claude as claude_mod
+
+    async def always_bad(content, library_block):
+        return "not valid json"
+    monkeypatch.setattr(claude_mod, "extract_signals_from_transcript", always_bad)
+
+    with pytest.raises(ValueError):
+        asyncio.run(dp._extract_signals_with_retry("interview", "text", None, "", "f.txt"))

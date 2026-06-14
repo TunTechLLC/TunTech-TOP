@@ -264,6 +264,20 @@ export default function SignalPanel({ engagementId, onRefresh }) {
         </div>
       )}
 
+      {processResult && processResult.files && processResult.files.some(f => f.error) && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          <div className="font-medium mb-1">
+            {processResult.files.filter(f => f.error).length} file(s) failed extraction and were
+            not processed — their signals are not lost; re-run processing to retry:
+          </div>
+          <ul className="list-disc list-inside space-y-0.5">
+            {processResult.files.filter(f => f.error).map((f, i) => (
+              <li key={i}><span className="font-mono">{f.file_name}</span> — {f.error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {processError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
           {processError}

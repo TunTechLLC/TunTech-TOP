@@ -574,16 +574,74 @@ def scan_folder(folder_path: str, engagement_id: str) -> list[dict]:
     return candidates
 
 
+def _parse_extraction_response(raw: str, file_name: str) -> tuple[list, list]:
+    """Parse a raw signal-extraction response into (candidates, not_observed).
+
+    Raises json.JSONDecodeError on malformed JSON or ValueError on an unexpected JSON
+    shape — it NEVER silently returns empty. The caller retries once and then surfaces
+    the failure, so a file's signals can never be silently dropped. (The bug this
+    replaces caught the parse error, stored zero candidates, and marked the file
+    processed — permanently losing every signal in that file.)"""
+    clean = strip_json_fences(raw)
+    parsed = json.loads(clean)  # raises json.JSONDecodeError on malformed JSON
+    if isinstance(parsed, dict):
+        # New format: {"found": [...], "not_observed": [...]}
+        return parsed.get('found', []), parsed.get('not_observed', [])
+    if isinstance(parsed, list):
+        # Legacy array format (pre-Session 2 responses)
+        return parsed, []
+    raise ValueError(
+        f"Unexpected JSON shape for {file_name}: expected object or array, "
+        f"got {type(parsed).__name__}"
+    )
+
+
+async def _extract_signals_with_retry(file_type: str, content: str, prompt: str | None,
+                                      library_block: str, file_name: str,
+                                      attempts: int = 2) -> tuple[list, list]:
+    """Extract signals via Claude and parse the JSON, retrying once on a parse failure.
+
+    Malformed LLM JSON is a transient fault — calls run at temperature 1.0, so a re-call
+    yields a different, usually valid, sample. Regeneration is used instead of repairing
+    the bad output: repair could silently produce plausible-but-wrong JSON, trading
+    silent loss for silent corruption. If every attempt fails to parse, raises — the
+    caller (process_engagement_files) then records the file as failed and leaves it
+    unprocessed for re-attempt, rather than losing its signals silently."""
+    from api.services.claude import (
+        extract_signals_from_transcript,
+        extract_signals_from_document,
+    )
+    last_err = None
+    for attempt in range(1, attempts + 1):
+        if prompt is None:
+            raw = await extract_signals_from_transcript(content, library_block)
+        else:
+            raw = await extract_signals_from_document(content, prompt, library_block)
+        try:
+            candidates, not_observed = _parse_extraction_response(raw, file_name)
+            if attempt > 1:
+                logger.info(
+                    f"{file_name}: signal extraction recovered on attempt {attempt} "
+                    f"after invalid JSON"
+                )
+            return candidates, not_observed
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            logger.warning(
+                f"{file_name}: invalid JSON from signal extraction on "
+                f"attempt {attempt}/{attempts} — {e}"
+            )
+    raise ValueError(
+        f"Signal extraction for {file_name} returned unparseable JSON after "
+        f"{attempts} attempts: {last_err}"
+    )
+
+
 async def process_file(file_info: dict, engagement_id: str,
                        candidates_folder: str) -> dict:
     """Process a single file — extract signals via Claude and write
     candidate JSON to the candidates folder.
     Returns summary dict with file name, candidate count, and candidate file path."""
-    from api.services.claude import (
-        extract_signals_from_transcript,
-        extract_signals_from_document,
-    )
-
     file_type = file_info['type']
     file_path = file_info['path']
     file_name = file_info['name']
@@ -598,28 +656,9 @@ async def process_file(file_info: dict, engagement_id: str,
 
     prompt = PROMPT_MAP.get(file_type)
 
-    if prompt is None:
-        # interview, other — use SIGNAL_EXTRACTION_PROMPT via extract_signals_from_transcript
-        raw = await extract_signals_from_transcript(content, library_block)
-    else:
-        raw = await extract_signals_from_document(content, prompt, library_block)
-
-    clean = strip_json_fences(raw)
-
-    try:
-        parsed = json.loads(clean)
-        if isinstance(parsed, dict):
-            # New format: {"found": [...], "not_observed": [...]}
-            candidates = parsed.get('found', [])
-            not_observed = parsed.get('not_observed', [])
-        else:
-            # Fallback: legacy array format (pre-Session 2 responses)
-            candidates = parsed if isinstance(parsed, list) else []
-            not_observed = []
-    except json.JSONDecodeError:
-        logger.error(f"Claude returned invalid JSON for {file_name}: {raw[:200]}")
-        candidates = []
-        not_observed = []
+    candidates, not_observed = await _extract_signals_with_retry(
+        file_type, content, prompt, library_block, file_name
+    )
 
     # Validate not_observed: only keep well-formed SL-XX IDs
     not_observed = [sid for sid in not_observed if isinstance(sid, str) and sid.startswith('SL-')]
