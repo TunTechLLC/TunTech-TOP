@@ -481,20 +481,25 @@ def test_what_to_preserve_renders_strengths_and_omits_when_negative_only():
     assert len(doc2.paragraphs) == before  # nothing added
 
 
-def test_domain_cap_reserves_slots_for_strengths():
-    """A risk-dominated domain must not crowd out its Strength signals — the cap reserves
-    up to 2 strength slots so positive evidence reaches candidate review."""
-    from api.services.document_processor import _apply_domain_cap
+def test_select_keeps_all_high_and_reserves_strength_in_medium():
+    """High is never dropped (uncapped per domain); Strength signals get reserved Medium
+    slots even when higher-corroboration risk Mediums would otherwise crowd them out."""
+    from api.services.document_processor import _select_candidates
     cands = (
         [{'domain': 'Delivery Operations', 'signal_name': f'risk{i}',
-          'signal_confidence': 'High', 'valence': 'Risk'} for i in range(5)]
-        + [{'domain': 'Delivery Operations', 'signal_name': f'str{i}',
-            'signal_confidence': 'Medium', 'valence': 'Strength'} for i in range(2)]
+          'signal_confidence': 'High', 'valence': 'Risk'} for i in range(6)]
+        + [{'domain': 'Delivery Operations', 'signal_name': f'mrisk{i}', 'signal_confidence': 'Medium',
+            'valence': 'Risk', '_corroboration': 3} for i in range(4)]
+        + [{'domain': 'Delivery Operations', 'signal_name': f'str{i}', 'signal_confidence': 'Medium',
+            'valence': 'Strength', '_corroboration': 1} for i in range(2)]
     )
-    capped, removed = _apply_domain_cap(cands, cap=5)
-    assert len(capped) == 5                       # cap total preserved
-    assert removed == 2
-    assert sum(1 for c in capped if c['valence'] == 'Strength') == 2   # both strengths kept
+    main, hypothesis, removed = _select_candidates(cands)
+    highs = [c for c in main if c['signal_confidence'] == 'High']
+    meds = [c for c in main if c['signal_confidence'] == 'Medium']
+    assert len(highs) == 6                                              # all High kept (uncapped)
+    assert len(meds) == 3                                               # Medium budget = 3
+    assert sum(1 for c in meds if c['valence'] == 'Strength') == 2      # 2 strength slots reserved
+    assert hypothesis == [] and removed == 3
 
 
 def test_accept_enforces_single_accepted_run_per_agent():
@@ -519,15 +524,44 @@ def test_accept_enforces_single_accepted_run_per_agent():
     assert repo.get_accepted_output('E_ACC', 'Synthesizer') == 'SECOND run output (complete)'
 
 
-def test_domain_cap_unchanged_without_strengths():
-    """With no Strength signals the cap behaves exactly as before — top N by confidence."""
-    from api.services.document_processor import _apply_domain_cap
-    cands = [{'domain': 'Sales & Pipeline', 'signal_name': f's{i}',
-              'signal_confidence': 'High', 'valence': 'Risk'} for i in range(7)]
-    capped, removed = _apply_domain_cap(cands, cap=5)
-    assert len(capped) == 5
+def test_select_medium_budget_keeps_most_corroborated():
+    """With no strengths: all High kept; Medium capped at the per-domain budget, keeping the
+    most-corroborated Mediums."""
+    from api.services.document_processor import _select_candidates
+    cands = (
+        [{'domain': 'Sales & Pipeline', 'signal_name': f'h{i}', 'signal_confidence': 'High',
+          'valence': 'Risk'} for i in range(4)]
+        + [{'domain': 'Sales & Pipeline', 'signal_name': f'm{i}', 'signal_confidence': 'Medium',
+            'valence': 'Risk', '_corroboration': i} for i in range(5)]   # corr 0..4
+    )
+    main, hypothesis, removed = _select_candidates(cands)
+    assert sum(1 for c in main if c['signal_confidence'] == 'High') == 4       # all High kept
+    meds = sorted(c['signal_name'] for c in main if c['signal_confidence'] == 'Medium')
+    assert meds == ['m2', 'm3', 'm4']                                          # top-3 by corroboration
     assert removed == 2
-    assert all(c['valence'] == 'Risk' for c in capped)
+
+
+def test_select_global_ceiling_trims_worst_first_with_floor():
+    """Above the ceiling, trim worst-first but keep >=1 per examined domain (coverage floor)."""
+    from collections import Counter
+    from api.services.document_processor import _select_candidates
+    cands = [{'domain': f'D{d}', 'signal_name': f'h{d}_{i}', 'signal_confidence': 'High',
+              'valence': 'Risk', '_corroboration': 1} for d in range(6) for i in range(10)]  # 60 > 55
+    main, _, removed = _select_candidates(cands, ceiling=55)
+    assert len(main) == 55 and removed == 5
+    per = Counter(c['domain'] for c in main)
+    assert all(per[f'D{d}'] >= 1 for d in range(6))                            # floor preserved
+
+
+def test_select_hypothesis_goes_to_hidden_not_main():
+    from api.services.document_processor import _select_candidates
+    cands = [
+        {'domain': 'X', 'signal_name': 'h', 'signal_confidence': 'High', 'valence': 'Risk'},
+        {'domain': 'X', 'signal_name': 'y', 'signal_confidence': 'Hypothesis', 'valence': 'Risk'},
+    ]
+    main, hyp, _ = _select_candidates(cands)
+    assert [c['signal_name'] for c in main] == ['h']
+    assert [c['signal_name'] for c in hyp] == ['y']
 
 
 # ---------------------------------------------------------------------------

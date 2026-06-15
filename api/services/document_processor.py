@@ -710,46 +710,69 @@ async def process_file(file_info: dict, engagement_id: str,
     }
 
 
-def _apply_domain_cap(candidates: list[dict], cap: int = 5,
-                      strength_reserve: int = 2) -> tuple[list[dict], int]:
-    """Cap candidates per domain, keeping highest-confidence entries first.
-    Confidence order: High > Medium > Hypothesis.
+MEDIUM_PER_DOMAIN = 3          # main-set budget for Medium-confidence signals, per domain
+MAIN_CANDIDATE_CEILING = 55    # hard upper bound on the main reviewable set (volume guard)
 
-    Strength reserve: a domain dominated by Risk signals would otherwise crowd out its
-    Strength signals (which feed Preserve findings and the value case). Within each
-    domain, guarantee up to `strength_reserve` Strength-valence signals survive the cap by
-    swapping in the highest-confidence overflow strengths for the lowest-confidence kept
-    non-strengths. The cap total is unchanged.
-    Returns (capped_list, count_removed)."""
-    CONFIDENCE_RANK = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+
+def _select_candidates(candidates: list[dict],
+                       medium_per_domain: int = MEDIUM_PER_DOMAIN,
+                       ceiling: int = MAIN_CANDIDATE_CEILING,
+                       strength_reserve: int = 2) -> tuple[list[dict], list[dict], int]:
+    """Quality-gated selection of the main candidate set. Replaces the old fixed per-domain
+    cap, which dropped material High signals on rich engagements yet admitted marginal ones
+    on thin ones. Culls by QUALITY, not a fixed count:
+      - Hypothesis -> hidden toggle (returned separately).
+      - High: ALL kept per domain (the material core; post-dedup usually corroborated).
+      - Medium: top `medium_per_domain` per domain, ranked by corroboration then evidence
+        depth, reserving up to `strength_reserve` Medium slots for Strength signals (value case).
+      - Global ceiling: if the main set still exceeds `ceiling` (only on very large
+        engagements), trim worst-first (Medium before High, then least-corroborated) down to
+        the ceiling, never below one signal per examined domain (coverage floor).
+    Self-scaling: thin engagements keep few, rich ones keep their genuine material signals,
+    total bounded. Returns (main, hypothesis, removed_count)."""
+    rank = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+    def corr(c): return c.get('_corroboration', 1)
+    def rank_of(c): return (rank.get(c.get('signal_confidence', ''), 0), corr(c), len(c.get('notes') or ''))
+
+    hypothesis = [c for c in candidates if c.get('signal_confidence') == 'Hypothesis']
+    high_med = [c for c in candidates if c.get('signal_confidence') != 'Hypothesis']
+
     by_domain: dict[str, list[dict]] = {}
-    for c in candidates:
-        domain = c.get('domain', '')
-        by_domain.setdefault(domain, []).append(c)
-    capped = []
-    for domain_candidates in by_domain.values():
-        sorted_dc = sorted(
-            domain_candidates,
-            key=lambda c: CONFIDENCE_RANK.get(c.get('signal_confidence', ''), 0),
-            reverse=True,
-        )
-        if len(sorted_dc) <= cap:
-            capped.extend(sorted_dc)
-            continue
-        kept = sorted_dc[:cap]
-        kept_strengths = sum(1 for c in kept if c.get('valence') == 'Strength')
-        if kept_strengths < strength_reserve:
-            overflow_strengths = [c for c in sorted_dc[cap:] if c.get('valence') == 'Strength']
-            slots = min(strength_reserve - kept_strengths, len(overflow_strengths))
-            if slots > 0:
-                # Drop the lowest-confidence kept non-strengths to make room (cap preserved).
-                non_strength_positions = [i for i, c in enumerate(kept)
-                                          if c.get('valence') != 'Strength']
-                drop = set(non_strength_positions[-slots:])
-                kept = [c for i, c in enumerate(kept) if i not in drop]
-                kept.extend(overflow_strengths[:slots])
-        capped.extend(kept)
-    return capped, len(candidates) - len(capped)
+    for c in high_med:
+        by_domain.setdefault(c.get('domain', ''), []).append(c)
+
+    main: list[dict] = []
+    for items in by_domain.values():
+        highs = [c for c in items if c.get('signal_confidence') == 'High']
+        meds = sorted((c for c in items if c.get('signal_confidence') == 'Medium'),
+                      key=lambda c: (corr(c), len(c.get('notes') or '')), reverse=True)
+        kept_med = meds[:medium_per_domain]
+        kept_str = sum(1 for c in kept_med if c.get('valence') == 'Strength')
+        if kept_str < strength_reserve:
+            overflow_str = [c for c in meds[medium_per_domain:] if c.get('valence') == 'Strength']
+            slots = min(strength_reserve - kept_str, len(overflow_str))
+            if slots:
+                ns_pos = [i for i, c in enumerate(kept_med) if c.get('valence') != 'Strength']
+                drop = set(ns_pos[-slots:])
+                kept_med = [c for i, c in enumerate(kept_med) if i not in drop] + overflow_str[:slots]
+        main.extend(highs + kept_med)
+
+    # global ceiling backstop — trim worst-first, but protect the best signal per domain
+    if len(main) > ceiling:
+        best_per_domain: dict[str, dict] = {}
+        for c in main:
+            d = c.get('domain', '')
+            if d not in best_per_domain or rank_of(c) > rank_of(best_per_domain[d]):
+                best_per_domain[d] = c
+        protected = {id(c) for c in best_per_domain.values()}
+        droppable = sorted((c for c in main if id(c) not in protected), key=rank_of)
+        drop_ids = {id(c) for c in droppable[:len(main) - ceiling]}
+        main = [c for c in main if id(c) not in drop_ids]
+
+    removed = len(high_med) - len(main)
+    for c in main + hypothesis:          # strip the transient ranking field
+        c.pop('_corroboration', None)
+    return main, hypothesis, removed
 
 
 def _deduplicate_candidates(candidates: list[dict]) -> tuple[list[dict], int]:
@@ -797,16 +820,17 @@ def _merge_cluster(members: list[dict]) -> dict:
     Confidence = strongest member, upgraded one level if corroborated by >=2 distinct
     source files (computed ONCE here from the raw members — corroboration is not applied
     earlier). Source breadth is preserved in notes (no schema change)."""
+    sources = sorted({m.get('source_file', '') for m in members if m.get('source_file')})
+    corro = max(len(sources), 1)   # distinct-source count, for downstream quality ranking
     if len(members) == 1:
-        return members[0]
+        return {**members[0], '_corroboration': corro}
     rank = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
     upgrade = {'Hypothesis': 'Medium', 'Medium': 'High', 'High': 'High'}
     rep = max(members, key=lambda c: (rank.get(c.get('signal_confidence', ''), 0),
                                       len(c.get('notes') or '')))
-    sources = sorted({m.get('source_file', '') for m in members if m.get('source_file')})
     conf = max((m.get('signal_confidence', 'Hypothesis') for m in members),
                key=lambda x: rank.get(x, 0))
-    merged = {**rep}
+    merged = {**rep, '_corroboration': corro}
     if len(sources) >= 2:
         merged['signal_confidence'] = upgrade.get(conf, conf)
         note = (merged.get('notes') or '').rstrip()
@@ -917,12 +941,8 @@ async def process_engagement_files(engagement_id: str,
     # Consolidate across files — exact-name pre-pass + semantic dedup (within-domain)
     deduped, dedup_count, dedup_degraded = await _consolidate_candidates(all_candidates)
 
-    # Per-domain cap: keep top 5 per domain by confidence
-    capped, domain_cap_count = _apply_domain_cap(deduped, cap=5)
-
-    # Separate High/Medium from Hypothesis
-    main_candidates = [c for c in capped if c.get('signal_confidence') != 'Hypothesis']
-    hypothesis_candidates = [c for c in capped if c.get('signal_confidence') == 'Hypothesis']
+    # Quality-gated selection: keep all High, bound Medium, hide Hypothesis, ceiling backstop
+    main_candidates, hypothesis_candidates, domain_cap_count = _select_candidates(deduped)
     hypothesis_count = len(hypothesis_candidates)
 
     # Signals found in any file are no longer gaps — remove from not_observed
@@ -944,7 +964,7 @@ async def process_engagement_files(engagement_id: str,
             'not_observed':          final_not_observed,
         }, f, indent=2)
 
-    strength_count = sum(1 for c in capped if c.get('valence') == 'Strength')
+    strength_count = sum(1 for c in main_candidates if c.get('valence') == 'Strength')
     logger.info(
         f"Merged candidates for {engagement_id}: "
         f"{len(main_candidates)} main, {hypothesis_count} hypothesis, "

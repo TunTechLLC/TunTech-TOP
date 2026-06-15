@@ -389,8 +389,9 @@ def test_extract_signals_with_retry_raises_after_all_attempts(monkeypatch):
 
 def test_merge_cluster_single_unchanged():
     from api.services.document_processor import _merge_cluster
-    c = {"signal_name": "x", "signal_confidence": "Medium"}
-    assert _merge_cluster([c]) is c
+    out = _merge_cluster([{"signal_name": "x", "signal_confidence": "Medium", "source_file": "f"}])
+    assert out["signal_name"] == "x" and out["signal_confidence"] == "Medium"
+    assert out["_corroboration"] == 1          # singleton is corroborated by its one source
 
 
 def test_merge_cluster_corroboration_upgrade_two_sources():
