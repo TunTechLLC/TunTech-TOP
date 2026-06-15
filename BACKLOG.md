@@ -29,6 +29,31 @@ feature across real engagements; otherwise defer.
 
 ---
 
+## Code-Quality Remediation — top 5 from the scoped audit (NEW, 2026-06-15)
+
+A scoped code-quality audit (`TOP_AUDIT_PLAN.md` → findings in `TOP_audit_findings.md`) found **47 items
+(0 Critical · 13 High · 26 Medium · 8 Low)**. The **top 5 fix-first systemic issues** are turned into a
+test-gated remediation plan: **`TOP_AUDIT_REMEDIATION_PLAN.md`**. The remaining Medium/Low items stay in
+`TOP_audit_findings.md` as a punch-list. Ordering is **fix-first** (systemic reach × threat to data
+integrity / deliverable correctness), not strict severity.
+
+| # | Remediation item | Severity | Note |
+|---|------------------|----------|------|
+| 1 | Close remaining silent-failure swallows | High | The proven defect class — broad `except → return default` in `claude.py` (3 sites), `document_processor`, `report_sections`, `qa_revision`, 2 frontend sites |
+| 2 | Enforce skill quality rules in code, not prompts | High | computed≠CONFIRMED, attribution-to-source, positive-finding-no-pattern — currently SOFT/NONE. Continues the D-label work; cross-doc-conflict half stays in Decision Surfacing below |
+| 4 | One Claude I/O policy: `MAX_INPUT_CHARS` + retries | High | No input-size guard anywhere; shared client runs `max_retries=0`. Pairs with #1 to make Claude calls fail loud + bounded |
+| 5 | Finish Rule-5 centralization | Medium | `prompts.py` builds `_DOMAIN_LIST` dynamically then hardcodes domains ×5 + enums; same drift in report_sections, document_processor, 2 routers, RoadmapPanel |
+
+> **Item 3 (delete dead `signal.py` `bulk_create`) — ✅ DONE 2026-06-15 (`4bb9438`), recorded in `PROGRESS.md`.**
+> Numbers 1/2/4/5 kept as-is for traceability to `TOP_AUDIT_REMEDIATION_PLAN.md`.
+
+**Suggested execution order** (by cost/isolation, see plan): ~~3~~ → 4 → 1 → 2 → 5. Each ships as its own
+commit with its pre-registered test landing first; re-run the 148-test baseline after each. **Priority vs.
+features below is the consultant's call** — these are correctness/maintainability hardening, distinct from
+the feature track.
+
+---
+
 ## Remaining features — build order
 
 | # | Item | Sessions | Notes |
