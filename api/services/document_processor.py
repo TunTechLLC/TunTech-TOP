@@ -791,6 +791,81 @@ def _deduplicate_candidates(candidates: list[dict]) -> tuple[list[dict], int]:
     return deduped, len(candidates) - len(deduped)
 
 
+def _merge_cluster(members: list[dict]) -> dict:
+    """Merge candidates that are the same underlying signal into one.
+    Representative = highest base confidence, then longest notes (most evidence).
+    Confidence = strongest member, upgraded one level if corroborated by >=2 distinct
+    source files (computed ONCE here from the raw members — corroboration is not applied
+    earlier). Source breadth is preserved in notes (no schema change)."""
+    if len(members) == 1:
+        return members[0]
+    rank = {'High': 2, 'Medium': 1, 'Hypothesis': 0}
+    upgrade = {'Hypothesis': 'Medium', 'Medium': 'High', 'High': 'High'}
+    rep = max(members, key=lambda c: (rank.get(c.get('signal_confidence', ''), 0),
+                                      len(c.get('notes') or '')))
+    sources = sorted({m.get('source_file', '') for m in members if m.get('source_file')})
+    conf = max((m.get('signal_confidence', 'Hypothesis') for m in members),
+               key=lambda x: rank.get(x, 0))
+    merged = {**rep}
+    if len(sources) >= 2:
+        merged['signal_confidence'] = upgrade.get(conf, conf)
+        note = (merged.get('notes') or '').rstrip()
+        merged['notes'] = (note + f"\n[Corroborated across {len(sources)} sources: "
+                           f"{', '.join(sources)}]").strip()
+    else:
+        merged['signal_confidence'] = conf
+    return merged
+
+
+async def _consolidate_candidates(all_candidates: list[dict]) -> tuple[list[dict], int, bool]:
+    """Collapse duplicate candidate signals: cheap exact-name pre-grouping, then semantic
+    clustering (Claude, within-domain) of the group representatives, then one merge that
+    computes corroboration once from the raw members. Within-domain is enforced in CODE
+    (any cross-domain cluster is split) — not left to the prompt.
+    Returns (consolidated, removed_count, semantic_degraded). On semantic-clustering
+    failure, falls back to exact-name dedup only (every candidate preserved — no loss),
+    sets semantic_degraded=True, and logs loudly (never silently degrades)."""
+    from api.services.claude import cluster_duplicate_signals
+    if not all_candidates:
+        return [], 0, False
+
+    # 1. exact pre-group by (domain, normalized name) -> raw candidate indices
+    groups: dict[tuple, list[int]] = {}
+    order: list[tuple] = []
+    for i, c in enumerate(all_candidates):
+        key = (c.get('domain', ''), c.get('signal_name', '').lower().strip())
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(i)
+    group_members = [groups[k] for k in order]
+    reps = [all_candidates[m[0]] for m in group_members]
+
+    # 2. semantic cluster the representatives; fall back to exact-only on any failure
+    semantic_degraded = False
+    try:
+        clusters_of_groups = await cluster_duplicate_signals(reps)
+    except Exception as exc:
+        logger.warning(
+            f"_consolidate_candidates: semantic dedup failed ({exc}) — falling back to "
+            f"exact-name dedup only. All candidates preserved; consolidation reduced."
+        )
+        clusters_of_groups = [[g] for g in range(len(reps))]
+        semantic_degraded = True
+
+    # 3. enforce within-domain — split any cluster whose groups span more than one domain
+    final_clusters: list[list[int]] = []
+    for cluster in clusters_of_groups:
+        by_dom: dict[str, list[int]] = {}
+        for gid in cluster:
+            by_dom.setdefault(reps[gid].get('domain', ''), []).extend(group_members[gid])
+        final_clusters.extend(by_dom.values())
+
+    # 4. one merge per final cluster (corroboration computed here, from raw members)
+    consolidated = [_merge_cluster([all_candidates[i] for i in idxs]) for idxs in final_clusters]
+    return consolidated, len(all_candidates) - len(consolidated), semantic_degraded
+
+
 async def process_engagement_files(engagement_id: str,
                                    interviews_folder: str,
                                    documents_folder: str,
@@ -839,8 +914,8 @@ async def process_engagement_files(engagement_id: str,
             all_candidates.append({**c, 'source_file': source_file})
         all_not_observed.update(result.get('not_observed', []))
 
-    # Deduplicate across files
-    deduped, dedup_count = _deduplicate_candidates(all_candidates)
+    # Consolidate across files — exact-name pre-pass + semantic dedup (within-domain)
+    deduped, dedup_count, dedup_degraded = await _consolidate_candidates(all_candidates)
 
     # Per-domain cap: keep top 5 per domain by confidence
     capped, domain_cap_count = _apply_domain_cap(deduped, cap=5)
@@ -865,6 +940,7 @@ async def process_engagement_files(engagement_id: str,
             'dedup_count':           dedup_count,
             'domain_cap_count':      domain_cap_count,
             'hypothesis_count':      hypothesis_count,
+            'semantic_dedup_degraded': dedup_degraded,
             'not_observed':          final_not_observed,
         }, f, indent=2)
 
@@ -885,6 +961,7 @@ async def process_engagement_files(engagement_id: str,
         'dedup_count':           dedup_count,
         'domain_cap_count':      domain_cap_count,
         'hypothesis_count':      hypothesis_count,
+        'semantic_dedup_degraded': dedup_degraded,
     }
 
 

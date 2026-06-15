@@ -716,6 +716,31 @@ Return format example:
   "not_observed": ["SL-17", "SL-23"]
 }}"""
 
+SIGNAL_DEDUP_PROMPT = """You are deduplicating candidate operational signals from a consulting diagnostic.
+Multiple source files often surface the SAME underlying signal under different names. Group the
+candidates that describe the SAME underlying signal so duplicates can be merged.
+
+Candidates are listed grouped by DOMAIN, each with an [index], name, observed value, and a short
+evidence note. Group ONLY within the same domain.
+
+RULES:
+- Merge candidates that are restatements of the SAME underlying signal (same metric / same
+  condition / same root issue), even if worded differently. E.g. "Critical revenue concentration
+  in single client" + "Revenue Concentration - Helix Health" + "Top Client Revenue Concentration"
+  are ONE signal.
+- Do NOT merge signals that are RELATED but DISTINCT. Keep SEPARATE:
+  * different metrics (NPS vs CSAT; on-time-delivery vs estimation-error)
+  * a risk vs its consequence (revenue concentration vs the renewal being at risk)
+  * different specific instances (fixed-bid overrun vs underwater retainer)
+  * a strength vs a separate risk
+- When unsure whether two are the same, keep them SEPARATE. Under-merging is safe; over-merging
+  loses information.
+- Every index must appear EXACTLY ONCE across the groups (a partition). Singletons are expected.
+
+OUTPUT: JSON only, no prose, no code fences. A list of lists of indices, each inner list being
+the indices of one underlying signal:
+[[0, 4, 9], [1], [2, 7], ...]"""
+
 AGENT_REGISTRY = {
     "Diagnostician": {
         "sequence":              1,

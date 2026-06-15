@@ -383,3 +383,71 @@ def test_extract_signals_with_retry_raises_after_all_attempts(monkeypatch):
 
     with pytest.raises(ValueError):
         asyncio.run(dp._extract_signals_with_retry("interview", "text", None, "", "f.txt"))
+
+
+# --- Defect B: semantic-dedup merge, corroboration, fallback, within-domain invariant ---
+
+def test_merge_cluster_single_unchanged():
+    from api.services.document_processor import _merge_cluster
+    c = {"signal_name": "x", "signal_confidence": "Medium"}
+    assert _merge_cluster([c]) is c
+
+
+def test_merge_cluster_corroboration_upgrade_two_sources():
+    """A signal corroborated by >=2 distinct sources is upgraded one level + noted."""
+    from api.services.document_processor import _merge_cluster
+    m = _merge_cluster([
+        {"signal_name": "a", "signal_confidence": "Hypothesis", "source_file": "f1.txt", "notes": "n"},
+        {"signal_name": "b", "signal_confidence": "Medium", "source_file": "f2.txt", "notes": "longer note"},
+    ])
+    assert m["signal_confidence"] == "High"            # max(Medium,Hyp)=Medium, +1 -> High
+    assert "Corroborated across 2 sources" in m["notes"]
+
+
+def test_merge_cluster_no_upgrade_single_source():
+    """Multiple restatements from the SAME file are not corroboration — no upgrade."""
+    from api.services.document_processor import _merge_cluster
+    m = _merge_cluster([
+        {"signal_name": "a", "signal_confidence": "Hypothesis", "source_file": "f1.txt"},
+        {"signal_name": "b", "signal_confidence": "Medium", "source_file": "f1.txt"},
+    ])
+    assert m["signal_confidence"] == "Medium"
+
+
+def test_consolidate_fallback_preserves_all_and_flags(monkeypatch):
+    """If semantic clustering fails, fall back to exact-only — nothing lost, degraded=True."""
+    import asyncio
+    from api.services import document_processor as dp
+    import api.services.claude as claude_mod
+
+    async def boom(items):
+        raise RuntimeError("simulated clustering failure")
+    monkeypatch.setattr(claude_mod, "cluster_duplicate_signals", boom)
+
+    cands = [
+        {"domain": "D", "signal_name": "S1", "signal_confidence": "High", "source_file": "a"},
+        {"domain": "D", "signal_name": "S1", "signal_confidence": "Medium", "source_file": "b"},
+        {"domain": "D", "signal_name": "S2", "signal_confidence": "High", "source_file": "a"},
+    ]
+    out, removed, degraded = asyncio.run(dp._consolidate_candidates(cands))
+    assert degraded is True
+    assert len(out) == 2 and removed == 1          # S1 (exact-merged) + S2; nothing lost
+
+
+def test_consolidate_enforces_within_domain(monkeypatch):
+    """Even if the model groups across domains, code splits the cluster by domain."""
+    import asyncio
+    from api.services import document_processor as dp
+    import api.services.claude as claude_mod
+
+    async def cross_domain(items):
+        return [[0, 1]]                              # model wrongly groups across domains
+    monkeypatch.setattr(claude_mod, "cluster_duplicate_signals", cross_domain)
+
+    cands = [
+        {"domain": "Sales", "signal_name": "Concentration", "signal_confidence": "High", "source_file": "a"},
+        {"domain": "Finance", "signal_name": "Concentration", "signal_confidence": "High", "source_file": "b"},
+    ]
+    out, _, _ = asyncio.run(dp._consolidate_candidates(cands))
+    assert len(out) == 2                            # not merged across domains
+    assert {c["domain"] for c in out} == {"Sales", "Finance"}

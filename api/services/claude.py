@@ -7,6 +7,7 @@ import anthropic
 
 from api.services.prompts import (
     SIGNAL_EXTRACTION_PROMPT,
+    SIGNAL_DEDUP_PROMPT,
     FINDINGS_EXTRACTION_PROMPT,
     ROADMAP_EXTRACTION_PROMPT,
     REPORT_NARRATOR_PROMPT,
@@ -645,6 +646,64 @@ def _parse_json_array(raw: str, context: str) -> list:
     if start == -1 or end == -1 or end <= start:
         raise ValueError(f"{context}: no JSON array in model response")
     return json.loads(text[start:end + 1])  # raises json.JSONDecodeError on malformed JSON
+
+
+def _reconcile_partition(clusters: list, n: int) -> list[list[int]]:
+    """Coerce a model's index-clustering into a valid partition of 0..n-1, tolerating minor
+    imperfections (a duplicated or missing index) instead of discarding the whole clustering.
+    Each index kept once (first occurrence wins); out-of-range/non-int dropped; any index not
+    covered becomes its own singleton. Logs when it has to repair. (Total garbage — no JSON
+    array at all — is caught earlier by _parse_json_array, which raises -> caller degrades.)"""
+    seen: set = set()
+    reconciled: list[list[int]] = []
+    raw_count = 0
+    for grp in (clusters if isinstance(clusters, list) else []):
+        if not isinstance(grp, list):
+            continue
+        raw_count += len(grp)
+        kept = [i for i in grp if isinstance(i, int) and 0 <= i < n and i not in seen]
+        if kept:
+            seen.update(kept)
+            reconciled.append(kept)
+    missing = [i for i in range(n) if i not in seen]
+    reconciled.extend([m] for m in missing)
+    if missing or raw_count != n:
+        logger.info(
+            f"_reconcile_partition: repaired clustering — {len(missing)} index(es) recovered "
+            f"as singletons (model emitted {raw_count} indices for {n} candidates)"
+        )
+    return reconciled
+
+
+async def cluster_duplicate_signals(items: list[dict]) -> list[list[int]]:
+    """Cluster candidate signals that are restatements of the SAME underlying signal,
+    within each domain (judgment work — the deterministic merge is the caller's job).
+    `items` is the list to cluster (the exact-dedup group representatives); each needs
+    domain, signal_name, observed_value, notes. Returns a partition of item indices as a
+    list of index-lists. RAISES on a non-partition or parse failure — the caller falls
+    back to exact-only dedup and surfaces the degradation (no silent loss)."""
+    from collections import defaultdict
+    by_domain = defaultdict(list)
+    for i, it in enumerate(items):
+        by_domain[it.get('domain', '?')].append(i)
+    lines = []
+    for dom in sorted(by_domain):
+        lines.append(f"\n### DOMAIN: {dom}")
+        for i in by_domain[dom]:
+            it = items[i]
+            note = (it.get('notes') or '').replace('\n', ' ')[:120]
+            lines.append(f"[{i}] {it.get('signal_name', '')} | {it.get('observed_value', '')} | {note}")
+    user = "\n".join(lines)
+    logger.info(f"cluster_duplicate_signals: clustering {len(items)} candidates")
+    async with async_client.messages.stream(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=SIGNAL_DEDUP_PROMPT,
+        messages=[{"role": "user", "content": user}],
+    ) as stream:
+        message = await stream.get_final_message()
+    clusters = _parse_json_array(extract_text(message), "cluster_duplicate_signals")
+    return _reconcile_partition(clusters, len(items))
 
 
 async def detect_coverage_gaps(

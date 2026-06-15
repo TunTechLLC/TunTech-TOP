@@ -1259,3 +1259,29 @@ def test_parse_json_array_raises_on_malformed():
     from api.services.claude import _parse_json_array
     with pytest.raises(json.JSONDecodeError):
         _parse_json_array('[ {"a":1} {"b":2} ]', "ctx")  # missing comma
+
+
+# --- Defect B: partition reconciliation (tolerate model index imperfections) ---
+
+def test_reconcile_partition_perfect():
+    from api.services.claude import _reconcile_partition
+    assert sorted(i for g in _reconcile_partition([[0, 2], [1]], 3) for i in g) == [0, 1, 2]
+
+
+def test_reconcile_partition_duplicate_index_kept_once():
+    """The exact failure that hit the wired run: more indices than candidates (a dup)."""
+    from api.services.claude import _reconcile_partition
+    out = _reconcile_partition([[0, 1], [1, 2]], 3)   # index 1 duplicated -> 4 for 3
+    assert sorted(i for g in out for i in g) == [0, 1, 2]
+
+
+def test_reconcile_partition_recovers_missing_as_singleton():
+    from api.services.claude import _reconcile_partition
+    out = _reconcile_partition([[0]], 3)              # 1 and 2 missing
+    assert sorted(i for g in out for i in g) == [0, 1, 2]
+
+
+def test_reconcile_partition_drops_out_of_range():
+    from api.services.claude import _reconcile_partition
+    out = _reconcile_partition([[0, 5], [1]], 3)      # 5 out of range; 2 missing
+    assert sorted(i for g in out for i in g) == [0, 1, 2]
