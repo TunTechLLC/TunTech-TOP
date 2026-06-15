@@ -240,10 +240,6 @@ class ReportGeneratorService(ReportSectionsMixin):
             rc  = primary_finding['root_cause']
             dot = rc.find('. ')
             cause_line = (rc[:dot] if dot > 0 else rc).strip()
-            # Truncate to 10 words for the at-a-glance box — full explanation in Section 5
-            words = cause_line.split()
-            if len(words) > 10:
-                cause_line = ' '.join(words[:10]) + '\u2026'
             if cause_line:
                 kf_rows.append(('Primary Cause', cause_line))
         pz_rows = narrative.get('priority_zero_table_rows', [])
