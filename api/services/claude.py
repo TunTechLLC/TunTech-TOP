@@ -182,10 +182,16 @@ async def extract_findings_from_synthesizer(synthesizer_output: str,
     )
     message = await _stream_final_message(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
+        max_tokens=AGENT_MAX_TOKENS,
         system=FINDINGS_EXTRACTION_PROMPT,
         messages=[{"role": "user", "content": user_message}],
     )
+    if getattr(message, 'stop_reason', None) == 'max_tokens':
+        logger.warning(
+            f"extract_findings_from_synthesizer: TRUNCATED at max_tokens={AGENT_MAX_TOKENS} "
+            f"— the findings JSON array is cut off and will fail to parse. Raise the cap and "
+            f"re-parse. (A rich engagement with many patterns/findings can exceed the cap.)"
+        )
     raw = extract_text(message)
     clean = raw.strip()
     if clean.startswith('```json'):
