@@ -14,13 +14,17 @@ validated the core mission: economics **E1/E2 now appear** (were missing in E006
 silent file loss**, Cardinal flagged, **$3.5M Helix risk-framed** (not a loss). **C2 closed as
 not-needed** — E1/E2 reached the deliverable, so selection isn't hiding them.
 
-**The E007 grading surfaced the highest-value next capability:** TOP still does not
-systematically flag **cross-document contradictions**. The answer key's seeded conflicts are
-**real in the source (verified)** but unflagged by TOP: **C3** (Client Health "roughly 72%" vs
-Deck 68%), **A2** (status note "approved by delivery (D. Cho)" vs CTO/Principal denial), **C1**
-date, **C2** 37%/30%. That is exactly the **Decision Surfacing** feature below — now
-evidence-validated as the priority. (Plus a small economics label refinement — see the table:
-the $12K Pinnacle overrun is still labeled CONFIRMED when it should be ESTIMATED.)
+**Near-term follow-on (in progress): a small economics label refinement** — the $12K Pinnacle
+overrun is labeled CONFIRMED when it should be ESTIMATED (it is computed from an *estimated*
+$38K forecast, so it can't be CONFIRMED). Small `ECONOMICS_PROMPT` tweak.
+
+**Discretionary, NOT necessary:** TOP doesn't systematically flag cross-document contradictions
+(C3 72%/68%, A2 Cho-approval, C1 date, C2 37%/30% — all real in source, verified). That is the
+**Decision Surfacing** feature below. But it is **not a correctness issue**: the answer key
+itself rates these conflicts non-load-bearing (§6.5) — the findings/recommendations don't change
+— and the consultant catches such discrepancies in review. Its value is review-burden reduction
+and client-facing polish, not correctness. Build only if those savings justify a designed
+feature across real engagements; otherwise defer.
 
 ---
 
@@ -28,8 +32,8 @@ the $12K Pinnacle overrun is still labeled CONFIRMED when it should be ESTIMATED
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | **Evidence-validated by E007** — TOP doesn't flag cross-document conflicts (C1/C2/C3/A2, all real in source). Highest-value next capability. See below. |
-| 1b | Economics label refinement — computed leakage/overrun = ESTIMATED, not CONFIRMED | <1 | Small `ECONOMICS_PROMPT` tweak. From E007: the $12K Pinnacle overrun ($26K confirmed − $38K *estimated* forecast) is mislabeled CONFIRMED. Pairs with Decision Surfacing. |
+| — | Economics label refinement — computed leakage/overrun = ESTIMATED, not CONFIRMED | <1 | **Near-term.** Small `ECONOMICS_PROMPT` tweak. From E007: the $12K Pinnacle overrun ($26K confirmed − $38K *estimated* forecast) is mislabeled CONFIRMED. |
+| 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | **Discretionary, NOT necessary.** E007 showed TOP doesn't flag cross-doc conflicts (C1/C2/C3/A2) — but they're non-load-bearing (answer key §6.5) and the consultant catches them in review. Value is review-burden/polish, not correctness. See below. |
 | 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
 | 3 | PowerPoint Export | 1 | Ships with audit checks |
 | 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |

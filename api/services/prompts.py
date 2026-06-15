@@ -94,6 +94,12 @@ SOURCE-PROVIDED ECONOMICS — PRECEDENCE AND LABELING:
   percent of revenue x revenue) is DERIVED, never CONFIRMED. An exposure is a risk figure,
   never a CONFIRMED number and never a realized "loss" — realization is not certain. Never
   label a computed figure or a risk/exposure figure CONFIRMED.
+- BRIGHT LINE: a figure is CONFIRMED only if a source states it verbatim as a hard fact (e.g.
+  TTM revenue, a contract price, a bill rate). ANY figure you calculate is NOT CONFIRMED —
+  DERIVED if every input is confirmed, INFERRED if any input is an estimate, forecast, or
+  assumption. This explicitly covers leakage, overruns, variances, and run-rates: e.g. a
+  fixed-bid overrun = (estimated effort forecast − confirmed contract price) is INFERRED (its
+  forecast input is an estimate), never CONFIRMED.
 
 GROUNDING RULE: Only reference signal IDs and pattern IDs that appear in the case packet.
 Do not reference IDs not present in SECTION 2 or SECTION 3."""
