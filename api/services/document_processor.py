@@ -560,7 +560,7 @@ def scan_folder(folder_path: str, engagement_id: str) -> list[dict]:
         file_path = os.path.join(folder_path, file_name)
         file_hash = hash_file(file_path)
 
-        if pf_repo.already_processed(file_hash):
+        if pf_repo.already_processed(engagement_id, file_hash):
             logger.info(f"Skipping already processed file: {file_name}")
             continue
 

@@ -152,7 +152,7 @@ def test_db(monkeypatch, tmp_path):
             processed_date TEXT NOT NULL,
             signal_count INTEGER DEFAULT 0,
             status TEXT DEFAULT 'processed',
-            UNIQUE(file_hash)
+            UNIQUE(engagement_id, file_hash)
         );
         CREATE TABLE IF NOT EXISTS QACoverageItems (
             qa_coverage_id TEXT PRIMARY KEY,
@@ -1319,3 +1319,23 @@ def test_reconcile_partition_drops_out_of_range():
     from api.services.claude import _reconcile_partition
     out = _reconcile_partition([[0, 5], [1]], 3)      # 5 out of range; 2 missing
     assert sorted(i for g in out for i in g) == [0, 1, 2]
+
+
+# --- Engagement-scoped file dedup (enables duplicate/parallel engagements) ---
+
+def test_already_processed_is_engagement_scoped(test_db):
+    """A content hash processed in one engagement must NOT count as processed in a different
+    engagement — else a duplicate/parallel engagement (or another client with identical files)
+    silently processes nothing. Duplicate detection stays content-based, but per engagement."""
+    from api.db.repositories.processed_files import ProcessedFilesRepository
+    repo = ProcessedFilesRepository()
+    repo.mark_processed(engagement_id="E006", file_name="Interview_X.txt",
+                        file_hash="abc123", file_type="interview", signal_count=5)
+    assert repo.already_processed("E006", "abc123") is True      # same engagement -> seen
+    assert repo.already_processed("E007", "abc123") is False     # different engagement -> NOT seen
+    assert repo.already_processed("E006", "other") is False      # different hash -> NOT seen
+    # a duplicate engagement can RECORD the same-content file — UNIQUE is (engagement_id,
+    # file_hash), not file_hash, so no global collision blocks it.
+    repo.mark_processed(engagement_id="E007", file_name="Interview_X.txt",
+                        file_hash="abc123", file_type="interview", signal_count=5)
+    assert repo.already_processed("E007", "abc123") is True

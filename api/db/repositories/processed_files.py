@@ -14,8 +14,8 @@ GET_FOR_ENGAGEMENT = """
     ORDER  BY processed_date DESC
 """
 
-GET_BY_HASH = """
-    SELECT file_id FROM ProcessedFiles WHERE file_hash = ?
+GET_IN_ENGAGEMENT_BY_HASH = """
+    SELECT file_id FROM ProcessedFiles WHERE engagement_id = ? AND file_hash = ?
 """
 
 GET_FULL_BY_HASH = """
@@ -42,8 +42,13 @@ class ProcessedFilesRepository(BaseRepository):
         rows = self._query(GET_FOR_ENGAGEMENT, (engagement_id,))
         return [dict(row) for row in rows]
 
-    def already_processed(self, file_hash: str) -> bool:
-        rows = self._query(GET_BY_HASH, (file_hash,))
+    def already_processed(self, engagement_id: str, file_hash: str) -> bool:
+        """True if a file with this content hash was already processed FOR THIS ENGAGEMENT.
+        Scoped to the engagement on purpose: duplicate detection is by content hash, so a
+        duplicate/parallel engagement (or another client with identical-content files) must
+        re-process its own copies — a global content check would wrongly skip them all.
+        (get_by_hash below stays global for cross-engagement lookups.)"""
+        rows = self._query(GET_IN_ENGAGEMENT_BY_HASH, (engagement_id, file_hash))
         return len(rows) > 0
 
     def get_by_hash(self, file_hash: str) -> dict | None:
