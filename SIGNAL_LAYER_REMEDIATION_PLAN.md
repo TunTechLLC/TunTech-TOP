@@ -1,22 +1,21 @@
 # Signal-Layer Remediation Plan — Handoff Doc
 
-**Status:** **PHASE 1 COMPLETE & PUSHED (2026-06-14).** Defects E, A, A2, D shipped,
-each test-gated, 136 tests pass. **Created:** 2026-06-13.
+**Status:** **PHASE 1 + PHASE 2 (B, C1) COMPLETE & PUSHED.** Defects E, A, A2, D, B, C1
+shipped, each test-gated, 147 tests pass. **Created:** 2026-06-13.
 
-### ▶ RESUME HERE (paused 2026-06-14 EOD) — OPEN DECISION
-Phase 1 is done. The next move is an unmade decision for Victor:
-- **(1) Interim re-baseline now** — Victor creates a FRESH engagement, runs it end-to-end,
-  to measure what Phase 1 *alone* recovered. CAVEAT: partial — E1/E2 economics won't fully
-  appear until B+C deliver figures to the agent; you'd mainly see Opus quality + fail-loud +
-  the E3 label fix.
-- **(2) [RECOMMENDED] Go straight to Phase 2 = B + C**, then ONE comprehensive re-baseline.
-  Rationale: the interim re-baseline wouldn't change that B+C are needed (the ~60% cull is
-  structural, not model-fixable), it costs a full manual run, and it's incomplete on the
-  headline economics.
-- Either way: **create a FRESH engagement; do NOT wipe E006** (it's the documented "before").
-- **B + C is the design-heavy core** (semantic dedup: Claude-assisted vs normalized-key;
-  cap/confidence: raise cap modestly + stop demoting derived figures to cull-first Hypothesis).
-  Approach it **design-first + pre-registered test**, same method as Phase 1. Details in §3.
+### ▶ RESUME HERE — re-baseline on a FRESH engagement
+The signal-layer redesign is functionally done. **Next: the comprehensive re-baseline.**
+- **Victor creates a FRESH engagement** on the Cobalt source (do NOT wipe E006 — it's the
+  documented "before"), runs it end-to-end (process files → patterns → agents → findings →
+  roadmap → report → QA), and grades v1/v2 against the answer key.
+- **What to confirm at re-baseline:** E1/E2 economics now appear with correct labels; the
+  Revenue-at-Risk headline is the $2.8M/$3.48M Helix exposure (DERIVED, not CONFIRMED); the
+  big material signals (concentration, PMO/authority, renewal) survive; no whole-file silent
+  loss; the main candidate set is bounded (~49 on E006) and reads as the *right* signals.
+- **C2 decision is pending the re-baseline:** does any *material single-source derived*
+  figure still get demoted to Hypothesis-and-hidden? If yes → add a derived-reserve in
+  selection (safer than a rubric change). If no → C2 not needed.
+- Open question still open: post-change **review-burden** number in practice (E006 main ≈ 49).
 
 **Working method (load-bearing):** evidence first; pre-registered reversible test before any
 production change; tag claims verified/inferred/unchecked; surface own gaps proactively;
@@ -39,9 +38,21 @@ commit + push each piece. Throwaway verification scripts live in `scripts/` (del
   computed/exposure figures are DERIVED not CONFIRMED, exposure is "risk not loss". Fixes
   E3 mislabel. Verified on real E006 input: $3.48M → DERIVED, "risk, not realized".
 
-### Carried into Phase 2 / follow-ons
-- **B + C** still to do (the core signal-quality redesign — see §3 below).
-- D's full effect (E1/E2 reaching the agent) depends on B+C delivering the figures.
+### Phase 2 — shipped record
+- **B** (`dc93ee3`) — semantic dedup. `cluster_duplicate_signals` (Opus, within-domain) +
+  `_reconcile_partition` (tolerates duplicate/missing model indices) + `_merge_cluster`
+  (representative + union sources + one corroboration upgrade if ≥2 sources). Exact-name
+  pre-pass; within-domain ENFORCED in code; graceful FLAGGED fallback. E006: 120 raw → ~65/67.
+- **C1** (`f7c02e7`) — quality-gated selection replacing the fixed per-domain cap.
+  `_select_candidates`: keep ALL High/domain, top-3 Medium (corroboration-ranked, strength
+  reserve), global ceiling 55 (worst-first trim, per-domain floor). `MEDIUM_PER_DOMAIN=3`,
+  `MAIN_CANDIDATE_CEILING=55`. E006: 65 deduped → 49 main; E1 AND E2 in main.
+- **Economics fix now complete end-to-end:** B corroborates E1/E2 to Medium → C1 keeps them
+  → they reach the Consulting Economics agent → D preserves their labels.
+
+### Follow-ons
+- **C2** (single-source derived → Hypothesis demotion) DEFERRED — evaluate at re-baseline.
+- D's full effect depended on B+C delivering the figures — now satisfied.
 **How we work now (agreed):** every problem claim cites evidence; every fix gets a
 **pre-registered, reversible test that runs BEFORE any production change** (the standard set
 by the economics proof). Tag each item verified / inferred / unchecked. Do not get ahead of
