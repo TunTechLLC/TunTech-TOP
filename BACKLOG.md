@@ -5,28 +5,26 @@
 
 ---
 
-## CURRENT — Checkpoint 5 validation in progress (Cobalt E006)
+## CURRENT — Checkpoint 5 re-baseline (Cobalt, fresh engagement)
 
-The Post-Assembly QA Stage (QA-1 through QA-5), the Strengths & Value-Case Reframe
-(Tracks 1–3), and the economic-figure-classification fix are all **built, tested, and
-committed**. The remaining active work is **Checkpoint 5** — the end-to-end Cobalt Data
-Partners (E006) dry run that validates the QA stage and the value-case reframe against a
-purpose-built answer key
-(`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`).
+The Post-Assembly QA Stage, the Strengths & Value-Case Reframe, and the
+economic-figure-classification fix are built, tested, and committed. The Cobalt E006 dry run
+then surfaced **systemic signal-layer defects** (ChatGPT graded v2 7/10): silent whole-file
+signal loss, a ~60% over-cull, derived economics demoted-and-dropped, and missing E1/E2
+figures. Those were fixed in a six-defect **Signal-Layer Remediation (Phase 1+2: E, A, A2, D,
+B, C1)** — all shipped (147 tests), recorded in `PROGRESS.md`, detailed in
+`SIGNAL_LAYER_REMEDIATION_PLAN.md`.
 
-**State (2026-06-12):** v1 generated and graded against the answer key. The
-economic-figure fix is confirmed in a real document — the Revenue-at-Risk headline is
-**$2.8M** (Helix), not $127K; the margin strength is excluded from the exposure table and
-renders correctly in "What to Preserve."
-
-**Next steps, in order:**
-1. Fix the one strength `display_label` ("Hidden margin cost from overtime" → "Gross profit
-   funding capacity"), confirm the executive-display selections, regenerate v1.
-2. Run the QA stage (Coverage → Coherence → Editorial → Revision → v2) and confirm it catches
-   the v1 coverage/coherence gaps: **C1** (Jan-15 vs Oct-31 SOW date conflict), **C4**
-   (Cardinal MedGroup prospect-vs-active), **C3** (68% vs ~72% on-time), **A2** (SOW
-   "approved by D. Cho" contradiction), and the **$461K–$1.49M run-rate sum** inconsistency.
-3. Confirm v2 is delivery-ready; close Checkpoint 5 against the pass criteria below.
+**Active work: the comprehensive re-baseline.**
+1. Create a **fresh engagement** on the Cobalt source (do NOT wipe E006 — it is the "before").
+   Run end-to-end and grade v1/v2 against the answer key
+   (`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`).
+2. Confirm E1/E2 appear with correct labels; Revenue-at-Risk is the Helix exposure (DERIVED,
+   not CONFIRMED); the seeded conflicts (**C1** date, **C3** 68% vs ~72%, **C4** Cardinal,
+   **A2** SOW approval) are still flagged by QA; material signals survive; no silent file loss;
+   main set bounded (~49 on E006).
+3. Make the deferred **C2** call (single-source derived demotion) based on the result, then
+   close Checkpoint 5 against the pass criteria below.
 
 ---
 

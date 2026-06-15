@@ -11,10 +11,13 @@
 **Checkpoint 4:** ✅ Passed 2026-04-03 — Dry Run 4 (E004) complete
 
 **Where we are:** The Post-Assembly QA Stage (QA-1–QA-5), the Strengths & Value-Case
-Reframe (Tracks 1–3), and the economic-figure-classification fix are built, tested
-(126 tests), and **committed**. **Checkpoint 5** — the Cobalt Data Partners (E006)
-end-to-end dry run validating the QA stage and the value-case reframe — is in progress
-(v1 generated and graded; QA stage next). See BACKLOG.md → "CURRENT".
+Reframe (Tracks 1–3), and the economic-figure-classification fix are built, tested, and
+**committed**. The Cobalt E006 dry run then surfaced **systemic signal-layer defects**
+(ChatGPT graded v2 7/10), fixed in a six-defect **Signal-Layer Remediation (Phase 1+2:
+E, A, A2, D, B, C1; 147 tests)** — all committed and pushed. The active task is the
+**Checkpoint 5 re-baseline**: a fresh end-to-end Cobalt run validating the remediation
+against the answer key. Full remediation detail in `SIGNAL_LAYER_REMEDIATION_PLAN.md`;
+see BACKLOG.md → "CURRENT".
 
 Historical work prior to the current thread lives in `PROGRESS_ARCHIVE.md`.
 Test engagement inventory lives in `ARCHITECTURE.md` §"Database Schema".
@@ -47,26 +50,26 @@ Test engagement inventory lives in `ARCHITECTURE.md` §"Database Schema".
 | Strengths T3 | **Track 3** — Executive Brief value reframe (**reframe, not restructure**): value-first `executive_snapshot` (prize → structural cause → recoverable value → first move), whole-brief VALUE-CASE POSTURE, "Three Critical Problems" → "Three Gaps to Close", roadmap `roadmap_rationale` value spine. Skill: strengths evidence rule + Preserve-finding exception; QA-2 `weak_grounding` catches generic praise. | ✅ |
 | Econ figure classification | **Root-cause fix for executive economic figures (2026-06-12).** `figure_type` was assigned by a domain-lookup table, mis-routing the "Revenue at Risk" headline — E006 v2 showed **$127K** (PMO opportunity cost) instead of the **$2.8M** Helix exposure (mirrors E004's $186K). Now classified from the figure's *nature*: `_classify_figure_type` reads the economic_impact text the agent wrote (exposure/drag/opportunity/replacement signals, scoped to the primary figure's window so a secondary figure can't capture the type) and valence (Positive/Dual → `funding_capacity`); the domain map is demoted to a last-resort fallback. `_suggest_economic_figures` blanks the exposure columns for strengths; the findings figure extractor (`_parse_economic_figures`) skips unit-rate/sub-$1K figures (F007 "$100 per violation" → no figure). New pre-render guard `check_revenue_at_risk_coherence` (narrator_auditor) flags a "Revenue at Risk" headline materially dwarfed by a larger executive exposure. Item-2: valence exclusion completed on the economic exposure table + chart (a strength no longer renders as a "drag"). Frontend: `funding_capacity` Type option + valence-aware default. 126 tests (+16). E004 (negatives-only) byte-unchanged — all changes are parse-time or valence-gated. | ✅ |
 | Cobalt fixes | **Bug-fix bundle found during the Cobalt E006 dry run** (all tested): valence-blind domain cap now reserves up to 2 Strength slots/domain; valence casing normalization + coercion/observability logging (strength-survival + Positive/Dual counts); agent `call_claude` cap 8k→16k, narrator 24k, roadmap extraction 16k, all with `stop_reason=='max_tokens'` truncation warnings (**3 of 5 Cobalt agents had silently truncated at 8k**); `AgentRunRepository.accept()` enforces one accepted run per agent (re-runs left two accepted → `get_accepted_output` non-deterministic on same-day ties) + `run_id` tiebreaker; frontend Preserve-finding exempt from the ≥1-pattern load guard; test-fixture drift fixed (Signals/OPDFindings/AgentRuns). New `scripts/valence_state.py` checkpoint. `top.log` untracked + gitignored. 110 tests pass. | ✅ |
+| Signal-Layer Remediation (Phase 1+2) | **Systemic signal-quality fixes found during the Cobalt E006 dry run** (ChatGPT graded v2 7/10; root cause = the signal layer, not one client). Six defects, each evidence-gated with a pre-registered test, all committed + pushed: **E** (`4c0b058`) standardize on Opus 4.7 + stream all 7 long Claude calls (no timeouts); **A** (`3d45cce`) JSON robustness — malformed extraction JSON no longer silently stores zero signals (had lost the CTO + Operations interviews); retry-then-fail-loud, failed file re-attempted next run, SignalPanel surfaces it; **A2** (`1ec8329`) QA agents + narrator fail loud — a parse failure can no longer read as "0 issues = clean"; **D** (`13b1093`) `ECONOMICS_PROMPT` precedence/labeling — exposure is DERIVED/"risk not loss", never CONFIRMED (fixes the E3 mislabel); **B** (`dc93ee3`) semantic dedup of cross-file restatements (concentration ×6→1; corroborates to High; within-domain enforced in code; `_reconcile_partition` tolerates model index slips; graceful flagged fallback); **C1** (`f7c02e7`) quality-gated selection replacing the fixed per-domain cap — keep ALL High/domain, top-3 Medium (corroboration-ranked, strength reserve), global ceiling 55 worst-first with per-domain floor. Economics fixed end-to-end (B→C1→D): on E006, 120 raw → 65 deduped → 49 main, E1 AND E2 reach the agent. 147 tests. C2 (single-source derived demotion) deferred to the re-baseline. Full record: `SIGNAL_LAYER_REMEDIATION_PLAN.md`. | ✅ |
 
 ---
 
 ## Next Steps
 
-**Current task — Checkpoint 5 (Cobalt E006).** All build work through the
-economic-figure-classification fix is committed (Strengths + Cobalt fixes in `6c139e5`;
-the figure-classification fix in `db8e108`). The Cobalt Data Partners (E006) dry run — a
-purpose-built value-case + QA test client — is the end-to-end Checkpoint 5 validation.
+**Current task — Checkpoint 5 re-baseline (Cobalt, fresh engagement).** The Signal-Layer
+Remediation (Phase 1+2: E, A, A2, D, B, C1) is complete, committed, and pushed (147 tests).
+The next step is the comprehensive end-to-end re-baseline:
 
-**Validated so far:** 15 Strength signals across 9 domains; 1 Positive ("Preserve") finding;
-v1 generated and graded against the answer key. The figure-classification fix is **confirmed
-in a real document** — the Revenue-at-Risk headline is $2.8M (Helix), not $127K; the margin
-strength is excluded from the exposure table and renders correctly in "What to Preserve."
+1. Create a **fresh engagement** on the Cobalt source (do NOT wipe E006 — it is the documented
+   "before"). Run it end-to-end: process files → patterns → agents → findings → roadmap →
+   report → QA. Grade v1/v2 against the answer key.
+2. **Confirm:** E1/E2 economics appear with correct labels; Revenue-at-Risk is the Helix
+   exposure (DERIVED, not CONFIRMED); material signals (concentration, PMO/authority, renewal)
+   survive; no silent file loss; the main candidate set is bounded (~49 on E006) and reads as
+   the right signals.
+3. **Make the deferred C2 call:** does any *material single-source derived* figure still get
+   demoted to Hypothesis-and-hidden? If yes → add a derived-reserve in selection (safer than a
+   rubric change). If no → C2 not needed. Then close Checkpoint 5 against the pass criteria in
+   BACKLOG.md.
 
-**Remaining for Checkpoint 5** (detail in BACKLOG.md → "CURRENT"):
-1. Fix the strength `display_label` ("Hidden margin cost from overtime" → "Gross profit
-   funding capacity"), confirm executive-display selections, regenerate v1.
-2. Run the QA stage (Coverage → Coherence → Editorial → Revision → v2); confirm it catches
-   the v1 gaps — C1 (Jan-15 vs Oct-31 date conflict), C4 (Cardinal MedGroup), C3 (68% vs
-   ~72% on-time), A2 (SOW "approved by D. Cho" contradiction), and the $461K–$1.49M run-rate
-   sum inconsistency.
-3. Confirm v2 is delivery-ready; close Checkpoint 5 against the pass criteria in BACKLOG.md.
+Resume pointer + full remediation evidence: `SIGNAL_LAYER_REMEDIATION_PLAN.md` → "▶ RESUME HERE".
