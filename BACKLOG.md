@@ -14,9 +14,10 @@ validated the core mission: economics **E1/E2 now appear** (were missing in E006
 silent file loss**, Cardinal flagged, **$3.5M Helix risk-framed** (not a loss). **C2 closed as
 not-needed** — E1/E2 reached the deliverable, so selection isn't hiding them.
 
-**Near-term follow-on (in progress): a small economics label refinement** — the $12K Pinnacle
-overrun is labeled CONFIRMED when it should be ESTIMATED (it is computed from an *estimated*
-$38K forecast, so it can't be CONFIRMED). Small `ECONOMICS_PROMPT` tweak.
+**The near-term label refinement is DONE** (`ab90fa9`, recorded in `PROGRESS.md`): the
+`ECONOMICS_PROMPT` BRIGHT LINE rule now labels computed overrun/leakage figures INFERRED, not
+CONFIRMED (verified on E007 — the $12K Pinnacle overrun is now INFERRED). So the only remaining
+item is **Decision Surfacing (below) — and it is discretionary.**
 
 **Discretionary, NOT necessary:** TOP doesn't systematically flag cross-document contradictions
 (C3 72%/68%, A2 Cho-approval, C1 date, C2 37%/30% — all real in source, verified). That is the
@@ -32,7 +33,6 @@ feature across real engagements; otherwise defer.
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| — | Economics label refinement — computed leakage/overrun = ESTIMATED, not CONFIRMED | <1 | **Near-term.** Small `ECONOMICS_PROMPT` tweak. From E007: the $12K Pinnacle overrun ($26K confirmed − $38K *estimated* forecast) is mislabeled CONFIRMED. |
 | 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | **Discretionary, NOT necessary.** E007 showed TOP doesn't flag cross-doc conflicts (C1/C2/C3/A2) — but they're non-load-bearing (answer key §6.5) and the consultant catches them in review. Value is review-burden/polish, not correctness. See below. |
 | 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
 | 3 | PowerPoint Export | 1 | Ships with audit checks |

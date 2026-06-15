@@ -71,13 +71,15 @@ core mission against the answer key:
 - **C2 closed as NOT needed** — E1/E2 reached the deliverable, so selection isn't hiding them;
   the residual is a label issue, not a hiding issue.
 
-**Two follow-ons logged in BACKLOG (verified, not assumed):**
-1. **D refinement** — a *computed* leakage/overrun figure (the $12K Pinnacle overrun) is still
-   labeled CONFIRMED when it should be ESTIMATED/DERIVED ($26K confirmed − $38K *estimated*
-   forecast). Small `ECONOMICS_PROMPT` tweak.
-2. **Cross-document conflict detection** (= the existing **Decision Surfacing** feature). The
-   answer key's seeded contradictions (C1 date, C2 37%/30%, C3 68%/72%, A2 Cho-approval) are
-   **real in the source — verified** — but TOP has no systematic cross-source conflict flag.
-   E007 is concrete evidence this is the highest-value next capability.
+**Follow-ons:**
+1. **D label refinement — DONE** (`ab90fa9`): the `ECONOMICS_PROMPT` BRIGHT LINE rule now labels
+   a *computed* overrun/leakage figure INFERRED, not CONFIRMED (verified on E007 — the $12K
+   Pinnacle overrun is INFERRED; the $26K contract stays CONFIRMED as a verbatim source fact).
+2. **Cross-document conflict detection** (= the existing **Decision Surfacing** feature) —
+   **DISCRETIONARY, not necessary.** The answer key's seeded contradictions (C1 date, C2 37%/30%,
+   C3 68%/72%, A2 Cho-approval) are real in source (verified) but unflagged — yet they are
+   non-load-bearing (answer key §6.5; findings/recommendations unchanged) and the consultant
+   catches such discrepancies in review. Value is review-burden/polish, not correctness. Defer
+   unless the savings justify a designed feature.
 
 Full remediation evidence: `SIGNAL_LAYER_REMEDIATION_PLAN.md`.
