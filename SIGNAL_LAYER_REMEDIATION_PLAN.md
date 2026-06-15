@@ -1,21 +1,26 @@
 # Signal-Layer Remediation Plan — Handoff Doc
 
-**Status:** **PHASE 1 + PHASE 2 (B, C1) COMPLETE & PUSHED.** Defects E, A, A2, D, B, C1
-shipped, each test-gated, 147 tests pass. **Created:** 2026-06-13.
+**Status:** **COMPLETE & RE-BASELINED (E007, 2026-06-15).** Defects E, A, A2, D, B, C1 (plus
+engagement-scoped dedup, findings-cap, Primary-Cause fixes) shipped, 148 tests. **Created:** 2026-06-13.
 
-### ▶ RESUME HERE — re-baseline on a FRESH engagement
-The signal-layer redesign is functionally done. **Next: the comprehensive re-baseline.**
-- **Victor creates a FRESH engagement** on the Cobalt source (do NOT wipe E006 — it's the
-  documented "before"), runs it end-to-end (process files → patterns → agents → findings →
-  roadmap → report → QA), and grades v1/v2 against the answer key.
-- **What to confirm at re-baseline:** E1/E2 economics now appear with correct labels; the
-  Revenue-at-Risk headline is the $2.8M/$3.48M Helix exposure (DERIVED, not CONFIRMED); the
-  big material signals (concentration, PMO/authority, renewal) survive; no whole-file silent
-  loss; the main candidate set is bounded (~49 on E006) and reads as the *right* signals.
-- **C2 decision is pending the re-baseline:** does any *material single-source derived*
-  figure still get demoted to Hypothesis-and-hidden? If yes → add a derived-reserve in
-  selection (safer than a rubric change). If no → C2 not needed.
-- Open question still open: post-change **review-burden** number in practice (E006 main ≈ 49).
+### ▶ RESUME HERE — remediation closed; two follow-ons in BACKLOG
+The E007 end-to-end re-baseline **validated the core mission** against the answer key:
+- **Economics E1/E2 now appear** in the deliverable (entirely missing in E006 v2): Pinnacle
+  $26K→$38K→~$12K overrun; retainers underwater (Mesa ~$9K/mo, ~$108K/yr).
+- **No silent file loss** (CTO + Director of Operations represented; 55 signals, cross-source
+  corroboration). **Cardinal (C4) flagged.** Revenue-at-Risk = **$3.5M Helix, risk-framed**
+  (not a loss). Margin not headlined as compression. Primary Cause reads cleanly.
+- **C2 CLOSED as not-needed** — E1/E2 reached the deliverable, so selection isn't hiding them;
+  the residual is a *label* issue, not a *hiding* issue.
+
+**Two follow-ons (in BACKLOG, both verified against the source):**
+1. **D label refinement** — a computed leakage/overrun figure (the $12K Pinnacle overrun) is
+   still labeled CONFIRMED; should be ESTIMATED ($26K confirmed − $38K *estimated* forecast).
+   Small `ECONOMICS_PROMPT` tweak.
+2. **Cross-document conflict detection = Decision Surfacing.** The answer key's seeded
+   conflicts (C1 date, C2 37%/30%, C3 68%/72%, A2 Cho-approval) are real in the source
+   (verified — e.g. Client Health literally says "roughly 72%"; status note says "approved by
+   delivery (D. Cho)") but TOP has no systematic cross-source conflict flag. Highest-value next.
 
 **Working method (load-bearing):** evidence first; pre-registered reversible test before any
 production change; tag claims verified/inferred/unchecked; surface own gaps proactively;

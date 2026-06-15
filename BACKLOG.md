@@ -5,26 +5,22 @@
 
 ---
 
-## CURRENT — Checkpoint 5 re-baseline (Cobalt, fresh engagement)
+## CURRENT — Signal-Layer Remediation done; Decision Surfacing is next
 
-The Post-Assembly QA Stage, the Strengths & Value-Case Reframe, and the
-economic-figure-classification fix are built, tested, and committed. The Cobalt E006 dry run
-then surfaced **systemic signal-layer defects** (ChatGPT graded v2 7/10): silent whole-file
-signal loss, a ~60% over-cull, derived economics demoted-and-dropped, and missing E1/E2
-figures. Those were fixed in a six-defect **Signal-Layer Remediation (Phase 1+2: E, A, A2, D,
-B, C1)** — all shipped (147 tests), recorded in `PROGRESS.md`, detailed in
-`SIGNAL_LAYER_REMEDIATION_PLAN.md`.
+The **Signal-Layer Remediation** (Phase 1+2: E, A, A2, D, B, C1, plus engagement-scoped dedup,
+findings-cap, and Primary-Cause fixes) is **complete and re-baselined on E007** (2026-06-15) —
+recorded in `PROGRESS.md`, detailed in `SIGNAL_LAYER_REMEDIATION_PLAN.md`. The re-baseline
+validated the core mission: economics **E1/E2 now appear** (were missing in E006 v2), **no
+silent file loss**, Cardinal flagged, **$3.5M Helix risk-framed** (not a loss). **C2 closed as
+not-needed** — E1/E2 reached the deliverable, so selection isn't hiding them.
 
-**Active work: the comprehensive re-baseline.**
-1. Create a **fresh engagement** on the Cobalt source (do NOT wipe E006 — it is the "before").
-   Run end-to-end and grade v1/v2 against the answer key
-   (`C:\001-cowork-projects\New-client\Cobalt-Data-Partners_TESTKEY\Cobalt_E006_ANSWER_KEY.md`).
-2. Confirm E1/E2 appear with correct labels; Revenue-at-Risk is the Helix exposure (DERIVED,
-   not CONFIRMED); the seeded conflicts (**C1** date, **C3** 68% vs ~72%, **C4** Cardinal,
-   **A2** SOW approval) are still flagged by QA; material signals survive; no silent file loss;
-   main set bounded (~49 on E006).
-3. Make the deferred **C2** call (single-source derived demotion) based on the result, then
-   close Checkpoint 5 against the pass criteria below.
+**The E007 grading surfaced the highest-value next capability:** TOP still does not
+systematically flag **cross-document contradictions**. The answer key's seeded conflicts are
+**real in the source (verified)** but unflagged by TOP: **C3** (Client Health "roughly 72%" vs
+Deck 68%), **A2** (status note "approved by delivery (D. Cho)" vs CTO/Principal denial), **C1**
+date, **C2** 37%/30%. That is exactly the **Decision Surfacing** feature below — now
+evidence-validated as the priority. (Plus a small economics label refinement — see the table:
+the $12K Pinnacle overrun is still labeled CONFIRMED when it should be ESTIMATED.)
 
 ---
 
@@ -32,7 +28,8 @@ B, C1)** — all shipped (147 tests), recorded in `PROGRESS.md`, detailed in
 
 | # | Item | Sessions | Notes |
 |---|------|----------|-------|
-| 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | NEW — highest-value next capability. See below. |
+| 1 | Decision Surfacing (forks as pre-reasoned decisions) | TBD | **Evidence-validated by E007** — TOP doesn't flag cross-document conflicts (C1/C2/C3/A2, all real in source). Highest-value next capability. See below. |
+| 1b | Economics label refinement — computed leakage/overrun = ESTIMATED, not CONFIRMED | <1 | Small `ECONOMICS_PROMPT` tweak. From E007: the $12K Pinnacle overrun ($26K confirmed − $38K *estimated* forecast) is mislabeled CONFIRMED. Pairs with Decision Surfacing. |
 | 2 | Editable Engagement Info | 1 | Nice-to-have; can slot anywhere |
 | 3 | PowerPoint Export | 1 | Ships with audit checks |
 | 4 | Standardize Economic Output | 1 | Priority driven by QA Stage data |

@@ -14,9 +14,11 @@
 Reframe (Tracks 1–3), and the economic-figure-classification fix are built, tested, and
 **committed**. The Cobalt E006 dry run then surfaced **systemic signal-layer defects**
 (ChatGPT graded v2 7/10), fixed in a six-defect **Signal-Layer Remediation (Phase 1+2:
-E, A, A2, D, B, C1; 147 tests)** — all committed and pushed. The active task is the
-**Checkpoint 5 re-baseline**: a fresh end-to-end Cobalt run validating the remediation
-against the answer key. Full remediation detail in `SIGNAL_LAYER_REMEDIATION_PLAN.md`;
+E, A, A2, D, B, C1; 148 tests)** — all committed and pushed. It is now **complete and
+re-baselined on E007** (2026-06-15), validated against the answer key: E1/E2 economics appear,
+no silent file loss, Cardinal flagged, $3.5M Helix risk-framed; C2 closed as not-needed. Two
+follow-ons logged — a small D label refinement and **Decision Surfacing** (cross-document
+conflict detection), the next capability. Full detail in `SIGNAL_LAYER_REMEDIATION_PLAN.md`;
 see BACKLOG.md → "CURRENT".
 
 Historical work prior to the current thread lives in `PROGRESS_ARCHIVE.md`.
@@ -56,20 +58,26 @@ Test engagement inventory lives in `ARCHITECTURE.md` §"Database Schema".
 
 ## Next Steps
 
-**Current task — Checkpoint 5 re-baseline (Cobalt, fresh engagement).** The Signal-Layer
-Remediation (Phase 1+2: E, A, A2, D, B, C1) is complete, committed, and pushed (147 tests).
-The next step is the comprehensive end-to-end re-baseline:
+**Signal-Layer Remediation: COMPLETE and re-baselined (E007, 2026-06-15).** Phase 1+2
+(E, A, A2, D, B, C1) plus the engagement-scoped dedup, findings-cap, and Primary-Cause fixes
+are shipped, committed, pushed (148 tests). The E007 end-to-end re-baseline validated the
+core mission against the answer key:
 
-1. Create a **fresh engagement** on the Cobalt source (do NOT wipe E006 — it is the documented
-   "before"). Run it end-to-end: process files → patterns → agents → findings → roadmap →
-   report → QA. Grade v1/v2 against the answer key.
-2. **Confirm:** E1/E2 economics appear with correct labels; Revenue-at-Risk is the Helix
-   exposure (DERIVED, not CONFIRMED); material signals (concentration, PMO/authority, renewal)
-   survive; no silent file loss; the main candidate set is bounded (~49 on E006) and reads as
-   the right signals.
-3. **Make the deferred C2 call:** does any *material single-source derived* figure still get
-   demoted to Hypothesis-and-hidden? If yes → add a derived-reserve in selection (safer than a
-   rubric change). If no → C2 not needed. Then close Checkpoint 5 against the pass criteria in
-   BACKLOG.md.
+- **Economics E1/E2 now appear** in the deliverable (entirely missing in E006 v2): Pinnacle
+  $26K→$38K→~$12K overrun; retainers underwater (Mesa ~$9K/mo, ~$108K/yr).
+- **No silent file loss** — CTO and Director of Operations interviews represented; 55 signals,
+  "grounded in cross-source corroboration" (the B work). **Cardinal (C4) flagged.**
+  Revenue-at-Risk = $3.5M Helix, risk-framed (not a loss); margin not headlined as compression.
+- **C2 closed as NOT needed** — E1/E2 reached the deliverable, so selection isn't hiding them;
+  the residual is a label issue, not a hiding issue.
 
-Resume pointer + full remediation evidence: `SIGNAL_LAYER_REMEDIATION_PLAN.md` → "▶ RESUME HERE".
+**Two follow-ons logged in BACKLOG (verified, not assumed):**
+1. **D refinement** — a *computed* leakage/overrun figure (the $12K Pinnacle overrun) is still
+   labeled CONFIRMED when it should be ESTIMATED/DERIVED ($26K confirmed − $38K *estimated*
+   forecast). Small `ECONOMICS_PROMPT` tweak.
+2. **Cross-document conflict detection** (= the existing **Decision Surfacing** feature). The
+   answer key's seeded contradictions (C1 date, C2 37%/30%, C3 68%/72%, A2 Cho-approval) are
+   **real in the source — verified** — but TOP has no systematic cross-source conflict flag.
+   E007 is concrete evidence this is the highest-value next capability.
+
+Full remediation evidence: `SIGNAL_LAYER_REMEDIATION_PLAN.md`.
