@@ -76,7 +76,7 @@ See `PROGRESS.md` for completed steps and `BACKLOG.md` for build order.
 |----------|---------|---------|
 | `TOP_DB_PATH` | SQLite database path | `C:\Users\varic\OneDrive\100_TunTech\TOP\TOP.db` |
 | `TOP_LOG_PATH` | Log file path | `C:\Dev\TunTech\TOP\top.log` |
-| `TOP_MODEL` | Claude model | `claude-sonnet-4-6` |
+| `TOP_MODEL` | Claude model | `claude-opus-4-7` |
 | `TOP_MAX_TOKENS` | Max tokens per Claude call | `8000` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | (required) |
 
