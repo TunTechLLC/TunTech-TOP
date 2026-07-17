@@ -142,6 +142,7 @@ export default function PatternPanel({ engagementId, onRefresh }) {
             <button
               onClick={handleParseRecommendations}
               disabled={loadingRecs}
+              title="Reads the accepted Skeptic run and lists patterns it judged overstated. Review each and Apply to lower its confidence before findings are built — nothing changes until you Apply."
               className="px-3 py-1.5 border border-amber-500 text-amber-700 rounded text-xs font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
             >
               {loadingRecs ? 'Parsing...' : 'Parse Skeptic Recommendations'}
